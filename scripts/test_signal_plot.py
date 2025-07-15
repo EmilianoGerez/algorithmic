@@ -79,9 +79,9 @@ if __name__ == "__main__":
     service = SignalDetectionService(repo, redis, db)
 
     symbol = "BTC/USD"
-    timeframe = "15T"
-    start = "2025-06-20T00:00:00Z"
-    end = "2025-07-15T00:00:00Z"
+    timeframe = "4H"
+    start = "2025-05-15T00:00:00Z"
+    end = "2025-07-22T00:00:00Z"
 
     result = service.detect_signals(
         symbol=symbol,

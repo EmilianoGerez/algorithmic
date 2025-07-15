@@ -47,24 +47,31 @@ class SignalDetectionService:
             candles = [bar.dict() for bar in bars]
             self.redis.setex(key, 3600 * 24, json.dumps(candles))
 
+        result = {
+            "candles": candles,
+            "tracked_fvgs": [],
+            "pivots": [],
+            "signals": []
+        }
+
         if signal_type in ["pivot", "fvg_and_pivot"]:
             pivots = pivot_points.detect_pivots(candles)
             self.save_pivots(pivots, symbol, timeframe)
-            return {"candles": pivots, "tracked_fvgs": []}
+            result["candles"] = pivots
+            result["pivots"] = [p for p in pivots if p.get("potential_swing_high") or p.get("potential_swing_low")]
 
-        elif signal_type in ["fvg", "fvg_and_pivot"]:
+        if signal_type in ["fvg", "fvg_and_pivot"]:
             detected = fvg.detect_fvg(candles)
             tracked = fvg_tracker.track_fvg_status(candles, detected)
             self.save_tracked_fvgs(tracked, symbol, timeframe)
-            return {"candles": detected, "tracked_fvgs": tracked}
+            result["candles"] = detected
+            result["tracked_fvgs"] = tracked
 
-        elif signal_type == "fvg_sweep_cisd":
-            candles_15m = candles
-            signals = detect_fvg_sweep_cisd(symbol, candles_15m, self.db)
-            return {"candles": candles_15m, "signals": signals, "tracked_fvgs": []}
+        if signal_type == "fvg_sweep_cisd":
+            signals = detect_fvg_sweep_cisd(symbol, candles, self.db)
+            result["signals"] = signals
 
-        else:
-            raise ValueError(f"Unknown signal type: {signal_type}")
+        return result
 
     def save_tracked_fvgs(self, tracked: List[dict], symbol: str, timeframe: str):
         for f in tracked:
@@ -109,7 +116,3 @@ class SignalDetectionService:
                 )
                 self.db.add(pivot)
         self.db.commit()
-
-
-
-

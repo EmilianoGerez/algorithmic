@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+redis
+matplotlib
+python-dotenv
+black
+isort
+pytest

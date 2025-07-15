@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtualenv
+venv/
+
+# Env files
+.env
+
+# IDE/Editor files
+.idea/
+.vscode/

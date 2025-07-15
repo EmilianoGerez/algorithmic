@@ -1,0 +1,4 @@
+# dev-requirements.txt (for development/testing)
+pytest
+typer
+uvicorn

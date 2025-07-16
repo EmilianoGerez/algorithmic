@@ -14,6 +14,7 @@ import uuid
 from src.core.liquidity.base_pool_manager import BaseLiquidityPoolManager, LiquidityPool
 from src.db.models.fvg import FVG as FVGModel
 from src.core.signals.fvg import detect_fvg
+from src.core.signals.enhanced_fvg_detector import detect_fvg_with_filters, FVGFilterConfig, FVGFilterPresets
 from sqlalchemy.orm import Session
 
 
@@ -35,57 +36,47 @@ class FVGPool(LiquidityPool):
 
 
 class FVGPoolManager(BaseLiquidityPoolManager):
-    """Manager for FVG liquidity pools"""
+    """Manager for FVG liquidity pools with enhanced filtering"""
     
-    def __init__(self, db_session: Session, cache_manager: Optional[object] = None):
+    def __init__(self, db_session: Session, cache_manager: Optional[object] = None, 
+                 filter_config: Optional[FVGFilterConfig] = None):
         super().__init__(db_session, cache_manager)
         self.max_fvg_age_days = 30  # How long to keep FVGs active
+        self.filter_config = filter_config or FVGFilterPresets.balanced()
     
     def _get_pool_type(self) -> str:
         return "fvg"
     
+    def set_filter_preset(self, preset: str):
+        """Set FVG filter preset: 'conservative', 'balanced', 'aggressive', 'scalping'"""
+        preset_map = {
+            'conservative': FVGFilterPresets.conservative(),
+            'balanced': FVGFilterPresets.balanced(),
+            'aggressive': FVGFilterPresets.aggressive(),
+            'scalping': FVGFilterPresets.scalping()
+        }
+        
+        if preset in preset_map:
+            self.filter_config = preset_map[preset]
+        else:
+            raise ValueError(f"Unknown preset: {preset}. Available: {list(preset_map.keys())}")
+    
     def detect_pools(self, candles: List[Dict], symbol: str, timeframe: str) -> List[FVGPool]:
-        """Detect FVG pools from candle data"""
-        fvg_candles = detect_fvg(candles)
+        """Detect high-quality FVG pools from candle data using enhanced filtering"""
+        # Use enhanced detection with filters
+        fvg_candles = detect_fvg_with_filters(candles, self.filter_config)
         pools = []
         
         for i, candle in enumerate(fvg_candles):
-            if candle.get("fvg_zone"):
+            if candle.get("fvg_zone") and candle.get("fvg_filtered"):
                 zone_low, zone_high = sorted(candle["fvg_zone"])
                 direction = "bullish" if candle.get("fvg_bullish") else "bearish"
                 
-                pool = FVGPool(
-                    id=f"fvg_{symbol}_{timeframe}_{i}_{uuid.uuid4().hex[:8]}",
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    timestamp=datetime.fromisoformat(candle["timestamp"].replace("Z", "")),
-                    price_level=(zone_low + zone_high) / 2,
-                    pool_type="fvg",
-                    status="active",
-                    zone_low=zone_low,
-                    zone_high=zone_high,
-                    direction=direction,
-                    strength=self._calculate_fvg_strength(candle, candles[max(0, i-5):i+6])
-                )
-                pools.append(pool)
-        
-        return pools
-    
-    def detect_inverse_fvg(self, candles: List[Dict], symbol: str, timeframe: str,
-                          original_direction: str) -> List[FVGPool]:
-        """Detect inverse FVGs after liquidity grab"""
-        inverse_pools = []
-        fvg_candles = detect_fvg(candles)
-        
-        for i, candle in enumerate(fvg_candles):
-            if candle.get("fvg_zone"):
-                zone_low, zone_high = sorted(candle["fvg_zone"])
-                direction = "bullish" if candle.get("fvg_bullish") else "bearish"
-                
-                # Check if this is an inverse FVG (opposite direction)
-                if direction != original_direction:
+                # Only create pool if strength meets threshold
+                fvg_strength = candle.get("fvg_strength", 0.0)
+                if fvg_strength >= self.filter_config.min_strength_threshold:
                     pool = FVGPool(
-                        id=f"ifvg_{symbol}_{timeframe}_{i}_{uuid.uuid4().hex[:8]}",
+                        id=f"fvg_{symbol}_{timeframe}_{i}_{uuid.uuid4().hex[:8]}",
                         symbol=symbol,
                         timeframe=timeframe,
                         timestamp=datetime.fromisoformat(candle["timestamp"].replace("Z", "")),
@@ -95,10 +86,43 @@ class FVGPoolManager(BaseLiquidityPoolManager):
                         zone_low=zone_low,
                         zone_high=zone_high,
                         direction=direction,
-                        is_inverse=True,
-                        strength=self._calculate_fvg_strength(candle, candles[max(0, i-5):i+6])
+                        strength=fvg_strength  # Use the enhanced strength calculation
                     )
-                    inverse_pools.append(pool)
+                    pools.append(pool)
+        
+        return pools
+    
+    def detect_inverse_fvg(self, candles: List[Dict], symbol: str, timeframe: str,
+                          original_direction: str) -> List[FVGPool]:
+        """Detect inverse FVGs after liquidity grab using enhanced filtering"""
+        inverse_pools = []
+        # Use enhanced detection for inverse FVGs as well
+        fvg_candles = detect_fvg_with_filters(candles, self.filter_config)
+        
+        for i, candle in enumerate(fvg_candles):
+            if candle.get("fvg_zone") and candle.get("fvg_filtered"):
+                zone_low, zone_high = sorted(candle["fvg_zone"])
+                direction = "bullish" if candle.get("fvg_bullish") else "bearish"
+                
+                # Check if this is an inverse FVG (opposite direction)
+                if direction != original_direction:
+                    fvg_strength = candle.get("fvg_strength", 0.0)
+                    if fvg_strength >= self.filter_config.min_strength_threshold:
+                        pool = FVGPool(
+                            id=f"ifvg_{symbol}_{timeframe}_{i}_{uuid.uuid4().hex[:8]}",
+                            symbol=symbol,
+                            timeframe=timeframe,
+                            timestamp=datetime.fromisoformat(candle["timestamp"].replace("Z", "")),
+                            price_level=(zone_low + zone_high) / 2,
+                            pool_type="fvg",
+                            status="active",
+                            zone_low=zone_low,
+                            zone_high=zone_high,
+                            direction=direction,
+                            is_inverse=True,
+                            strength=fvg_strength  # Use enhanced strength
+                        )
+                        inverse_pools.append(pool)
         
         return inverse_pools
     
@@ -200,7 +224,7 @@ class FVGPoolManager(BaseLiquidityPoolManager):
         query = self.db.query(FVGModel).filter(
             FVGModel.symbol == symbol,
             FVGModel.timeframe == timeframe,
-            FVGModel.status.in_(["active", "tested"])
+            FVGModel.status.in_(["active", "tested", "open"])  # Include "open" status
         )
         
         if start_time:

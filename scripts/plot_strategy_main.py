@@ -21,8 +21,8 @@ service = SignalDetectionService(repo, redis, db)
 symbol = "BTC/USD"
 ltf = "15T"  # Low timeframe for entries (15-minute candles)
 htf = "4H"   # High timeframe for context (Daily)
-start = "2025-05-18T00:00:00Z"
-end = "2025-05-24T00:00:00Z"
+start = "2025-07-01T00:00:00Z"
+end = "2025-07-13T00:00:00Z"
 
 print("🚀 Multi-Timeframe Signal Detection")
 print("=" * 50)

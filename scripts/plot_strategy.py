@@ -4,24 +4,24 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 
 def plot_candles_with_signals_and_4h_fvg(
-    candles_15m: List[Dict],
+    candles: List[Dict],
     pivots: List[Dict],
     tracked_fvgs_4h: List[Dict],
-    cisd_signals: List[Dict],
+    signals: List[Dict],
     save_path: str = "plot.png",
-    title: str = "15m Chart with 4H FVG, Pivots, and CISD"
+    title: str = "15m Chart with 4H FVG, Pivots, and Signals"
 ):
-    timestamps = [datetime.fromisoformat(c["timestamp"].replace("Z", "")) for c in candles_15m]
-    opens = [c["open"] for c in candles_15m]
-    highs = [c["high"] for c in candles_15m]
-    lows = [c["low"] for c in candles_15m]
-    closes = [c["close"] for c in candles_15m]
+    timestamps = [datetime.fromisoformat(c["timestamp"].replace("Z", "")) for c in candles]
+    opens = [c["open"] for c in candles]
+    highs = [c["high"] for c in candles]
+    lows = [c["low"] for c in candles]
+    closes = [c["close"] for c in candles]
 
     fig, ax = plt.subplots(figsize=(14, 6))
     ax.set_title(title)
 
     # Plot OHLC candles
-    for i in range(len(candles_15m)):
+    for i in range(len(candles)):
         color = "green" if closes[i] >= opens[i] else "red"
         ax.plot([timestamps[i], timestamps[i]], [lows[i], highs[i]], color="black", linewidth=0.5)
         ax.plot([timestamps[i], timestamps[i]], [opens[i], closes[i]], color=color, linewidth=2)
@@ -56,26 +56,26 @@ def plot_candles_with_signals_and_4h_fvg(
         else:
             fvg_shown = True
 
-    # CISD signals → 4 candle length, color-coded
-    cisd_shown_bull = cisd_shown_bear = False
+    # Trading signals → 4 candle length, color-coded
+    signal_shown_bull = signal_shown_bear = False
     candle_duration = timedelta(minutes=15)
-    for signal in cisd_signals:
-        ts = datetime.fromisoformat(signal["timestamp"].replace("Z", ""))
+    for signal in signals:
+        ts = signal.timestamp
         end_ts = ts + candle_duration * 4
-        level = signal["price"]
-        direction = signal["direction"]
+        level = signal.price
+        direction = signal.direction
 
         color = "green" if direction == "bullish" else "red"
-        label = "CISD Bullish" if direction == "bullish" and not cisd_shown_bull else \
-                "CISD Bearish" if direction == "bearish" and not cisd_shown_bear else ""
+        label = "Signal Bullish" if direction == "bullish" and not signal_shown_bull else \
+                "Signal Bearish" if direction == "bearish" and not signal_shown_bear else ""
 
         ax.hlines(y=level, xmin=ts, xmax=end_ts, colors=color, linestyle="--", linewidth=1.4, label=label)
         ax.scatter(ts, level, color=color, marker="D", s=60)
 
         if direction == "bullish":
-            cisd_shown_bull = True
+            signal_shown_bull = True
         else:
-            cisd_shown_bear = True
+            signal_shown_bear = True
 
     # Format X-axis
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())

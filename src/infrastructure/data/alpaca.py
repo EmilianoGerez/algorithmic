@@ -17,6 +17,31 @@ class AlpacaCryptoRepository:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update(HEADERS)
+    
+    def _convert_timeframe(self, timeframe: str) -> str:
+        """
+        Convert pandas-style timeframes to Alpaca API format
+        
+        Examples:
+        - "1T" -> "1Min"
+        - "5T" -> "5Min"
+        - "15T" -> "15Min"
+        - "1H" -> "1H"
+        - "4H" -> "4H"
+        - "1D" -> "1D"
+        """
+        timeframe_map = {
+            "1T": "1Min",
+            "5T": "5Min",
+            "15T": "15Min",
+            "30T": "30Min",
+            "1H": "1H",
+            "4H": "4H",
+            "1D": "1D",
+            "1W": "1W"
+        }
+        
+        return timeframe_map.get(timeframe, timeframe)
 
     def get_bars(
         self,
@@ -29,18 +54,21 @@ class AlpacaCryptoRepository:
         """
         Fetch bars from Alpaca, handling pagination.
         - symbol: 'BTC/USD'
-        - timeframe: '1Min', '5Min', '15Min', '1H', '4H'
+        - timeframe: '1T', '5T', '15T', '1H', '4H', '1D' (pandas style)
         - start/end: ISO 8601 (e.g., '2024-01-01T00:00:00Z')
         """
         all_bars: List[Candle] = []
 
         url = f"{BASE_URL}/bars"
         page_token = None
+        
+        # Convert timeframe to Alpaca API format
+        api_timeframe = self._convert_timeframe(timeframe)
 
         while True:
             params = {
                 "symbols": symbol,  # Use symbol as-is, e.g. 'BTC/USD'
-                "timeframe": timeframe,
+                "timeframe": api_timeframe,  # Use converted timeframe
                 "limit": limit_per_page,
             }
             if start:

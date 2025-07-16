@@ -2,7 +2,7 @@
 # File: src/db/models/pivot.py
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Float, DateTime, Boolean, Enum, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from src.db.base import Base
@@ -20,4 +20,4 @@ class Pivot(Base):
     type = Column(Enum("high", "low", name="pivot_type"))
     confirmed = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

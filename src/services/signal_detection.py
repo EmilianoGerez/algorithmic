@@ -1,7 +1,9 @@
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional
 from src.db.models.candle import Candle
 from src.infrastructure.data.alpaca import AlpacaCryptoRepository
 from src.core.signals import pivot_points, fvg, fvg_tracker
+from src.core.signals.multi_timeframe_engine import MultiTimeframeSignalEngine, TradingSignal
+from src.infrastructure.cache.enhanced_cache_manager import CacheManager
 import redis
 import json
 from hashlib import sha256
@@ -9,19 +11,34 @@ from src.db.models.fvg import FVG
 from src.db.models.pivot import Pivot
 from sqlalchemy.orm import Session
 from datetime import datetime
-from src.services.cisd_into_4H_fvg import detect_fvg_sweep_cisd
 
 
 class SignalDetectionService:
+    """
+    Refactored Signal Detection Service with separation of concerns
+    
+    This service now acts as a facade that delegates to specialized components:
+    - MultiTimeframeSignalEngine for advanced signal detection
+    - Enhanced caching for performance
+    - Specialized pool managers for different liquidity types
+    """
+    
     def __init__(self, repo: AlpacaCryptoRepository, redis_client: redis.Redis, db_session: Session):
         self.repo = repo
         self.redis = redis_client
         self.db = db_session
-
+        
+        # Initialize enhanced cache manager
+        self.cache_manager = CacheManager(redis_client, use_memory_cache=True)
+        
+        # Initialize multi-timeframe engine
+        self.mtf_engine = MultiTimeframeSignalEngine(repo, db_session, self.cache_manager)
+    
     def _cache_key(self, symbol: str, timeframe: str, start: str, end: str) -> str:
+        """Legacy cache key method - kept for backwards compatibility"""
         key_str = f"{symbol}-{timeframe}-{start}-{end}"
         return f"bars:{sha256(key_str.encode()).hexdigest()}"
-
+    
     def detect_signals(
         self,
         symbol: str,
@@ -30,12 +47,17 @@ class SignalDetectionService:
         start: str = None,
         end: str = None,
     ) -> dict:
-        key = self._cache_key(symbol, timeframe, start, end)
-        cached = self.redis.get(key)
-
-        if cached:
+        """
+        Legacy method for backwards compatibility
+        
+        For new implementations, use detect_multi_timeframe_signals()
+        """
+        # Use enhanced caching
+        cached_candles = self.cache_manager.get_bars(symbol, timeframe, start, end)
+        
+        if cached_candles:
             print("✅ Using cached bars")
-            candles = json.loads(cached)
+            candles = cached_candles
         else:
             print("📡 Fetching bars from Alpaca")
             bars: List[Candle] = self.repo.get_bars(
@@ -45,7 +67,7 @@ class SignalDetectionService:
                 end=end,
             )
             candles = [bar.dict() for bar in bars]
-            self.redis.setex(key, 3600 * 24, json.dumps(candles))
+            self.cache_manager.set_bars(symbol, timeframe, start, end, candles)
 
         result = {
             "candles": candles,
@@ -67,31 +89,235 @@ class SignalDetectionService:
             result["candles"] = detected
             result["tracked_fvgs"] = tracked
 
-        if signal_type == "fvg_sweep_cisd":
-            signals = detect_fvg_sweep_cisd(symbol, candles, self.db)
-            result["signals"] = signals
-
         return result
+    
+    def detect_multi_timeframe_signals(
+        self,
+        symbol: str,
+        strategy_type: str = "intraday",
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        update_pools: bool = True
+    ) -> List[TradingSignal]:
+        """
+        New method for advanced multi-timeframe signal detection
+        
+        Args:
+            symbol: Trading symbol (e.g., "BTC/USD")
+            strategy_type: Strategy type (scalping, intraday, swing, position)
+            start: Start time for analysis
+            end: End time for analysis
+            update_pools: Whether to update liquidity pools
+            
+        Returns:
+            List of TradingSignal objects with comprehensive signal data
+        """
+        return self.mtf_engine.detect_signals(
+            symbol=symbol,
+            strategy_type=strategy_type,
+            start=start,
+            end=end,
+            update_pools=update_pools
+        )
+    
+    def get_liquidity_pools(self, symbol: str, timeframe: str, pool_type: str = "all") -> dict:
+        """
+        Get active liquidity pools for a symbol and timeframe
+        
+        Args:
+            symbol: Trading symbol
+            timeframe: Timeframe (e.g., "4H", "1D")
+            pool_type: Type of pools ("fvg", "pivot", "all")
+            
+        Returns:
+            Dictionary with pool information
+        """
+        result = {}
+        
+        if pool_type in ["fvg", "all"]:
+            fvg_pools = self.mtf_engine.fvg_manager.load_active_pools(symbol, timeframe)
+            result["fvg_pools"] = [
+                {
+                    "id": pool.id,
+                    "symbol": pool.symbol,
+                    "timeframe": pool.timeframe,
+                    "timestamp": pool.timestamp.isoformat(),
+                    "zone_low": pool.zone_low,
+                    "zone_high": pool.zone_high,
+                    "direction": pool.direction,
+                    "status": pool.status,
+                    "strength": pool.strength,
+                    "is_inverse": pool.is_inverse,
+                    "touch_count": pool.touch_count
+                }
+                for pool in fvg_pools
+            ]
+        
+        if pool_type in ["pivot", "all"]:
+            pivot_pools = self.mtf_engine.pivot_manager.load_active_pools(symbol, timeframe)
+            result["pivot_pools"] = [
+                {
+                    "id": pool.id,
+                    "symbol": pool.symbol,
+                    "timeframe": pool.timeframe,
+                    "timestamp": pool.timestamp.isoformat(),
+                    "price_level": pool.price_level,
+                    "pivot_type": pool.pivot_type,
+                    "status": pool.status,
+                    "strength": pool.strength,
+                    "confirmed": pool.confirmed,
+                    "test_count": pool.test_count
+                }
+                for pool in pivot_pools
+            ]
+        
+        return result
+    
+    def update_liquidity_pools(self, symbol: str, timeframe: str, start: str, end: str) -> dict:
+        """
+        Update liquidity pools for a symbol and timeframe
+        
+        Returns:
+            Dictionary with update statistics
+        """
+        # Get fresh candle data
+        candles = self._get_candles_with_cache(symbol, timeframe, start, end)
+        
+        # Update FVG pools
+        fvg_pools = self.mtf_engine.fvg_manager.detect_pools(candles, symbol, timeframe)
+        updated_fvg_pools = self.mtf_engine.fvg_manager.update_pool_status(fvg_pools, candles)
+        
+        try:
+            fvg_saved = self.mtf_engine.fvg_manager.save_pools(updated_fvg_pools)
+        except Exception as e:
+            print(f"Error saving FVG pools: {e}")
+            fvg_saved = False
+        
+        # Update pivot pools
+        pivot_pools = self.mtf_engine.pivot_manager.detect_pools(candles, symbol, timeframe)
+        updated_pivot_pools = self.mtf_engine.pivot_manager.update_pool_status(pivot_pools, candles)
+        pivot_saved = self.mtf_engine.pivot_manager.save_pools(updated_pivot_pools)
+        
+        return {
+            "fvg_pools_updated": len(updated_fvg_pools),
+            "pivot_pools_updated": len(updated_pivot_pools),
+            "fvg_save_success": fvg_saved,
+            "pivot_save_success": pivot_saved,
+            "candles_processed": len(candles)
+        }
+    
+    def get_signal_history(self, symbol: Optional[str] = None, hours_back: int = 24) -> List[dict]:
+        """
+        Get signal history
+        
+        Args:
+            symbol: Optional symbol filter
+            hours_back: Hours to look back
+            
+        Returns:
+            List of signal dictionaries
+        """
+        signals = self.mtf_engine.get_signal_history(symbol, hours_back)
+        
+        return [
+            {
+                "id": signal.id,
+                "signal_type": signal.signal_type.value,
+                "symbol": signal.symbol,
+                "ltf_timeframe": signal.ltf_timeframe,
+                "htf_timeframe": signal.htf_timeframe,
+                "timestamp": signal.timestamp.isoformat(),
+                "price": signal.price,
+                "direction": signal.direction,
+                "strength": signal.strength.value,
+                "confidence": signal.confidence,
+                "entry_price": signal.entry_price,
+                "stop_loss": signal.stop_loss,
+                "take_profit": signal.take_profit,
+                "htf_context": signal.htf_context,
+                "ltf_context": signal.ltf_context,
+                "related_pools": signal.related_pools,
+                "expires_at": signal.expires_at.isoformat() if signal.expires_at else None
+            }
+            for signal in signals
+        ]
+    
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics"""
+        return self.mtf_engine.get_cache_stats()
+    
+    def cleanup_old_data(self, days_old: int = 7) -> dict:
+        """Clean up old data"""
+        return self.mtf_engine.cleanup_old_data(days_old)
+    
+    def _get_candles_with_cache(self, symbol: str, timeframe: str, start: str, end: str) -> List[Dict]:
+        """Get candles with caching"""
+        cached_candles = self.cache_manager.get_bars(symbol, timeframe, start, end)
+        
+        if cached_candles:
+            return cached_candles
+        
+        bars: List[Candle] = self.repo.get_bars(
+            symbol=symbol,
+            timeframe=timeframe,
+            start=start,
+            end=end,
+        )
+        candles = [bar.dict() for bar in bars]
+        self.cache_manager.set_bars(symbol, timeframe, start, end, candles)
+        
+        return candles
 
     def save_tracked_fvgs(self, tracked: List[dict], symbol: str, timeframe: str):
+        """Save or update FVGs, handling duplicates gracefully"""
         for f in tracked:
-            self.db.add(FVG(
-                symbol=symbol,
-                timeframe=timeframe,
-                timestamp=datetime.fromisoformat(f["timestamp"].replace("Z", "")),
-                direction=f["direction"],
-                zone_low=f["zone"][0],
-                zone_high=f["zone"][1],
-                status=f["status"],
-                iFVG=f["iFVG"],
-                touched=True,
-                created_by_index=f["index"],
-                mitigation_by=f["mitigation_by"],
-                invalidated_by=f["invalidated_by"],
-                retested=f["retested"],
-                retested_at=datetime.fromisoformat(f["retested_at"].replace("Z", "")) if f["retested_at"] else None
-            ))
-        self.db.commit()
+            timestamp = datetime.fromisoformat(f["timestamp"].replace("Z", ""))
+            
+            # Check if FVG already exists
+            existing_fvg = self.db.query(FVG).filter(
+                FVG.timestamp == timestamp,
+                FVG.timeframe == timeframe,
+                FVG.symbol == symbol
+            ).first()
+            
+            if existing_fvg:
+                # Update existing FVG
+                existing_fvg.direction = f["direction"]
+                existing_fvg.zone_low = f["zone"][0]
+                existing_fvg.zone_high = f["zone"][1]
+                existing_fvg.status = f["status"]
+                existing_fvg.iFVG = f["iFVG"]
+                existing_fvg.touched = True
+                existing_fvg.created_by_index = f["index"]
+                existing_fvg.mitigation_by = f["mitigation_by"]
+                existing_fvg.invalidated_by = f["invalidated_by"]
+                existing_fvg.retested = f["retested"]
+                existing_fvg.retested_at = datetime.fromisoformat(f["retested_at"].replace("Z", "")) if f["retested_at"] else None
+            else:
+                # Create new FVG
+                self.db.add(FVG(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    timestamp=timestamp,
+                    direction=f["direction"],
+                    zone_low=f["zone"][0],
+                    zone_high=f["zone"][1],
+                    status=f["status"],
+                    iFVG=f["iFVG"],
+                    touched=True,
+                    created_by_index=f["index"],
+                    mitigation_by=f["mitigation_by"],
+                    invalidated_by=f["invalidated_by"],
+                    retested=f["retested"],
+                    retested_at=datetime.fromisoformat(f["retested_at"].replace("Z", "")) if f["retested_at"] else None
+                ))
+        
+        try:
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error saving FVGs: {e}")
+            raise
 
     def save_pivots(self, pivot_data: List[Dict], symbol: str, timeframe: str):
         for i, item in enumerate(pivot_data):

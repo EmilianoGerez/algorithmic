@@ -9,7 +9,6 @@ from src.infrastructure.cache.redis import get_redis_connection
 from src.db.session import SessionLocal
 from src.db.models.fvg import FVG
 from src.db.models.pivot import Pivot
-from src.services.cisd_into_4H_fvg import detect_fvg_sweep_cisd
 from plot_strategy import plot_candles_with_signals_and_4h_fvg
 
 # Initialize dependencies
@@ -18,102 +17,97 @@ redis = get_redis_connection()
 db = SessionLocal()
 service = SignalDetectionService(repo, redis, db)
 
-# Parameters
+# Parameters - Multi-Timeframe Analysis
 symbol = "BTC/USD"
-timeframe = "15T"  # 15-minute candles
-timeframe_4h = "4H"
+ltf = "15T"  # Low timeframe for entries (15-minute candles)
+htf = "4H"   # High timeframe for context (Daily)
 start = "2025-05-18T00:00:00Z"
-end = "2025-05-23T00:00:00Z"
+end = "2025-05-24T00:00:00Z"
 
-# Step 1: Detect 15m candles (FVG + Pivot)
-result = service.detect_signals(
+print("🚀 Multi-Timeframe Signal Detection")
+print("=" * 50)
+
+# Method 1: Use new multi-timeframe engine
+print("\n1. Using New Multi-Timeframe Engine:")
+signals = service.detect_multi_timeframe_signals(
+    symbol=symbol,
+    strategy_type="intraday",  # Uses 15T LTF + 4H HTF
+    start=start,
+    end=end,
+    update_pools=True
+)
+
+print(f"📊 Detected {len(signals)} high-quality signals")
+for i, signal in enumerate(signals[:5]):  # Show top 5
+    print(f"  {i+1}. {signal.signal_type.value} - {signal.direction} - "
+          f"Price: ${signal.price:.2f} - Strength: {signal.strength.name} - "
+          f"Confidence: {signal.confidence:.2f}")
+
+# Method 2: Get liquidity pools for plotting
+print("\n2. Getting Liquidity Pools for Plotting:")
+htf_pools = service.get_liquidity_pools(symbol, htf, "all")
+
+# Get LTF candles using the legacy method for compatibility with plotting
+ltf_result = service.detect_signals(
     symbol=symbol,
     signal_type="fvg_and_pivot",
-    timeframe=timeframe,
+    timeframe=ltf,
     start=start,
     end=end
 )
-candles_15m = result["candles"]
+candles_ltf = ltf_result["candles"]
 
-# Step 2: Load tracked 4H FVGs from DB
-tracked_fvgs_4h = db.query(FVG).filter(
-    FVG.symbol == symbol,
-    FVG.timeframe == timeframe_4h,
-    FVG.status == "open"
-).all()
+print(f"📈 HTF Pools - FVG: {len(htf_pools.get('fvg_pools', []))}, Pivots: {len(htf_pools.get('pivot_pools', []))}")
+print(f"📊 LTF Candles: {len(candles_ltf)}")
 
-# Step 3: Load tracked 15m pivots
-pivots = db.query(Pivot).filter(
-    Pivot.symbol == symbol,
-    Pivot.timeframe == "4H",
-    Pivot.timestamp >= datetime.fromisoformat(start.replace("Z", ""))
-).all()
-
-# Step 4: Detect CISD entries into 4H FVGs
-cisd_signals = detect_fvg_sweep_cisd(
-    symbol=symbol,
-    candles_15m=candles_15m,
-    db=db,
-    timeframe_4h=timeframe_4h,
-    start=start,
-    end=end
-)
-
-print(f"Detected {len(cisd_signals)} CISD signals:")
-for i, signal in enumerate(cisd_signals):
-    print(f"  {i+1}. {signal['timestamp']} - {signal['direction']} - Price: {signal['cisd_price']} - Type: {signal['type']}")
-
-
+# Format data for plotting (maintain compatibility with existing plot function)
 # Format pivots
 pivot_data = [
     {
-        "timestamp": p.timestamp.isoformat(),
-        "price": p.price,
-        "type": p.type
-    } for p in pivots
+        "timestamp": pool["timestamp"],
+        "price": pool["price_level"],
+        "type": pool["pivot_type"]
+    } for pool in htf_pools.get("pivot_pools", [])
 ]
 
 # Format FVGs
 fvg_data = [
     {
-        "timestamp": f.timestamp.isoformat(),
-        "zone": [f.zone_low, f.zone_high],
-        "direction": f.direction,
-        "iFVG": f.iFVG
-    } for f in tracked_fvgs_4h
+        "timestamp": pool["timestamp"],
+        "zone": [pool["zone_low"], pool["zone_high"]],
+        "direction": pool["direction"],
+        "iFVG": pool["is_inverse"]
+    } for pool in htf_pools.get("fvg_pools", [])
 ]
 
-# Format CISDs
-cisd_lines = []
-for s in cisd_signals:
-    direction = s["direction"]
-    
-    # Use the actual CISD price from the signal instead of trying to match pivots
-    cisd_lines.append({
-        "timestamp": s["timestamp"],
-        "direction": direction,
-        "price": s["cisd_price"]  # Use the actual CISD price
-    })
-    
-    print(f"Added CISD line: {s['timestamp']} - {direction} - Price: {s['cisd_price']} - Type: {s.get('type', 'unknown')}")
+print(f"\n📊 Data for plotting:")
+print(f"  Pivot data points: {len(pivot_data)}")
+print(f"  FVG data points: {len(fvg_data)}")
+print(f"  Signals: {len(signals)}")
 
-print(f"Total CISD lines to plot: {len(cisd_lines)}")
-
-# Debug: Show what we're passing to the plot function
-if cisd_lines:
-    print("CISD lines format:")
-    for i, line in enumerate(cisd_lines[:3]):  # Show first 3
-        print(f"  {i+1}. {line}")
-else:
-    print("WARNING: No CISD lines to plot!")
-
-# Plot
+# Plot with the FVG and pivot data and signals
 plot_candles_with_signals_and_4h_fvg(
-    candles_15m,
+    candles_ltf,
     pivots=pivot_data,
     tracked_fvgs_4h=fvg_data,
-    cisd_signals=cisd_lines,
+    signals=signals,
     save_path="plot.png"
 )
 
-print("✅ Saved plot to plot.png")
+print("\n✅ Plot saved to plot.png")
+print("\n📊 Summary:")
+print(f"  • LTF Candles ({ltf}): {len(candles_ltf)}")
+print(f"  • HTF Pivot Points ({htf}): {len(pivot_data)}")
+print(f"  • HTF FVG Zones ({htf}): {len(fvg_data)}")
+
+# Show cache statistics
+cache_stats = service.get_cache_stats()
+print(f"\n💾 Cache Performance:")
+print(f"  • Memory cache entries: {cache_stats['memory_cache_size']}")
+print(f"  • Redis connected: {cache_stats['redis_connected']}")
+
+print(f"\n🎯 Strategy Summary:")
+print(f"  • Using {ltf} for entries and {htf} for context")
+print(f"  • New MTF engine provides higher quality signals")
+print(f"  • Enhanced caching improves performance")
+print(f"  • Real-time ready architecture")

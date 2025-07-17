@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 import pandas as pd
+import pytz
 from src.services.signal_detection import SignalDetectionService
 from src.infrastructure.data.alpaca import AlpacaCryptoRepository
 from src.infrastructure.cache.redis import get_redis_connection
@@ -56,6 +57,34 @@ class WorkingCleanBacktester:
             print(f"   ❌ Error flushing: {e}")
             self.db.rollback()
     
+    def _is_trading_time(self, timestamp: datetime) -> bool:
+        """
+        Check if timestamp falls within allowed NY trading hours:
+        - 20:00 to 00:00 (8 PM to 12 AM)
+        - 02:00 to 04:00 (2 AM to 4 AM)
+        - 08:00 to 13:00 (8 AM to 1 PM)
+        """
+        # Convert timestamp to NY timezone
+        ny_tz = pytz.timezone('America/New_York')
+        
+        # If timestamp is timezone-naive, assume it's UTC
+        if timestamp.tzinfo is None:
+            utc_timestamp = pytz.utc.localize(timestamp)
+        else:
+            utc_timestamp = timestamp.astimezone(pytz.utc)
+        
+        # Convert to NY time
+        ny_time = utc_timestamp.astimezone(ny_tz)
+        hour = ny_time.hour
+        
+        # Check if within allowed trading windows
+        return (
+            (20 <= hour <= 23) or  # 8 PM to 11 PM (00:00 is hour 0)
+            (hour == 0) or         # 12 AM
+            (2 <= hour <= 3) or    # 2 AM to 3 AM (4 AM is hour 4)
+            (8 <= hour <= 12)      # 8 AM to 12 PM (1 PM is hour 13)
+        )
+    
     def backtest_working(self, symbol: str, ltf: str, start: str, end: str) -> Dict:
         """
         Working backtesting with dual HTF processing (4H and 1D) and 5-minute entries
@@ -66,6 +95,7 @@ class WorkingCleanBacktester:
         print(f"   Period: {start} to {end}")
         print(f"   HTF Sources: 4H and 1D timeframes only")
         print(f"   Entry Method: 2 candles above/below EMA 20 after FVG rejection")
+        print(f"   🕐 Trading Hours (NY Time): 20:00-00:00, 02:00-04:00, 08:00-13:00")
         
         # Clean slate
         self.flush_database()
@@ -158,8 +188,8 @@ class WorkingCleanBacktester:
                     print(f"   ⚠️ Skipping FVG with bad timestamp: {fvg['timestamp']}")
                     continue
             
-            # Check for signals
-            if available_fvgs:
+            # Check for signals (only during allowed trading hours)
+            if available_fvgs and self._is_trading_time(current_time):
                 ltf_history = ltf_df[ltf_df['timestamp'] <= current_time]
                 
                 signal = self._check_for_signal(candle, ltf_history, available_fvgs)
@@ -167,6 +197,11 @@ class WorkingCleanBacktester:
                 if signal:
                     signals.append(signal)
                     print(f"   ✅ Signal at {current_time}: {signal['direction']} at {signal['entry_price']:.2f}")
+            elif available_fvgs:
+                # Skip signal due to timezone constraint
+                ny_tz = pytz.timezone('America/New_York')
+                ny_time = current_time.astimezone(ny_tz) if current_time.tzinfo else pytz.utc.localize(current_time).astimezone(ny_tz)
+                print(f"   ⏰ Skipping signal at {current_time} (NY time: {ny_time.strftime('%H:%M')} - outside trading hours)")
         
         print(f"✅ Processing complete")
         
@@ -214,8 +249,8 @@ class WorkingCleanBacktester:
                     print(f"   ⚠️ Skipping FVG with bad timestamp: {fvg['timestamp']}")
                     continue
             
-            # Check for signals
-            if available_fvgs:
+            # Check for signals (only during allowed trading hours)
+            if available_fvgs and self._is_trading_time(current_time):
                 ltf_history = ltf_df[ltf_df['timestamp'] <= current_time]
                 
                 signal = self._check_for_signal(candle, ltf_history, available_fvgs)
@@ -223,6 +258,11 @@ class WorkingCleanBacktester:
                 if signal:
                     signals.append(signal)
                     print(f"   ✅ Signal at {current_time}: {signal['direction']} at {signal['entry_price']:.2f}")
+            elif available_fvgs:
+                # Skip signal due to timezone constraint
+                ny_tz = pytz.timezone('America/New_York')
+                ny_time = current_time.astimezone(ny_tz) if current_time.tzinfo else pytz.utc.localize(current_time).astimezone(ny_tz)
+                print(f"   ⏰ Skipping signal at {current_time} (NY time: {ny_time.strftime('%H:%M')} - outside trading hours)")
         
         print(f"✅ Processing complete")
         

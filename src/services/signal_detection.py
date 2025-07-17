@@ -66,7 +66,15 @@ class SignalDetectionService:
                 start=start,
                 end=end,
             )
-            candles = [bar.dict() for bar in bars]
+            # FIX: Ensure proper symbol and timeframe in candles
+            candles = [
+                {
+                    **bar.dict(),
+                    "symbol": symbol,
+                    "timeframe": timeframe
+                }
+                for bar in bars
+            ]
             self.cache_manager.set_bars(symbol, timeframe, start, end, candles)
 
         result = {
@@ -83,11 +91,66 @@ class SignalDetectionService:
             result["pivots"] = [p for p in pivots if p.get("potential_swing_high") or p.get("potential_swing_low")]
 
         if signal_type in ["fvg", "fvg_and_pivot"]:
-            detected = fvg.detect_fvg(candles)
-            tracked = fvg_tracker.track_fvg_status(candles, detected)
-            self.save_tracked_fvgs(tracked, symbol, timeframe)
-            result["candles"] = detected
-            result["tracked_fvgs"] = tracked
+            # Use unified FVG management system
+            from src.core.liquidity.unified_fvg_manager import UnifiedFVGManager
+            
+            unified_manager = UnifiedFVGManager(self.db)
+            
+            # Detect FVG zones using unified system
+            zones = unified_manager.detect_fvg_zones(candles)
+            
+            # Update zones with current price action
+            updated_zones = unified_manager.update_fvg_status(zones, candles)
+            
+            # Convert zones to legacy format for backward compatibility
+            tracked_fvgs = []
+            for zone in updated_zones:
+                tracked_fvgs.append({
+                    "fvg_id": zone.id,
+                    "index": 0,  # Legacy field
+                    "timestamp": zone.timestamp,
+                    "zone": [zone.zone_low, zone.zone_high],
+                    "direction": zone.direction,
+                    "status": zone.status,
+                    "invalidated_by": zone.invalidated_by_candle,
+                    "mitigation_by": zone.last_touch_time,
+                    "iFVG": False,  # Removed as requested
+                    "retested": zone.touch_count > 1,
+                    "retested_at": zone.last_touch_time,
+                    "touch_count": zone.touch_count,
+                    "max_penetration_pct": zone.max_penetration_pct,
+                    "confidence": zone.confidence,
+                    "strength": zone.strength
+                })
+            
+            # Save zones to database (ONLY HTF TIMEFRAMES)
+            if timeframe in ["4H", "1D"]:  # Only save HTF FVGs, avoid LTF pollution
+                unified_manager.save_zones(updated_zones)
+                print(f"✅ Saved {len(updated_zones)} {timeframe} FVGs to database")
+            else:
+                print(f"⚠️  Skipped saving {len(updated_zones)} {timeframe} FVGs (LTF not stored)")
+            
+            # Add FVG zone info to candles for backward compatibility
+            detected_candles = []
+            for i, candle in enumerate(candles):
+                candle_copy = candle.copy()
+                candle_copy["fvg_bullish"] = False
+                candle_copy["fvg_bearish"] = False
+                candle_copy["fvg_zone"] = None
+                
+                # Check if this candle has an FVG
+                candle_time = candle["timestamp"]
+                for zone in updated_zones:
+                    if zone.timestamp.isoformat() == candle_time.replace("Z", "+00:00"):
+                        candle_copy["fvg_bullish"] = zone.direction == "bullish"
+                        candle_copy["fvg_bearish"] = zone.direction == "bearish"
+                        candle_copy["fvg_zone"] = [zone.zone_low, zone.zone_high]
+                        break
+                
+                detected_candles.append(candle_copy)
+            
+            result["candles"] = detected_candles
+            result["tracked_fvgs"] = tracked_fvgs
 
         return result
     
@@ -269,55 +332,35 @@ class SignalDetectionService:
         return candles
 
     def save_tracked_fvgs(self, tracked: List[dict], symbol: str, timeframe: str):
-        """Save or update FVGs, handling duplicates gracefully"""
-        for f in tracked:
-            timestamp = datetime.fromisoformat(f["timestamp"].replace("Z", ""))
-            
-            # Check if FVG already exists
-            existing_fvg = self.db.query(FVG).filter(
-                FVG.timestamp == timestamp,
-                FVG.timeframe == timeframe,
-                FVG.symbol == symbol
-            ).first()
-            
-            if existing_fvg:
-                # Update existing FVG
-                existing_fvg.direction = f["direction"]
-                existing_fvg.zone_low = f["zone"][0]
-                existing_fvg.zone_high = f["zone"][1]
-                existing_fvg.status = f["status"]
-                existing_fvg.iFVG = f["iFVG"]
-                existing_fvg.touched = True
-                existing_fvg.created_by_index = f["index"]
-                existing_fvg.mitigation_by = f["mitigation_by"]
-                existing_fvg.invalidated_by = f["invalidated_by"]
-                existing_fvg.retested = f["retested"]
-                existing_fvg.retested_at = datetime.fromisoformat(f["retested_at"].replace("Z", "")) if f["retested_at"] else None
-            else:
-                # Create new FVG
-                self.db.add(FVG(
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    timestamp=timestamp,
-                    direction=f["direction"],
-                    zone_low=f["zone"][0],
-                    zone_high=f["zone"][1],
-                    status=f["status"],
-                    iFVG=f["iFVG"],
-                    touched=True,
-                    created_by_index=f["index"],
-                    mitigation_by=f["mitigation_by"],
-                    invalidated_by=f["invalidated_by"],
-                    retested=f["retested"],
-                    retested_at=datetime.fromisoformat(f["retested_at"].replace("Z", "")) if f["retested_at"] else None
-                ))
+        """
+        Save or update FVGs using unified system
+        """
+        from src.core.liquidity.unified_fvg_manager import UnifiedFVGManager, FVGZone, FVGStatus
         
-        try:
-            self.db.commit()
-        except Exception as e:
-            self.db.rollback()
-            print(f"Error saving FVGs: {e}")
-            raise
+        unified_manager = UnifiedFVGManager(self.db)
+        
+        # Convert tracked FVGs to zones
+        zones = []
+        for f in tracked:
+            zone = FVGZone(
+                id=f["fvg_id"],
+                symbol=symbol,
+                timeframe=timeframe,
+                timestamp=datetime.fromisoformat(f["timestamp"].replace("Z", "+00:00")),
+                direction=f["direction"],
+                zone_low=f["zone"][0],
+                zone_high=f["zone"][1],
+                status=f["status"],
+                touch_count=f.get("touch_count", 0),
+                max_penetration_pct=f.get("max_penetration_pct", 0.0),
+                confidence=f.get("confidence", 0.5),
+                strength=f.get("strength", 0.5),
+                last_touch_time=datetime.fromisoformat(f["retested_at"].replace("Z", "+00:00")) if f.get("retested_at") else None
+            )
+            zones.append(zone)
+        
+        # Save zones using unified manager
+        unified_manager.save_zones(zones)
 
     def save_pivots(self, pivot_data: List[Dict], symbol: str, timeframe: str):
         for i, item in enumerate(pivot_data):

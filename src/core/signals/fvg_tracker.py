@@ -1,8 +1,74 @@
 from typing import List, Dict
 import uuid
+from src.core.liquidity.unified_fvg_manager import UnifiedFVGManager, FVGZone, FVGStatus
+from sqlalchemy.orm import Session
 
 
-def track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], max_lookahead: int = 20) -> List[Dict]:
+def track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], 
+                    max_lookahead: int = 20, db_session: Session = None) -> List[Dict]:
+    """
+    Updated FVG tracker using unified FVG management system
+    This function maintains backward compatibility while using the new unified system
+    """
+    if db_session is None:
+        # Fallback to legacy tracking if no database session provided
+        return _legacy_track_fvg_status(candles, fvg_candidates, max_lookahead)
+    
+    # Use unified FVG manager
+    unified_manager = UnifiedFVGManager(db_session)
+    
+    # Convert candidates to FVG zones
+    zones = []
+    for i, candle in enumerate(fvg_candidates):
+        if not candle.get("fvg_zone"):
+            continue
+            
+        zone_low, zone_high = sorted(candle["fvg_zone"])
+        direction = "bullish" if candle.get("fvg_bullish") else "bearish"
+        
+        zone = FVGZone(
+            id=f"fvg_{i}_{uuid.uuid4().hex[:6]}",
+            symbol=candle.get("symbol", "UNKNOWN"),
+            timeframe=candle.get("timeframe", "15T"),
+            timestamp=candle["timestamp"],
+            direction=direction,
+            zone_low=zone_low,
+            zone_high=zone_high
+        )
+        zones.append(zone)
+    
+    # Update zones with price action
+    updated_zones = unified_manager.update_fvg_status(zones, candles)
+    
+    # Convert back to legacy format for backward compatibility
+    tracked_fvgs = []
+    for zone in updated_zones:
+        tracked_fvgs.append({
+            "fvg_id": zone.id,
+            "index": 0,  # Legacy field
+            "timestamp": zone.timestamp,
+            "zone": [zone.zone_low, zone.zone_high],
+            "direction": zone.direction,
+            "status": zone.status,
+            "invalidated_by": None,  # Legacy field - handled by unified system
+            "mitigation_by": None,   # Legacy field - handled by unified system
+            "iFVG": False,           # Removed as requested
+            "retested": zone.touch_count > 1,
+            "retested_at": zone.last_touch_time,
+            "touch_count": zone.touch_count,
+            "max_penetration_pct": zone.max_penetration_pct,
+            "confidence": zone.confidence,
+            "strength": zone.strength
+        })
+    
+    return tracked_fvgs
+
+
+def _legacy_track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], 
+                           max_lookahead: int = 20) -> List[Dict]:
+    """
+    Legacy FVG tracking - kept for backward compatibility
+    """
     tracked_fvgs = []
 
     for i, candle in enumerate(fvg_candidates):
@@ -12,10 +78,9 @@ def track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], max_lookah
         fvg_id = f"fvg_{i}_{uuid.uuid4().hex[:6]}"
         zone_low, zone_high = sorted(candle["fvg_zone"])
         direction = "bullish" if candle.get("fvg_bullish") else "bearish"
-        status = "open"
+        status = FVGStatus.ACTIVE
         invalidated_by = None
         mitigation_by = None
-        i_fvg = False
         retested = False
         retested_at = None
 
@@ -30,48 +95,27 @@ def track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], max_lookah
             body_low = min(open_, close)
 
             if direction == "bullish":
-                # ✅ Only mitigate if candle body overlaps the FVG
+                # Mitigate if candle body overlaps the FVG
                 if body_low < zone_high and body_high > zone_low:
-                    status = "mitigated"
+                    status = FVGStatus.MITIGATED
                     mitigation_by = j
                     break
 
-                # ❌ Invalidate if candle closes below FVG
+                # Invalidate if candle closes below FVG
                 if close < zone_low:
-                    status = "invalidated"
+                    status = FVGStatus.INVALIDATED
                     invalidated_by = j
-                    if j + 1 < len(candles) and candles[j + 1]["close"] < close:
-                        status = "iFVG"
-                        i_fvg = True
-
-                        # 🔁 Look for retest after iFVG
-                        for k in range(j + 2, min(j + 10, len(candles))):
-                            future_retest = candles[k]
-                            if future_retest["high"] >= zone_low:
-                                retested = True
-                                retested_at = future_retest["timestamp"]
-                                break
                     break
 
             else:  # bearish
                 if body_low < zone_high and body_high > zone_low:
-                    status = "mitigated"
+                    status = FVGStatus.MITIGATED
                     mitigation_by = j
                     break
 
                 if close > zone_high:
-                    status = "invalidated"
+                    status = FVGStatus.INVALIDATED
                     invalidated_by = j
-                    if j + 1 < len(candles) and candles[j + 1]["close"] > close:
-                        status = "iFVG"
-                        i_fvg = True
-
-                        for k in range(j + 2, min(j + 10, len(candles))):
-                            future_retest = candles[k]
-                            if future_retest["low"] <= zone_high:
-                                retested = True
-                                retested_at = future_retest["timestamp"]
-                                break
                     break
 
         tracked_fvgs.append({
@@ -83,7 +127,7 @@ def track_fvg_status(candles: List[Dict], fvg_candidates: List[Dict], max_lookah
             "status": status,
             "invalidated_by": invalidated_by,
             "mitigation_by": mitigation_by,
-            "iFVG": i_fvg,
+            "iFVG": False,  # Removed as requested
             "retested": retested,
             "retested_at": retested_at,
         })

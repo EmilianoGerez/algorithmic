@@ -30,9 +30,7 @@ def upgrade() -> None:
         sa.Column("timestamp", sa.DateTime(), nullable=True),
         sa.Column("index", sa.Integer(), nullable=True),
         sa.Column("price", sa.Float(), nullable=True),
-        sa.Column(
-            "type", sa.Enum("high", "low", name="pivot_type"), nullable=True
-        ),
+        sa.Column("type", sa.Enum("high", "low", name="pivot_type"), nullable=True),
         sa.Column("confirmed", sa.Boolean(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),

@@ -59,9 +59,7 @@ def create_sample_market_data(symbol: str, days: int = 30) -> MarketData:
 
         # Ensure high >= low
         open_price = base_price
-        close_price = base_price + (
-            Decimal("0.05") if i % 3 == 0 else Decimal("-0.05")
-        )
+        close_price = base_price + (Decimal("0.05") if i % 3 == 0 else Decimal("-0.05"))
         high_price = max(open_price, close_price) + Decimal("0.02")
         low_price = min(open_price, close_price) - Decimal("0.02")
 
@@ -165,12 +163,8 @@ def demo_risk_management():
 
     if assessment["approved"]:
         # Add position
-        position = risk_manager.add_position(
-            test_signal, assessment["position_size"]
-        )
-        print(
-            f"   Position added: {position.symbol} - {position.quantity} shares"
-        )
+        position = risk_manager.add_position(test_signal, assessment["position_size"])
+        print(f"   Position added: {position.symbol} - {position.quantity} shares")
 
         # Show portfolio summary
         summary = risk_manager.get_portfolio_summary()
@@ -245,16 +239,12 @@ def demo_multi_symbol_feed():
 
     for symbol in symbols:
         multi_feed.add_symbol(symbol, timeframes)
-        print(
-            f"➕ Added {symbol} with timeframes: {[tf.value for tf in timeframes]}"
-        )
+        print(f"➕ Added {symbol} with timeframes: {[tf.value for tf in timeframes]}")
 
     # Create market data collection for backtest
     market_data_collection = {}
     for symbol in symbols:
-        market_data_collection[symbol] = create_sample_market_data(
-            symbol, days=5
-        )
+        market_data_collection[symbol] = create_sample_market_data(symbol, days=5)
 
     # Set up signal receiver
     received_signals = []
@@ -273,9 +263,7 @@ def demo_multi_symbol_feed():
     multi_feed.start_backtest(market_data_collection)
 
     print(f"\n📈 Total candles received: {len(received_signals)}")
-    print(
-        f"🎯 Symbols processed: {len(set(c.symbol for c in received_signals))}"
-    )
+    print(f"🎯 Symbols processed: {len(set(c.symbol for c in received_signals))}")
 
     # Stop feed
     multi_feed.stop()
@@ -288,9 +276,7 @@ def demo_portfolio_management():
     print("=" * 50)
 
     # Create risk manager with multiple position sizers
-    risk_limits = RiskLimits(
-        max_positions=3, max_position_size=Decimal("0.15")
-    )
+    risk_limits = RiskLimits(max_positions=3, max_position_size=Decimal("0.15"))
 
     # Test different position sizers
     from core.risk import FixedRiskPositionSizer, VolatilityPositionSizer
@@ -364,9 +350,7 @@ def main():
         demo_portfolio_management()
 
         print("🎉 Phase 2 System Features:")
-        print(
-            "  ✅ Data Integration - Multiple adapters for different data sources"
-        )
+        print("  ✅ Data Integration - Multiple adapters for different data sources")
         print(
             "  ✅ Risk Management - Position sizing, portfolio limits, drawdown control"
         )
@@ -374,9 +358,7 @@ def main():
             "  ✅ Backtesting Engine - Comprehensive backtesting with risk integration"
         )
         print("  ✅ Multi-Symbol Feeds - Live and backtest data feeds")
-        print(
-            "  ✅ Portfolio Management - Multiple position sizing algorithms"
-        )
+        print("  ✅ Portfolio Management - Multiple position sizing algorithms")
         print()
         print("✅ All Phase 2 demonstrations completed successfully!")
 

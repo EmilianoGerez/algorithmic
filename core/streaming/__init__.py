@@ -39,9 +39,7 @@ class StreamingConfig:
     secret_key: Optional[str] = None
     base_url: Optional[str] = None
     symbols: List[str] = field(default_factory=list)
-    timeframes: List[TimeFrame] = field(
-        default_factory=lambda: [TimeFrame.MINUTE_1]
-    )
+    timeframes: List[TimeFrame] = field(default_factory=lambda: [TimeFrame.MINUTE_1])
     auto_reconnect: bool = True
     max_reconnect_attempts: int = 10
     reconnect_delay: float = 5.0
@@ -102,9 +100,7 @@ class StreamingDataProvider(ABC):
             return
 
         if self.reconnect_attempts >= self.config.max_reconnect_attempts:
-            print(
-                f"Max reconnection attempts reached for {self.config.provider.value}"
-            )
+            print(f"Max reconnection attempts reached for {self.config.provider.value}")
             return
 
         self.reconnect_attempts += 1
@@ -118,9 +114,7 @@ class StreamingDataProvider(ABC):
             success = await self.connect()
             if success:
                 self.reconnect_attempts = 0
-                print(
-                    f"Successfully reconnected to {self.config.provider.value}"
-                )
+                print(f"Successfully reconnected to {self.config.provider.value}")
             else:
                 await self._handle_reconnect()
         except Exception as e:
@@ -197,9 +191,7 @@ class MockStreamingProvider(StreamingDataProvider):
                         # Random price change (-0.5% to +0.5%)
                         import random
 
-                        change_pct = Decimal(
-                            str(random.uniform(-0.005, 0.005))
-                        )
+                        change_pct = Decimal(str(random.uniform(-0.005, 0.005)))
                         price_change = current_price * change_pct
                         new_price = current_price + price_change
 
@@ -392,9 +384,7 @@ class StreamingManager:
                 if success:
                     success_count += 1
             except Exception as e:
-                print(
-                    f"Failed to start provider {provider.config.provider.value}: {e}"
-                )
+                print(f"Failed to start provider {provider.config.provider.value}: {e}")
 
         self.is_running = success_count > 0
         return self.is_running
@@ -408,9 +398,7 @@ class StreamingManager:
             try:
                 await provider.disconnect()
             except Exception as e:
-                print(
-                    f"Error stopping provider {provider.config.provider.value}: {e}"
-                )
+                print(f"Error stopping provider {provider.config.provider.value}: {e}")
 
         self.is_running = False
 
@@ -483,9 +471,7 @@ class StreamingFactory:
         elif config.provider == StreamingProvider.ALPACA:
             return AlpacaStreamingProvider(config)
         else:
-            raise ValueError(
-                f"Unsupported streaming provider: {config.provider}"
-            )
+            raise ValueError(f"Unsupported streaming provider: {config.provider}")
 
     @staticmethod
     def create_manager_with_providers(

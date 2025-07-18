@@ -105,15 +105,9 @@ class MarketData:
         """Get the most recent candle"""
         return self.candles[-1] if self.candles else None
 
-    def get_candles_range(
-        self, start: datetime, end: datetime
-    ) -> List[Candle]:
+    def get_candles_range(self, start: datetime, end: datetime) -> List[Candle]:
         """Get candles within a time range"""
-        return [
-            candle
-            for candle in self.candles
-            if start <= candle.timestamp <= end
-        ]
+        return [candle for candle in self.candles if start <= candle.timestamp <= end]
 
 
 @dataclass
@@ -198,9 +192,7 @@ class Position:
         """Close the position"""
         self.realized_pnl = self.unrealized_pnl
         self.status = "closed"
-        self.metadata.update(
-            {"exit_price": exit_price, "exit_time": exit_time}
-        )
+        self.metadata.update({"exit_price": exit_price, "exit_time": exit_time})
 
 
 @dataclass
@@ -281,9 +273,7 @@ class StrategyConfig:
         if self.risk_reward_ratio <= 0:
             raise ValueError("Risk reward ratio must be positive")
         if not 0.0 <= self.confidence_threshold <= 1.0:
-            raise ValueError(
-                "Confidence threshold must be between 0.0 and 1.0"
-            )
+            raise ValueError("Confidence threshold must be between 0.0 and 1.0")
 
 
 @dataclass
@@ -314,9 +304,7 @@ class BacktestResult:
         if self.initial_capital == 0:
             return 0.0
         return float(
-            (self.final_capital - self.initial_capital)
-            / self.initial_capital
-            * 100
+            (self.final_capital - self.initial_capital) / self.initial_capital * 100
         )
 
     def calculate_win_rate(self) -> float:

@@ -164,9 +164,7 @@ def main():
     print(f"Success Rate: {passed/total*100:.1f}%")
 
     if passed == total:
-        print(
-            "\\n🎉 All tests passed! System is ready for Alpaca integration."
-        )
+        print("\\n🎉 All tests passed! System is ready for Alpaca integration.")
         print("\\n📚 Next steps:")
         print("1. Set up Alpaca API credentials in .env file")
         print("2. Run: python setup_alpaca.py")

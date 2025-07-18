@@ -218,9 +218,7 @@ class CoreBacktestEngine(BacktestEngine):
                 exit_price = self._apply_costs(
                     self.current_prices[position.symbol], config, "exit"
                 )
-                risk_manager.close_position(
-                    position, exit_price, self.current_time
-                )
+                risk_manager.close_position(position, exit_price, self.current_time)
 
     def _generate_results(
         self,
@@ -353,13 +351,9 @@ class OptimizationEngine:
                 )
 
                 # Calculate objective score
-                score = self._calculate_objective_score(
-                    result, objective_function
-                )
+                score = self._calculate_objective_score(result, objective_function)
 
-                results.append(
-                    {"parameters": params, "result": result, "score": score}
-                )
+                results.append({"parameters": params, "result": result, "score": score})
 
                 # Track best result
                 if score > best_score:
@@ -407,9 +401,7 @@ class OptimizationEngine:
             return result.win_rate
         elif objective == "risk_adjusted_return":
             return_pct = result.calculate_return_percentage()
-            max_dd = (
-                float(result.max_drawdown) if result.max_drawdown else 0.01
-            )
+            max_dd = float(result.max_drawdown) if result.max_drawdown else 0.01
             return return_pct / max_dd
         else:
             return 0.0

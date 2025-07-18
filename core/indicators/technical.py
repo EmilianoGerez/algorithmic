@@ -261,9 +261,7 @@ class TechnicalIndicators:
             if i == 0:
                 signal_value = macd_values[i]
             else:
-                signal_value = (
-                    alpha * macd_values[i] + (1 - alpha) * signal_value
-                )
+                signal_value = alpha * macd_values[i] + (1 - alpha) * signal_value
 
             signal_line.append(
                 IndicatorResult(
@@ -321,10 +319,7 @@ class TechnicalIndicators:
 
             # Calculate standard deviation
             variance = (
-                sum(
-                    (closes[j] - sma) ** 2
-                    for j in range(i - period + 1, i + 1)
-                )
+                sum((closes[j] - sma) ** 2 for j in range(i - period + 1, i + 1))
                 / period
             )
             std = variance**0.5
@@ -337,19 +332,13 @@ class TechnicalIndicators:
             metadata = {"period": period, "std_dev": std_dev}
 
             upper_band.append(
-                IndicatorResult(
-                    value=upper, timestamp=timestamp, metadata=metadata
-                )
+                IndicatorResult(value=upper, timestamp=timestamp, metadata=metadata)
             )
             middle_band.append(
-                IndicatorResult(
-                    value=sma, timestamp=timestamp, metadata=metadata
-                )
+                IndicatorResult(value=sma, timestamp=timestamp, metadata=metadata)
             )
             lower_band.append(
-                IndicatorResult(
-                    value=lower, timestamp=timestamp, metadata=metadata
-                )
+                IndicatorResult(value=lower, timestamp=timestamp, metadata=metadata)
             )
 
         return {
@@ -380,12 +369,8 @@ class TechnicalIndicators:
 
         for i in range(k_period - 1, len(candles)):
             # Find highest high and lowest low in the period
-            highs = [
-                float(candles[j].high) for j in range(i - k_period + 1, i + 1)
-            ]
-            lows = [
-                float(candles[j].low) for j in range(i - k_period + 1, i + 1)
-            ]
+            highs = [float(candles[j].high) for j in range(i - k_period + 1, i + 1)]
+            lows = [float(candles[j].low) for j in range(i - k_period + 1, i + 1)]
 
             highest_high = max(highs)
             lowest_low = min(lows)
@@ -412,10 +397,7 @@ class TechnicalIndicators:
         if len(k_values) >= d_period:
             for i in range(d_period - 1, len(k_values)):
                 d_value = (
-                    sum(
-                        k_values[j].value
-                        for j in range(i - d_period + 1, i + 1)
-                    )
+                    sum(k_values[j].value for j in range(i - d_period + 1, i + 1))
                     / d_period
                 )
                 d_values.append(
@@ -455,9 +437,7 @@ class EMASystem:
         self.medium_period = medium_period
         self.slow_period = slow_period
 
-    def calculate_emas(
-        self, candles: List[Candle]
-    ) -> Dict[str, List[IndicatorResult]]:
+    def calculate_emas(self, candles: List[Candle]) -> Dict[str, List[IndicatorResult]]:
         """
         Calculate all EMAs for the system.
 
@@ -493,9 +473,7 @@ class EMASystem:
         if not all(key in emas for key in ["fast", "medium", "slow"]):
             return False
 
-        if not all(
-            len(emas[key]) > abs(index) for key in ["fast", "medium", "slow"]
-        ):
+        if not all(len(emas[key]) > abs(index) for key in ["fast", "medium", "slow"]):
             return False
 
         fast_value = emas["fast"][index].value
@@ -527,9 +505,7 @@ class EMASystem:
         if not all(key in emas for key in ["fast", "medium", "slow"]):
             return 0.0
 
-        if not all(
-            len(emas[key]) > abs(index) for key in ["fast", "medium", "slow"]
-        ):
+        if not all(len(emas[key]) > abs(index) for key in ["fast", "medium", "slow"]):
             return 0.0
 
         fast_value = emas["fast"][index].value
@@ -575,9 +551,7 @@ class EMASystem:
             candle_idx = -(i + 1)
             ema_idx = -(i + 1)
 
-            if abs(candle_idx) > len(candles) or abs(ema_idx) > len(
-                emas["medium"]
-            ):
+            if abs(candle_idx) > len(candles) or abs(ema_idx) > len(emas["medium"]):
                 return False
 
             close_price = float(candles[candle_idx].close)

@@ -257,9 +257,7 @@ class StrategyRegistry:
 
         strategy_name = strategy_class.__name__
         if strategy_name in self._strategies:
-            raise ValueError(
-                f"Strategy '{strategy_name}' is already registered"
-            )
+            raise ValueError(f"Strategy '{strategy_name}' is already registered")
 
         self._strategies[strategy_name] = strategy_class
 
@@ -330,9 +328,7 @@ class StrategyRegistry:
 
         # Remove all instances of this strategy
         keys_to_remove = [
-            key
-            for key in self._instances.keys()
-            if key.startswith(f"{strategy_name}_")
+            key for key in self._instances.keys() if key.startswith(f"{strategy_name}_")
         ]
         for key in keys_to_remove:
             del self._instances[key]

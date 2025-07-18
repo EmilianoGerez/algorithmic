@@ -29,9 +29,7 @@ class DataAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_latest_candle(
-        self, symbol: str, timeframe: TimeFrame
-    ) -> Optional[Candle]:
+    def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get the latest candle for a symbol"""
         pass
 
@@ -75,9 +73,7 @@ class BacktraderAdapter(DataAdapter):
 
         return market_data
 
-    def get_latest_candle(
-        self, symbol: str, timeframe: TimeFrame
-    ) -> Optional[Candle]:
+    def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get latest candle from backtrader"""
         # TODO: Implement backtrader latest candle retrieval
         return None
@@ -175,9 +171,7 @@ class AlpacaAdapter(DataAdapter):
 
             # Convert to our candle format
             for timestamp, row in bars.iterrows():
-                candle = self._convert_alpaca_bar(
-                    row, symbol, timeframe, timestamp
-                )
+                candle = self._convert_alpaca_bar(row, symbol, timeframe, timestamp)
                 market_data.add_candle(candle)
 
             market_data.metadata["bars_fetched"] = len(bars)
@@ -188,9 +182,7 @@ class AlpacaAdapter(DataAdapter):
 
         return market_data
 
-    def get_latest_candle(
-        self, symbol: str, timeframe: TimeFrame
-    ) -> Optional[Candle]:
+    def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get latest candle from Alpaca"""
         try:
             # Get last trading day data
@@ -207,11 +199,7 @@ class AlpacaAdapter(DataAdapter):
                 limit=1,
             )
 
-            return (
-                market_data.get_latest_candle()
-                if market_data.candles
-                else None
-            )
+            return market_data.get_latest_candle() if market_data.candles else None
 
         except Exception as e:
             print(f"Error getting latest candle: {e}")
@@ -221,9 +209,7 @@ class AlpacaAdapter(DataAdapter):
         """Validate symbol with Alpaca"""
         try:
             client = self._get_client()
-            assets = client.list_assets(
-                status="active", asset_class="us_equity"
-            )
+            assets = client.list_assets(status="active", asset_class="us_equity")
 
             # Check if symbol exists in active assets
             for asset in assets:
@@ -270,9 +256,7 @@ class YahooFinanceAdapter(DataAdapter):
 
                 self._yfinance = yf
             except ImportError:
-                raise ImportError(
-                    "yfinance package required for YahooFinanceAdapter"
-                )
+                raise ImportError("yfinance package required for YahooFinanceAdapter")
         return self._yfinance
 
     def get_historical_data(
@@ -315,9 +299,7 @@ class YahooFinanceAdapter(DataAdapter):
         try:
             # Get data from Yahoo Finance
             ticker = yf.Ticker(symbol)
-            df = ticker.history(
-                start=start_date, end=end_date, interval=interval
-            )
+            df = ticker.history(start=start_date, end=end_date, interval=interval)
 
             # Convert to our candle format
             for timestamp, row in df.iterrows():
@@ -341,9 +323,7 @@ class YahooFinanceAdapter(DataAdapter):
 
         return market_data
 
-    def get_latest_candle(
-        self, symbol: str, timeframe: TimeFrame
-    ) -> Optional[Candle]:
+    def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get latest candle from Yahoo Finance"""
         try:
             # Get last 2 days of data to ensure we have latest complete candle

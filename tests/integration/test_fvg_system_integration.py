@@ -98,9 +98,7 @@ class TestFVGSystemIntegration:
 
         return candles
 
-    def test_end_to_end_fvg_detection(
-        self, fvg_system_config, sample_market_data
-    ):
+    def test_end_to_end_fvg_detection(self, fvg_system_config, sample_market_data):
         """Test the complete FVG detection process."""
         # Initialize detector
         detector = FVGDetector(config=fvg_system_config)
@@ -118,9 +116,7 @@ class TestFVGSystemIntegration:
             assert fvg.zone_high > fvg.zone_low
             assert fvg.status in ["active", "touched", "invalidated"]
 
-    def test_fvg_quality_classification(
-        self, fvg_system_config, sample_market_data
-    ):
+    def test_fvg_quality_classification(self, fvg_system_config, sample_market_data):
         """Test FVG quality classification system."""
         detector = FVGDetector(config=fvg_system_config)
         detected_fvgs = detector.detect_fvgs(sample_market_data)
@@ -226,12 +222,8 @@ class TestFVGSystemIntegration:
     def test_multi_timeframe_fvg_detection(self):
         """Test FVG detection across multiple timeframes."""
         configs = {
-            TimeFrame.MINUTE_5: FVGFilterConfig(
-                min_zone_size_percentage=0.005
-            ),
-            TimeFrame.MINUTE_15: FVGFilterConfig(
-                min_zone_size_percentage=0.01
-            ),
+            TimeFrame.MINUTE_5: FVGFilterConfig(min_zone_size_percentage=0.005),
+            TimeFrame.MINUTE_15: FVGFilterConfig(min_zone_size_percentage=0.01),
             TimeFrame.HOUR_1: FVGFilterConfig(min_zone_size_percentage=0.02),
         }
 
@@ -344,9 +336,7 @@ class TestFVGSystemIntegration:
         import sys
 
         fvg_memory_size = sys.getsizeof(fvgs)
-        assert (
-            fvg_memory_size < 1024 * 1024
-        ), "FVG results should use less than 1MB"
+        assert fvg_memory_size < 1024 * 1024, "FVG results should use less than 1MB"
 
 
 if __name__ == "__main__":

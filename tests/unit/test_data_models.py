@@ -113,9 +113,7 @@ class TestCandle:
         is_bearish = candle.close < candle.open
 
         assert is_bullish == expected_bullish
-        assert is_bearish == (
-            not expected_bullish and open_price != close_price
-        )
+        assert is_bearish == (not expected_bullish and open_price != close_price)
 
 
 class TestSignal:

@@ -53,9 +53,7 @@ def setup_alpaca_credentials():
         secret_key = "YOUR_ALPACA_SECRET_KEY"
 
         print(f"\\n⚠️  Using demo credentials: {api_key[:8]}...")
-        print(
-            "Update demo_alpaca_backtest.py with your actual credentials to run."
-        )
+        print("Update demo_alpaca_backtest.py with your actual credentials to run.")
         return None, None
 
     return api_key, secret_key
@@ -123,9 +121,7 @@ def fetch_alpaca_data(
         first_candle = market_data.candles[0]
         last_candle = market_data.candles[-1]
 
-        print(
-            f"📈 Data Range: {first_candle.timestamp} to {last_candle.timestamp}"
-        )
+        print(f"📈 Data Range: {first_candle.timestamp} to {last_candle.timestamp}")
         print(f"💰 Price Range: ${first_candle.close} to ${last_candle.close}")
 
         return market_data
@@ -152,9 +148,7 @@ def run_fvg_backtest(market_data: MarketData):
     strategy.initialize()
 
     # Create adapter for backtest engine
-    adapter = DataAdapterFactory.create_adapter(
-        "yahoo"
-    )  # Using Yahoo as fallback
+    adapter = DataAdapterFactory.create_adapter("yahoo")  # Using Yahoo as fallback
 
     # Configure backtest with crypto-appropriate settings
     backtest_config = BacktestConfig(
@@ -208,9 +202,7 @@ def run_fvg_backtest(market_data: MarketData):
 
             # Simulate individual trade returns (1:2 R:R)
             avg_win = float(backtest_config.initial_capital) * 0.04  # 4% wins
-            avg_loss = (
-                float(backtest_config.initial_capital) * 0.02
-            )  # 2% losses
+            avg_loss = float(backtest_config.initial_capital) * 0.02  # 2% losses
 
             winning_pnl = winners * avg_win
             losing_pnl = losers * -avg_loss
@@ -236,9 +228,7 @@ def run_fvg_backtest(market_data: MarketData):
             ),
             win_rate=62.0 if simulated_trades > 0 else 0.0,
             total_pnl=total_pnl,
-            max_drawdown=(
-                Decimal("3200.00") if simulated_trades > 0 else Decimal("0")
-            ),
+            max_drawdown=(Decimal("3200.00") if simulated_trades > 0 else Decimal("0")),
             signals=[],
             sharpe_ratio=1.35 if simulated_trades > 0 else None,
             sortino_ratio=1.85 if simulated_trades > 0 else None,
@@ -253,9 +243,7 @@ def run_fvg_backtest(market_data: MarketData):
             },
         )
 
-        print(
-            f"Backtest data feed started with {len(market_data.candles)} candles"
-        )
+        print(f"Backtest data feed started with {len(market_data.candles)} candles")
         return results
 
     except Exception as e:
@@ -303,13 +291,9 @@ def analyze_results(results):
 
     # Performance rating for crypto
     print(f"\\n🏆 CRYPTO PERFORMANCE RATING")
-    if (
-        total_return > 25 and max_drawdown < 7500
-    ):  # 25% return, <$7500 drawdown
+    if total_return > 25 and max_drawdown < 7500:  # 25% return, <$7500 drawdown
         print("🟢 EXCELLENT - Strong crypto returns with controlled risk")
-    elif (
-        total_return > 15 and max_drawdown < 12500
-    ):  # 15% return, <$12500 drawdown
+    elif total_return > 15 and max_drawdown < 12500:  # 15% return, <$12500 drawdown
         print("🟡 GOOD - Solid crypto performance with acceptable drawdown")
     elif total_return > 5:  # 5% return
         print("🟠 AVERAGE - Modest crypto gains, room for improvement")
@@ -341,9 +325,7 @@ def create_sample_data_fallback():
 
         # Bitcoin-like volatility - more dramatic moves
         trend = Decimal("50") * (i % 1000 - 500) / 1000  # Longer trend cycles
-        noise = (
-            Decimal("500") * ((i * 17) % 100 - 50) / 100
-        )  # Higher volatility
+        noise = Decimal("500") * ((i * 17) % 100 - 50) / 100  # Higher volatility
 
         price = base_price + trend + noise
 

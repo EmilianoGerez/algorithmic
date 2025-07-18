@@ -143,9 +143,7 @@ class SignalProcessor:
                 continue
 
             # Check EMA alignment
-            if not self.ema_system.check_ema_alignment(
-                emas, fvg_zone.direction.value
-            ):
+            if not self.ema_system.check_ema_alignment(emas, fvg_zone.direction.value):
                 continue
 
             # Check consecutive closes
@@ -299,9 +297,7 @@ class SignalProcessor:
 
         return False
 
-    def _is_trending_market(
-        self, candles: List[Candle], period: int = 20
-    ) -> bool:
+    def _is_trending_market(self, candles: List[Candle], period: int = 20) -> bool:
         """Check if market is trending (not consolidating)"""
         if len(candles) < period:
             return False
@@ -313,9 +309,7 @@ class SignalProcessor:
         low_prices = [float(c.low) for c in recent_candles]
 
         price_range = max(high_prices) - min(low_prices)
-        avg_price = sum(float(c.close) for c in recent_candles) / len(
-            recent_candles
-        )
+        avg_price = sum(float(c.close) for c in recent_candles) / len(recent_candles)
 
         # If range is > 3% of average price, consider it trending
         return (price_range / avg_price) > 0.03
@@ -328,9 +322,7 @@ class SignalProcessor:
 
         for fvg in fvg_zones:
             # Age filter
-            age_hours = (
-                context.current_time - fvg.timestamp
-            ).total_seconds() / 3600
+            age_hours = (context.current_time - fvg.timestamp).total_seconds() / 3600
             if age_hours > 168:  # 1 week
                 continue
 
@@ -427,9 +419,7 @@ class SignalProcessor:
         if last_signal.symbol != signal.symbol:
             return False
 
-        time_gap = (
-            signal.timestamp - last_signal.timestamp
-        ).total_seconds() / 60
+        time_gap = (signal.timestamp - last_signal.timestamp).total_seconds() / 60
         return time_gap < min_gap_minutes
 
     def _assess_signal_quality(self, signal: Signal) -> SignalQuality:
@@ -452,25 +442,19 @@ class SignalProcessor:
 
         total_signals = len(self.generated_signals)
         long_signals = sum(
-            1
-            for s in self.generated_signals
-            if s.direction == SignalDirection.LONG
+            1 for s in self.generated_signals if s.direction == SignalDirection.LONG
         )
         short_signals = total_signals - long_signals
 
         avg_confidence = (
             sum(s.confidence for s in self.generated_signals) / total_signals
         )
-        avg_strength = (
-            sum(s.strength for s in self.generated_signals) / total_signals
-        )
+        avg_strength = sum(s.strength for s in self.generated_signals) / total_signals
 
         quality_counts = {}
         for signal in self.generated_signals:
             quality = signal.metadata.get("quality", SignalQuality.LOW)
-            quality_counts[quality.value] = (
-                quality_counts.get(quality.value, 0) + 1
-            )
+            quality_counts[quality.value] = quality_counts.get(quality.value, 0) + 1
 
         return {
             "total_signals": total_signals,
@@ -507,9 +491,7 @@ class MultiTimeframeEngine:
         self.signal_processor = SignalProcessor(strategy_config)
         self.timeframe_data: Dict[TimeFrame, MarketData] = {}
 
-    def add_market_data(
-        self, timeframe: TimeFrame, market_data: MarketData
-    ) -> None:
+    def add_market_data(self, timeframe: TimeFrame, market_data: MarketData) -> None:
         """
         Add market data for a specific timeframe.
 
@@ -538,9 +520,7 @@ class MultiTimeframeEngine:
 
         # Higher timeframes for context
         htf_data = {
-            tf: data
-            for tf, data in self.timeframe_data.items()
-            if tf != ltf_timeframe
+            tf: data for tf, data in self.timeframe_data.items() if tf != ltf_timeframe
         }
 
         # Create signal context

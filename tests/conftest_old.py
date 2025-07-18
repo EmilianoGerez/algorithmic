@@ -123,9 +123,7 @@ def mock_redis():
 def mock_db_session():
     """Mock database session for testing."""
     mock_session = Mock()
-    mock_session.query.return_value.filter.return_value.first.return_value = (
-        None
-    )
+    mock_session.query.return_value.filter.return_value.first.return_value = None
     mock_session.query.return_value.filter.return_value.all.return_value = []
     mock_session.commit.return_value = None
     mock_session.rollback.return_value = None
@@ -170,9 +168,7 @@ def sample_signals(sample_candles) -> List[Signal]:
     for i, candle in enumerate(sample_candles[:10]):
         signal = Signal(
             signal_type="fvg_touch",
-            direction=(
-                SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT
-            ),
+            direction=(SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT),
             entry_price=candle.close,
             timestamp=candle.timestamp,
             stop_loss=candle.close * Decimal("0.98"),

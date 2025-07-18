@@ -114,9 +114,7 @@ class FixedRiskPositionSizer(PositionSizer):
 class VolatilityPositionSizer(PositionSizer):
     """Volatility-based position sizing using ATR"""
 
-    def __init__(
-        self, base_risk: float = 0.02, volatility_multiplier: float = 2.0
-    ):
+    def __init__(self, base_risk: float = 0.02, volatility_multiplier: float = 2.0):
         self.base_risk = base_risk
         self.volatility_multiplier = volatility_multiplier
 
@@ -132,9 +130,7 @@ class VolatilityPositionSizer(PositionSizer):
         atr = signal.metadata.get("atr", None)
         if atr is None:
             # Fall back to fixed risk sizing
-            return FixedRiskPositionSizer(
-                self.base_risk
-            ).calculate_position_size(
+            return FixedRiskPositionSizer(self.base_risk).calculate_position_size(
                 signal, account_balance, risk_limits, current_positions
             )
 
@@ -268,9 +264,7 @@ class RiskManager:
         # Check if we already have a position in this symbol
         existing_position = self.get_position_by_symbol(signal.symbol)
         if existing_position:
-            assessment["reasons"].append(
-                "Position already exists for this symbol"
-            )
+            assessment["reasons"].append("Position already exists for this symbol")
             return assessment
 
         # Calculate position size
@@ -295,9 +289,7 @@ class RiskManager:
 
         # Calculate risk amount
         if signal.stop_loss:
-            risk_amount = position_size * abs(
-                signal.entry_price - signal.stop_loss
-            )
+            risk_amount = position_size * abs(signal.entry_price - signal.stop_loss)
         else:
             risk_amount = required_capital * Decimal("0.02")  # Default 2% risk
 
@@ -339,9 +331,7 @@ class RiskManager:
 
         # Update portfolio metrics
         self.metrics.realized_pnl += position.realized_pnl
-        self.metrics.invested_capital -= (
-            position.quantity * position.entry_price
-        )
+        self.metrics.invested_capital -= position.quantity * position.entry_price
         self.metrics.available_cash += position.quantity * exit_price
 
         # Update trade statistics

@@ -28,9 +28,7 @@ from core import (  # Data models; Strategy system; Indicators; Signal processin
 )
 
 
-def create_sample_candles(
-    symbol: str, timeframe: TimeFrame, count: int = 100
-) -> list:
+def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -> list:
     """Create sample candle data for testing"""
     candles = []
     base_price = Decimal("50000")  # BTC price

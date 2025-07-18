@@ -171,9 +171,7 @@ def create_test_candles(
             open_price = base_price + price_variance
             high_price = open_price + Decimal("50")
             low_price = open_price - Decimal("50")
-            close_price = open_price + Decimal(
-                str(25 * (1 if i % 2 == 0 else -1))
-            )
+            close_price = open_price + Decimal(str(25 * (1 if i % 2 == 0 else -1)))
 
         # Volume based on profile
         if volume_profile == "high":

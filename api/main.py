@@ -72,9 +72,7 @@ class SignalResponse(BaseModel):
             signal_type=signal.signal_type.value,
             entry_price=float(signal.entry_price),
             stop_loss=float(signal.stop_loss) if signal.stop_loss else None,
-            take_profit=(
-                float(signal.take_profit) if signal.take_profit else None
-            ),
+            take_profit=(float(signal.take_profit) if signal.take_profit else None),
             confidence=signal.confidence,
             strength=signal.strength,
             strategy_name=signal.strategy_name,
@@ -102,9 +100,7 @@ class PositionResponse(BaseModel):
             quantity=float(position.quantity),
             entry_time=position.entry_time,
             current_price=(
-                float(position.current_price)
-                if position.current_price
-                else None
+                float(position.current_price) if position.current_price else None
             ),
             unrealized_pnl=float(position.unrealized_pnl),
             strategy_name=position.strategy_name,
@@ -138,9 +134,7 @@ class OrderResponse(BaseModel):
             status=order.status.value,
             created_at=order.created_at,
             filled_at=order.filled_at,
-            filled_price=(
-                float(order.filled_price) if order.filled_price else None
-            ),
+            filled_price=(float(order.filled_price) if order.filled_price else None),
             strategy_name=order.strategy_name,
         )
 
@@ -350,9 +344,7 @@ async def start_live_trading(config: LiveTradingRequest):
     """Start live trading"""
     try:
         if system_state.is_live_trading:
-            raise HTTPException(
-                status_code=400, detail="Live trading already running"
-            )
+            raise HTTPException(status_code=400, detail="Live trading already running")
 
         # Create broker adapter
         broker = PaperBrokerAdapter(initial_balance=Decimal("100000"))
@@ -382,14 +374,10 @@ async def start_live_trading(config: LiveTradingRequest):
         success = await system_state.live_engine.start()
         if success:
             system_state.is_live_trading = True
-            await _broadcast_event(
-                "live_trading_started", {"mode": config.mode}
-            )
+            await _broadcast_event("live_trading_started", {"mode": config.mode})
             return {"message": "Live trading started successfully"}
         else:
-            raise HTTPException(
-                status_code=500, detail="Failed to start live trading"
-            )
+            raise HTTPException(status_code=500, detail="Failed to start live trading")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -400,9 +388,7 @@ async def stop_live_trading():
     """Stop live trading"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
-            raise HTTPException(
-                status_code=400, detail="Live trading not running"
-            )
+            raise HTTPException(status_code=400, detail="Live trading not running")
 
         await system_state.live_engine.stop()
         system_state.is_live_trading = False
@@ -428,9 +414,7 @@ async def emergency_stop(reason: str = "Manual emergency stop"):
     """Emergency stop live trading"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
-            raise HTTPException(
-                status_code=400, detail="Live trading not running"
-            )
+            raise HTTPException(status_code=400, detail="Live trading not running")
 
         await system_state.live_engine.emergency_stop(reason)
         await _broadcast_event("emergency_stop", {"reason": reason})
@@ -447,9 +431,7 @@ async def send_manual_signal(signal_data: Dict[str, Any]):
     """Send a manual trading signal"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
-            raise HTTPException(
-                status_code=400, detail="Live trading not running"
-            )
+            raise HTTPException(status_code=400, detail="Live trading not running")
 
         # Create signal
         signal = Signal(
@@ -542,9 +524,7 @@ async def run_backtest(request: BacktestRequest):
             )
             strategy = FVGStrategy(config)
         else:
-            raise HTTPException(
-                status_code=400, detail="Strategy not supported"
-            )
+            raise HTTPException(status_code=400, detail="Strategy not supported")
 
         # Run backtest
         result = await asyncio.get_event_loop().run_in_executor(
@@ -600,9 +580,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             # Echo back for now - can be extended for bidirectional communication
-            await connection_manager.send_personal_message(
-                f"Echo: {data}", websocket
-            )
+            await connection_manager.send_personal_message(f"Echo: {data}", websocket)
     except WebSocketDisconnect:
         connection_manager.disconnect(websocket)
 

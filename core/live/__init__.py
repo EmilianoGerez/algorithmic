@@ -50,9 +50,7 @@ class LiveTradingConfig:
     risk_check_interval: float = 5.0  # seconds
     enable_auto_trading: bool = True
     enable_position_management: bool = True
-    emergency_stop_loss: float = (
-        0.05  # 5% portfolio loss triggers emergency stop
-    )
+    emergency_stop_loss: float = 0.05  # 5% portfolio loss triggers emergency stop
 
     def __post_init__(self):
         if self.max_orders_per_minute <= 0:
@@ -360,9 +358,7 @@ class LiveTradingEngine:
             # Start background tasks
             self._start_background_tasks()
 
-            print(
-                f"✅ Live Trading Engine started in {self.config.mode.value} mode"
-            )
+            print(f"✅ Live Trading Engine started in {self.config.mode.value} mode")
             return True
 
         except Exception as e:
@@ -383,9 +379,7 @@ class LiveTradingEngine:
 
         # Wait for background tasks to complete
         if self._background_tasks:
-            await asyncio.gather(
-                *self._background_tasks, return_exceptions=True
-            )
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
 
         # Disconnect from broker
         await self.broker.disconnect()
@@ -406,15 +400,11 @@ class LiveTradingEngine:
             assessment = self.risk_manager.evaluate_signal(signal)
 
             if not assessment["approved"]:
-                print(
-                    f"❌ Signal rejected: {', '.join(assessment['reasons'])}"
-                )
+                print(f"❌ Signal rejected: {', '.join(assessment['reasons'])}")
                 return None
 
             # Create order
-            order = self._create_order_from_signal(
-                signal, assessment["position_size"]
-            )
+            order = self._create_order_from_signal(signal, assessment["position_size"])
 
             # Place order
             order_id = await self.broker.place_order(order)
@@ -467,9 +457,7 @@ class LiveTradingEngine:
         """Add order event handler"""
         self.order_handlers.append(handler)
 
-    def add_position_handler(
-        self, handler: Callable[[Position], None]
-    ) -> None:
+    def add_position_handler(self, handler: Callable[[Position], None]) -> None:
         """Add position event handler"""
         self.position_handlers.append(handler)
 
@@ -532,9 +520,7 @@ class LiveTradingEngine:
                         expired_orders.append(order_id)
                         self._notify_order_cancelled(order)
 
-                    elif current_time > self.order_timeouts.get(
-                        order_id, current_time
-                    ):
+                    elif current_time > self.order_timeouts.get(order_id, current_time):
                         # Order timeout
                         await self.broker.cancel_order(order_id)
                         expired_orders.append(order_id)
@@ -606,10 +592,7 @@ class LiveTradingEngine:
 
     def _check_rate_limits(self) -> bool:
         """Check if we can place more orders"""
-        if (
-            self.state.orders_sent_this_minute
-            >= self.config.max_orders_per_minute
-        ):
+        if self.state.orders_sent_this_minute >= self.config.max_orders_per_minute:
             return False
         if self.state.orders_sent_today >= self.config.max_daily_trades:
             return False
@@ -625,9 +608,7 @@ class LiveTradingEngine:
             direction=signal.direction,
             quantity=position_size,
             price=(
-                signal.entry_price
-                if signal.signal_type == SignalType.ENTRY
-                else None
+                signal.entry_price if signal.signal_type == SignalType.ENTRY else None
             ),
             order_type=(
                 "market" if signal.signal_type == SignalType.ENTRY else "limit"

@@ -77,9 +77,7 @@ class Phase3Demo:
             await self.demo_real_time_updates()
 
             print("\n🎉 Phase 3 System Features:")
-            print(
-                "  ✅ Live Trading Engine - Paper and live trading capabilities"
-            )
+            print("  ✅ Live Trading Engine - Paper and live trading capabilities")
             print("  ✅ Real-time Data Streaming - Multiple provider support")
             print("  ✅ Order Management - Complete order lifecycle")
             print("  ✅ Risk Integration - Real-time risk monitoring")
@@ -141,9 +139,7 @@ class Phase3Demo:
 
         # Show initial status
         status = self.live_engine.get_status()
-        print(
-            f"💰 Initial balance: ${await broker.get_account_balance():,.2f}"
-        )
+        print(f"💰 Initial balance: ${await broker.get_account_balance():,.2f}")
         print(f"🎯 Trading mode: {config.mode.value}")
         print(f"🔄 Auto trading: {config.enable_auto_trading}")
         print(f"📊 Max positions: {risk_limits.max_positions}")
@@ -318,9 +314,7 @@ class Phase3Demo:
         pending_orders = 0
 
         for order in self.demo_orders:
-            status = await self.live_engine.broker.get_order_status(
-                order.order_id
-            )
+            status = await self.live_engine.broker.get_order_status(order.order_id)
             if status.value == "filled":
                 filled_orders += 1
             elif status.value == "pending":

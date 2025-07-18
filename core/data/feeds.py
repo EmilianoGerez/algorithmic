@@ -110,9 +110,7 @@ class LiveDataFeed(DataFeed):
                                 not last_timestamp
                                 or latest_candle.timestamp > last_timestamp
                             ):
-                                self.last_candles[key] = (
-                                    latest_candle.timestamp
-                                )
+                                self.last_candles[key] = latest_candle.timestamp
                                 self._notify_subscribers(latest_candle)
 
                 # Wait before next update
@@ -255,9 +253,7 @@ class MultiSymbolDataFeed(DataFeed):
         self.live_feed.subscribe(self._on_candle_received)
         self.live_feed.start()
 
-    def start_backtest(
-        self, market_data_collection: Dict[str, MarketData]
-    ) -> None:
+    def start_backtest(self, market_data_collection: Dict[str, MarketData]) -> None:
         """Start as backtest feed with multiple symbols"""
         self.is_live = False
 
@@ -300,9 +296,7 @@ class MultiSymbolDataFeed(DataFeed):
 
         self.is_running = False
 
-    def get_latest_candle(
-        self, symbol: str, timeframe: TimeFrame
-    ) -> Optional[Candle]:
+    def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get the latest candle for a symbol/timeframe"""
         if symbol in self.feeds:
             key = f"{timeframe.value}"

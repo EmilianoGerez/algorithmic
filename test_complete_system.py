@@ -319,9 +319,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "phase2_integration", test_name, False, str(e)
-            )
+            self.record_test_result("phase2_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_risk_management(self):
@@ -355,9 +353,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "phase2_integration", test_name, False, str(e)
-            )
+            self.record_test_result("phase2_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_backtesting_engine(self):
@@ -385,9 +381,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "phase2_integration", test_name, False, str(e)
-            )
+            self.record_test_result("phase2_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_multi_symbol_feeds(self):
@@ -409,9 +403,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "phase2_integration", test_name, False, str(e)
-            )
+            self.record_test_result("phase2_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_live_trading_engine(self):
@@ -571,9 +563,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "system_integration", test_name, False, str(e)
-            )
+            self.record_test_result("system_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_multi_component_integration(self):
@@ -603,9 +593,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "system_integration", test_name, False, str(e)
-            )
+            self.record_test_result("system_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_error_handling(self):
@@ -641,9 +629,7 @@ class SystemIntegrationTest:
             print(f"  ✅ {test_name}: PASSED")
 
         except Exception as e:
-            self.record_test_result(
-                "system_integration", test_name, False, str(e)
-            )
+            self.record_test_result("system_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_performance_integration(self):
@@ -680,14 +666,10 @@ class SystemIntegrationTest:
             assert creation_time < 1.0
 
             self.record_test_result("system_integration", test_name, True)
-            print(
-                f"  ✅ {test_name}: PASSED (creation time: {creation_time:.3f}s)"
-            )
+            print(f"  ✅ {test_name}: PASSED (creation time: {creation_time:.3f}s)")
 
         except Exception as e:
-            self.record_test_result(
-                "system_integration", test_name, False, str(e)
-            )
+            self.record_test_result("system_integration", test_name, False, str(e))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     def record_test_result(
@@ -755,9 +737,7 @@ class SystemIntegrationTest:
 
     def get_overall_success(self):
         """Get overall test success status"""
-        total_failed = sum(
-            results["failed"] for results in self.test_results.values()
-        )
+        total_failed = sum(results["failed"] for results in self.test_results.values())
         return total_failed == 0
 
 

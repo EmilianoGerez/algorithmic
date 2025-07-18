@@ -24,9 +24,7 @@ def check_python_version():
         print("❌ Python 3.8+ required. Current version:", sys.version)
         return False
 
-    print(
-        f"✅ Python {sys.version_info.major}.{sys.version_info.minor} is compatible"
-    )
+    print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor} is compatible")
     return True
 
 
@@ -44,9 +42,7 @@ def install_packages():
     for package in packages:
         try:
             print(f"Installing {package}...")
-            subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", package]
-            )
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
             print(f"✅ {package} installed successfully")
         except subprocess.CalledProcessError as e:
             print(f"❌ Failed to install {package}: {e}")
@@ -109,9 +105,7 @@ def test_alpaca_connection():
 
         api_key = os.getenv("ALPACA_API_KEY")
         secret_key = os.getenv("ALPACA_SECRET_KEY")
-        base_url = os.getenv(
-            "ALPACA_BASE_URL", "https://paper-api.alpaca.markets"
-        )
+        base_url = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
         if not api_key or api_key == "your_alpaca_api_key_here":
             print("⚠️  Alpaca API credentials not configured")
@@ -197,9 +191,7 @@ def test_data_fetching():
 
         if bars_count > 0:
             first_candle = market_data.candles[0]
-            print(
-                f"📈 Sample data: {first_candle.timestamp} - ${first_candle.close}"
-            )
+            print(f"📈 Sample data: {first_candle.timestamp} - ${first_candle.close}")
 
         return True
 

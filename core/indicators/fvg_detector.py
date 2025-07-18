@@ -148,9 +148,7 @@ class FVGDetector:
         zone_size = float(zone_high - zone_low)
 
         # Validate zone size
-        if not self._is_zone_size_valid(
-            zone_size, float(current_candle.close), atr
-        ):
+        if not self._is_zone_size_valid(zone_size, float(current_candle.close), atr):
             return None
 
         # Calculate strength and confidence
@@ -182,9 +180,7 @@ class FVGDetector:
             },
         )
 
-    def _is_zone_size_valid(
-        self, zone_size: float, price: float, atr: float
-    ) -> bool:
+    def _is_zone_size_valid(self, zone_size: float, price: float, atr: float) -> bool:
         """Check if zone size meets minimum requirements"""
         # Minimum pips
         if zone_size < self.config.min_zone_size_pips:
@@ -195,9 +191,7 @@ class FVGDetector:
             return False
 
         # Minimum ATR multiplier
-        if atr > 0 and zone_size < (
-            atr * self.config.min_zone_size_atr_multiplier
-        ):
+        if atr > 0 and zone_size < (atr * self.config.min_zone_size_atr_multiplier):
             return False
 
         return True
@@ -258,9 +252,7 @@ class FVGDetector:
 
         return min(confidence, 1.0)
 
-    def _calculate_volume_factor(
-        self, candles: List[Candle], index: int
-    ) -> float:
+    def _calculate_volume_factor(self, candles: List[Candle], index: int) -> float:
         """Calculate volume factor for strength calculation"""
         if index < self.config.volume_context_periods:
             return 0.0
@@ -286,9 +278,7 @@ class FVGDetector:
         volume_ratio = current_volume / avg_volume
         return min(volume_ratio / 2.0, 1.0)  # Normalize to 0-1
 
-    def _calculate_momentum_factor(
-        self, candles: List[Candle], index: int
-    ) -> float:
+    def _calculate_momentum_factor(self, candles: List[Candle], index: int) -> float:
         """Calculate momentum factor for strength calculation"""
         if index < 10:
             return 0.0
@@ -316,15 +306,11 @@ class FVGDetector:
         low_prices = [float(c.low) for c in context_candles]
 
         price_range = max(high_prices) - min(low_prices)
-        avg_price = sum(float(c.close) for c in context_candles) / len(
-            context_candles
-        )
+        avg_price = sum(float(c.close) for c in context_candles) / len(context_candles)
 
         return (price_range / avg_price) < 0.02  # 2% range threshold
 
-    def _has_sufficient_volume(
-        self, candles: List[Candle], index: int
-    ) -> bool:
+    def _has_sufficient_volume(self, candles: List[Candle], index: int) -> bool:
         """Check if candle has sufficient volume"""
         if index < self.config.volume_context_periods:
             return True
@@ -347,19 +333,13 @@ class FVGDetector:
         if avg_volume == 0:
             return True
 
-        return current_volume >= (
-            avg_volume * self.config.min_volume_multiplier
-        )
+        return current_volume >= (avg_volume * self.config.min_volume_multiplier)
 
-    def _passes_context_filters(
-        self, candles: List[Candle], index: int
-    ) -> bool:
+    def _passes_context_filters(self, candles: List[Candle], index: int) -> bool:
         """Check if FVG passes context filters"""
         # Weekend filter
         if self.config.exclude_weekend_fvgs:
-            if (
-                candles[index].timestamp.weekday() >= 5
-            ):  # Saturday = 5, Sunday = 6
+            if candles[index].timestamp.weekday() >= 5:  # Saturday = 5, Sunday = 6
                 return False
 
         # Consolidation filter
@@ -395,9 +375,7 @@ class FVGDetector:
         recent_trs = true_ranges[-period:]
         return sum(recent_trs) / len(recent_trs)
 
-    def _get_quality_level(
-        self, strength: float, confidence: float
-    ) -> FVGQuality:
+    def _get_quality_level(self, strength: float, confidence: float) -> FVGQuality:
         """Determine quality level based on strength and confidence"""
         combined_score = (strength + confidence) / 2
 
@@ -435,12 +413,8 @@ class FVGDetector:
             if fvg.strength >= self.config.high_quality_threshold
         )
 
-        avg_strength = (
-            sum(fvg.strength for fvg in self.detected_fvgs) / total_fvgs
-        )
-        avg_confidence = (
-            sum(fvg.confidence for fvg in self.detected_fvgs) / total_fvgs
-        )
+        avg_strength = sum(fvg.strength for fvg in self.detected_fvgs) / total_fvgs
+        avg_confidence = sum(fvg.confidence for fvg in self.detected_fvgs) / total_fvgs
 
         return {
             "total_fvgs": total_fvgs,

@@ -41,9 +41,7 @@ def sample_candles() -> List[Candle]:
 
     for i in range(10):
         timestamp = base_time + timedelta(minutes=15 * i)
-        price_variance = Decimal(
-            str(100 * (i % 3 - 1))
-        )  # -100, 0, 100 pattern
+        price_variance = Decimal(str(100 * (i % 3 - 1)))  # -100, 0, 100 pattern
 
         open_price = base_price + price_variance
         high_price = open_price + Decimal("50")
@@ -180,9 +178,7 @@ def create_test_candles(
             open_price = base_price + price_variance
             high_price = open_price + Decimal("50")
             low_price = open_price - Decimal("50")
-            close_price = open_price + Decimal(
-                str(25 * (1 if i % 2 == 0 else -1))
-            )
+            close_price = open_price + Decimal(str(25 * (1 if i % 2 == 0 else -1)))
 
         # Volume based on profile
         if volume_profile == "high":

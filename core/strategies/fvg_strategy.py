@@ -51,16 +51,12 @@ class FVGStrategy(BaseStrategy):
         self.htf_timeframes = self.get_parameter(
             "htf_timeframes", [TimeFrame.HOUR_4, TimeFrame.DAY_1]
         )
-        self.ltf_timeframe = self.get_parameter(
-            "ltf_timeframe", TimeFrame.MINUTE_5
-        )
+        self.ltf_timeframe = self.get_parameter("ltf_timeframe", TimeFrame.MINUTE_5)
         self.ema_periods = self.get_parameter(
             "ema_periods", {"fast": 9, "medium": 20, "slow": 50}
         )
         self.consecutive_closes = self.get_parameter("consecutive_closes", 2)
-        self.fvg_filter_preset = self.get_parameter(
-            "fvg_filter_preset", "balanced"
-        )
+        self.fvg_filter_preset = self.get_parameter("fvg_filter_preset", "balanced")
         self.swing_lookback = self.get_parameter("swing_lookback", 20)
         self.nyc_hours_only = self.get_parameter("nyc_hours_only", True)
 
@@ -184,9 +180,7 @@ class FVGStrategy(BaseStrategy):
             return False
 
         # Timing validation
-        if self.nyc_hours_only and not self._is_nyc_trading_hours(
-            signal.timestamp
-        ):
+        if self.nyc_hours_only and not self._is_nyc_trading_hours(signal.timestamp):
             return False
 
         return True
@@ -208,16 +202,12 @@ class FVGStrategy(BaseStrategy):
             raise ValueError("LTF timeframe cannot be in HTF timeframes")
 
         if not all(isinstance(tf, TimeFrame) for tf in self.htf_timeframes):
-            raise ValueError(
-                "All HTF timeframes must be TimeFrame enum values"
-            )
+            raise ValueError("All HTF timeframes must be TimeFrame enum values")
 
         if not isinstance(self.ltf_timeframe, TimeFrame):
             raise ValueError("LTF timeframe must be TimeFrame enum value")
 
-    def _validate_market_data(
-        self, market_data: Dict[TimeFrame, MarketData]
-    ) -> bool:
+    def _validate_market_data(self, market_data: Dict[TimeFrame, MarketData]) -> bool:
         """Validate market data availability"""
         required_timeframes = self.get_required_timeframes()
 
@@ -239,14 +229,10 @@ class FVGStrategy(BaseStrategy):
             "scalping": FVGFilterPresets.scalping,
         }
 
-        preset_func = preset_map.get(
-            self.fvg_filter_preset, FVGFilterPresets.balanced
-        )
+        preset_func = preset_map.get(self.fvg_filter_preset, FVGFilterPresets.balanced)
         return preset_func()
 
-    def _update_fvg_zones(
-        self, market_data: Dict[TimeFrame, MarketData]
-    ) -> None:
+    def _update_fvg_zones(self, market_data: Dict[TimeFrame, MarketData]) -> None:
         """Update FVG zones from higher timeframe data"""
         new_fvgs = []
 
@@ -310,9 +296,7 @@ class FVGStrategy(BaseStrategy):
             return None
 
         # Check EMA alignment
-        if not self.ema_system.check_ema_alignment(
-            emas, fvg_zone.direction.value
-        ):
+        if not self.ema_system.check_ema_alignment(emas, fvg_zone.direction.value):
             return None
 
         # Check consecutive closes above/below medium EMA
@@ -339,9 +323,7 @@ class FVGStrategy(BaseStrategy):
             return None
 
         # Calculate confidence
-        confidence = self._calculate_signal_confidence(
-            fvg_zone, emas, ltf_data
-        )
+        confidence = self._calculate_signal_confidence(fvg_zone, emas, ltf_data)
 
         # Create signal
         signal = Signal(
@@ -453,9 +435,7 @@ class FVGStrategy(BaseStrategy):
 
         return False
 
-    def _is_market_trending(
-        self, candles: List[Candle], period: int = 20
-    ) -> bool:
+    def _is_market_trending(self, candles: List[Candle], period: int = 20) -> bool:
         """Check if market is trending"""
         if len(candles) < period:
             return False
@@ -467,9 +447,7 @@ class FVGStrategy(BaseStrategy):
         low_prices = [float(c.low) for c in recent_candles]
 
         price_range = max(high_prices) - min(low_prices)
-        avg_price = sum(float(c.close) for c in recent_candles) / len(
-            recent_candles
-        )
+        avg_price = sum(float(c.close) for c in recent_candles) / len(recent_candles)
 
         # If range > 3% of average price, consider trending
         return (price_range / avg_price) > 0.03
@@ -505,9 +483,7 @@ class FVGStrategy(BaseStrategy):
         if self.last_signal_time is None:
             return False
 
-        time_gap = (
-            signal.timestamp - self.last_signal_time
-        ).total_seconds() / 60
+        time_gap = (signal.timestamp - self.last_signal_time).total_seconds() / 60
         return time_gap < min_gap_minutes
 
     def on_signal_generated(self, signal: Signal) -> None:
@@ -530,9 +506,7 @@ class FVGStrategy(BaseStrategy):
             "is_initialized": self.is_initialized,
             "active_fvgs": len(self.active_fvgs),
             "last_signal_time": (
-                self.last_signal_time.isoformat()
-                if self.last_signal_time
-                else None
+                self.last_signal_time.isoformat() if self.last_signal_time else None
             ),
             "configuration": {
                 "htf_timeframes": [tf.value for tf in self.htf_timeframes],

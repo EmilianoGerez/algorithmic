@@ -7,7 +7,7 @@ These adapters handle the integration with different data sources and platforms.
 
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from .models import Candle, MarketData, TimeFrame, SignalDirection
@@ -93,22 +93,39 @@ class BacktraderAdapter(DataAdapter):
 class AlpacaAdapter(DataAdapter):
     """Adapter for Alpaca Markets API"""
     
+    # Alpaca timeframe mapping
+    TIMEFRAME_MAP = {
+        TimeFrame.MINUTE_1: "1Min",
+        TimeFrame.MINUTE_5: "5Min", 
+        TimeFrame.MINUTE_15: "15Min",
+        TimeFrame.MINUTE_30: "30Min",
+        TimeFrame.HOUR_1: "1Hour",
+        TimeFrame.DAY_1: "1Day"
+    }
+    
     def __init__(self, api_key: str, secret_key: str, base_url: str = "https://paper-api.alpaca.markets"):
         self.api_key = api_key
         self.secret_key = secret_key
         self.base_url = base_url
         self._client = None
+        self._data_cache = {}
     
     def _get_client(self):
         """Get or create Alpaca client"""
         if self._client is None:
             try:
-                # TODO: Import and initialize Alpaca client
-                # from alpaca_trade_api import REST
-                # self._client = REST(self.api_key, self.secret_key, self.base_url)
-                pass
+                from alpaca_trade_api import REST
+                from alpaca_trade_api.common import URL
+                self._client = REST(
+                    self.api_key,
+                    self.secret_key,
+                    base_url=URL(self.base_url)
+                )
             except ImportError:
-                raise ImportError("alpaca-trade-api package required for AlpacaAdapter")
+                raise ImportError(
+                    "alpaca-trade-api package required for AlpacaAdapter. "
+                    "Install with: pip install alpaca-trade-api"
+                )
         return self._client
     
     def get_historical_data(
@@ -131,29 +148,86 @@ class AlpacaAdapter(DataAdapter):
             }
         )
         
-        # TODO: Implement Alpaca API calls
-        # client = self._get_client()
-        # bars = client.get_bars(symbol, timeframe, start_date, end_date, limit)
-        # for bar in bars:
-        #     candle = self._convert_alpaca_bar(bar, symbol, timeframe)
-        #     market_data.add_candle(candle)
+        try:
+            client = self._get_client()
+            alpaca_timeframe = self.TIMEFRAME_MAP.get(timeframe)
+            
+            if not alpaca_timeframe:
+                raise ValueError(f"Unsupported timeframe: {timeframe}")
+            
+            # Get bars from Alpaca
+            bars = client.get_bars(
+                symbol=symbol,
+                timeframe=alpaca_timeframe,
+                start=start_date.isoformat(),
+                end=end_date.isoformat(),
+                limit=limit,
+                adjustment='raw'  # Use raw prices for backtesting
+            ).df
+            
+            # Convert to our candle format
+            for timestamp, row in bars.iterrows():
+                candle = self._convert_alpaca_bar(row, symbol, timeframe, timestamp)
+                market_data.add_candle(candle)
+            
+            market_data.metadata["bars_fetched"] = len(bars)
+            
+        except Exception as e:
+            market_data.metadata["error"] = str(e)
+            print(f"Error fetching Alpaca data: {e}")
         
         return market_data
     
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get latest candle from Alpaca"""
-        # TODO: Implement Alpaca latest candle retrieval
-        return None
+        try:
+            # Get last trading day data
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=2)  # Get 2 days to ensure we have data
+            
+            market_data = self.get_historical_data(
+                symbol=symbol,
+                timeframe=timeframe,
+                start_date=start_date,
+                end_date=end_date,
+                limit=1
+            )
+            
+            return market_data.get_latest_candle() if market_data.candles else None
+            
+        except Exception as e:
+            print(f"Error getting latest candle: {e}")
+            return None
     
     def validate_symbol(self, symbol: str) -> bool:
         """Validate symbol with Alpaca"""
-        # TODO: Implement Alpaca symbol validation
-        return True
+        try:
+            client = self._get_client()
+            assets = client.list_assets(status='active', asset_class='us_equity')
+            
+            # Check if symbol exists in active assets
+            for asset in assets:
+                if asset.symbol == symbol and asset.tradable:
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"Error validating symbol {symbol}: {e}")
+            return False
     
-    def _convert_alpaca_bar(self, bar, symbol: str, timeframe: TimeFrame) -> Candle:
+    def _convert_alpaca_bar(self, bar, symbol: str, timeframe: TimeFrame, timestamp) -> Candle:
         """Convert Alpaca bar to our Candle model"""
-        # TODO: Implement conversion from Alpaca bar format
-        pass
+        return Candle(
+            timestamp=timestamp.to_pydatetime() if hasattr(timestamp, 'to_pydatetime') else timestamp,
+            open=Decimal(str(bar['open'])),
+            high=Decimal(str(bar['high'])),
+            low=Decimal(str(bar['low'])),
+            close=Decimal(str(bar['close'])),
+            volume=Decimal(str(bar['volume'])),
+            symbol=symbol,
+            timeframe=timeframe
+        )
 
 
 class YahooFinanceAdapter(DataAdapter):

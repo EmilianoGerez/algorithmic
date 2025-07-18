@@ -231,8 +231,8 @@ See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for detailed contribution guideline
 
 ## 📊 Project Statistics
 
-- **Files**: 495 Python files
-- **Lines of Code**: 2,151,595
+- **Files**: 26 Python files (clean, focused codebase)
+- **Lines of Code**: 8,516 lines (production-ready code only)
 - **Test Coverage**: 100% for core components
 - **Dependencies**: 12 core + 8 development
 - **Documentation**: 10+ comprehensive guides

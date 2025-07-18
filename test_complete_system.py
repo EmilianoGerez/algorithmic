@@ -11,7 +11,6 @@ Provides comprehensive validation of the entire system architecture.
 """
 
 import asyncio
-import json
 import os
 import sys
 from datetime import datetime, timedelta
@@ -23,12 +22,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from core import (  # Phase 1 - Core System; Phase 2 - Integration; Phase 3 - Live Trading
         BacktestConfig,
-        BacktestingEngine,
-        BacktestResult,
-        BacktraderAdapter,
-        BaseStrategy,
         Candle,
-        DataAdapter,
+        CoreBacktestEngine,  # Added concrete implementation
         ExecutionMode,
         FixedRiskPositionSizer,
         FVGDetector,
@@ -36,23 +31,22 @@ try:
         LiveTradingConfig,
         LiveTradingEngine,
         MultiSymbolDataFeed,
-        Order,
         PaperBrokerAdapter,
-        Position,
         RiskLimits,
         RiskManager,
         Signal,
         SignalDirection,
         SignalType,
         StreamingConfig,
-        StreamingFactory,
         StreamingManager,
         StreamingProvider,
         TimeFrame,
-        UniversalDataFeed,
-        YahooFinanceAdapter,
         create_fvg_strategy_config,
     )
+    
+    # Import additional classes from specific modules that aren't in main __all__
+    from core.data.adapters import YahooFinanceAdapter
+    from core.indicators.fvg_detector import FVGFilterConfig
 
     IMPORT_SUCCESS = True
     IMPORT_ERRORS = []
@@ -62,7 +56,7 @@ except Exception as e:
     # Import minimal required for error reporting
     try:
         from core.data.models import SignalDirection, SignalType, TimeFrame
-    except:
+    except ImportError:
         pass
 
 
@@ -260,12 +254,13 @@ class SystemIntegrationTest:
         test_name = "Indicators"
         try:
             # Test FVG detector
-            detector = FVGDetector(min_size=0.001, max_age_candles=5)
+            config = FVGFilterConfig(min_zone_size_pips=0.001, max_age_hours=120)
+            detector = FVGDetector(config)
 
             # Validate indicator properties
-            assert detector.min_size == 0.001
-            assert detector.max_age_candles == 5
-            assert hasattr(detector, "detect_fvg")
+            assert detector.config.min_zone_size_pips == 0.001
+            assert detector.config.max_age_hours == 120
+            assert hasattr(detector, "detect_fvgs")  # Fixed method name
 
             self.record_test_result("phase1_core", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
@@ -370,7 +365,7 @@ class SystemIntegrationTest:
             )
 
             # Create backtesting engine
-            engine = BacktestingEngine(config)
+            engine = CoreBacktestEngine(config)
 
             # Test engine properties
             assert hasattr(engine, "run_backtest")
@@ -388,14 +383,20 @@ class SystemIntegrationTest:
         """Test multi-symbol data feeds"""
         test_name = "Multi-Symbol Feeds"
         try:
+            # Create adapter first
+            adapter = YahooFinanceAdapter()
+            
             # Create multi-symbol feed
-            feed = MultiSymbolDataFeed(
-                symbols=["AAPL", "GOOGL", "MSFT"],
-                timeframes=[TimeFrame.MINUTE_1, TimeFrame.MINUTE_5],
-            )
+            feed = MultiSymbolDataFeed(adapter=adapter)
+            
+            # Add symbols and timeframes
+            feed.add_symbol("AAPL", [TimeFrame.MINUTE_1, TimeFrame.MINUTE_5])
+            feed.add_symbol("GOOGL", [TimeFrame.MINUTE_1, TimeFrame.MINUTE_5])
+            feed.add_symbol("MSFT", [TimeFrame.MINUTE_1, TimeFrame.MINUTE_5])
 
             # Test feed properties
-            assert hasattr(feed, "subscribe")
+            assert hasattr(feed, "add_symbol")
+            assert hasattr(feed, "remove_symbol")
             assert hasattr(feed, "unsubscribe")
             assert hasattr(feed, "get_latest_data")
 

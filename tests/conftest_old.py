@@ -1,21 +1,34 @@
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
-import pytest
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import List, Dict, Any
-import pandas as pd
 import asyncio
-from unittest.mock import Mock, AsyncMock
+import os
 
 # Import your core modules
 import sys
-import os
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, Mock
+
+import pandas as pd
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.data.models import Candle, TimeFrame, MarketData, Signal, SignalDirection, FVGZone
-from core.indicators.fvg_detector import FVGDetector, FVGFilterConfig, FVGQuality
+from core.data.models import (
+    Candle,
+    FVGZone,
+    MarketData,
+    Signal,
+    SignalDirection,
+    TimeFrame,
+)
+from core.indicators.fvg_detector import (
+    FVGDetector,
+    FVGFilterConfig,
+    FVGQuality,
+)
 
 
 @pytest.fixture(scope="session")
@@ -31,7 +44,7 @@ def sample_candles() -> List[Candle]:
     """Generate sample candle data for testing."""
     base_time = datetime(2025, 1, 1, 9, 0)
     candles = []
-    
+
     for i in range(100):
         timestamp = base_time + timedelta(minutes=i * 5)
         # Create realistic OHLC data with some volatility
@@ -41,17 +54,17 @@ def sample_candles() -> List[Candle]:
         low_price = open_price - Decimal(str(abs(i % 5) * 12))
         close_price = Decimal(str(base_price + (i % 4 - 1.5) * 25))
         volume = Decimal(str(1000 + (i % 10) * 100))
-        
+
         candle = Candle(
             timestamp=timestamp,
             open=open_price,
             high=high_price,
             low=low_price,
             close=close_price,
-            volume=volume
+            volume=volume,
         )
         candles.append(candle)
-    
+
     return candles
 
 
@@ -62,7 +75,7 @@ def sample_market_data(sample_candles) -> MarketData:
         symbol="BTC/USD",
         timeframe=TimeFrame.MINUTE_5,
         candles=sample_candles,
-        metadata={"source": "test", "generated": True}
+        metadata={"source": "test", "generated": True},
     )
 
 
@@ -70,6 +83,7 @@ def sample_market_data(sample_candles) -> MarketData:
 def fvg_strategy() -> FVGStrategy:
     """Create a configured FVG strategy for testing."""
     from core.strategies.factory import create_fvg_strategy_config
+
     config = create_fvg_strategy_config()
     return FVGStrategy(config)
 
@@ -78,12 +92,12 @@ def fvg_strategy() -> FVGStrategy:
 def risk_limits() -> RiskLimits:
     """Create standard risk limits for testing."""
     return RiskLimits(
-        max_position_size=Decimal('0.1'),
-        max_daily_loss=Decimal('0.05'),
-        max_drawdown=Decimal('0.2'),
+        max_position_size=Decimal("0.1"),
+        max_daily_loss=Decimal("0.05"),
+        max_drawdown=Decimal("0.2"),
         max_positions=5,
         max_correlation=0.7,
-        leverage_limit=Decimal('1.0')
+        leverage_limit=Decimal("1.0"),
     )
 
 
@@ -109,7 +123,9 @@ def mock_redis():
 def mock_db_session():
     """Mock database session for testing."""
     mock_session = Mock()
-    mock_session.query.return_value.filter.return_value.first.return_value = None
+    mock_session.query.return_value.filter.return_value.first.return_value = (
+        None
+    )
     mock_session.query.return_value.filter.return_value.all.return_value = []
     mock_session.commit.return_value = None
     mock_session.rollback.return_value = None
@@ -122,12 +138,12 @@ def sample_fvg_data() -> List[Dict[str, Any]]:
     """Generate sample FVG data for testing."""
     base_time = datetime(2025, 1, 1, 10, 0)
     fvgs = []
-    
+
     for i in range(10):
         timestamp = base_time + timedelta(hours=i * 4)
         zone_low = 50000 + (i * 100)
         zone_high = zone_low + 150
-        
+
         fvg = {
             "id": f"fvg_{i}",
             "symbol": "BTC/USD",
@@ -142,7 +158,7 @@ def sample_fvg_data() -> List[Dict[str, Any]]:
             "touch_count": 0,
         }
         fvgs.append(fvg)
-    
+
     return fvgs
 
 
@@ -150,36 +166,40 @@ def sample_fvg_data() -> List[Dict[str, Any]]:
 def sample_signals(sample_candles) -> List[Signal]:
     """Generate sample signals for testing."""
     signals = []
-    
+
     for i, candle in enumerate(sample_candles[:10]):
         signal = Signal(
             signal_type="fvg_touch",
-            direction=SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT,
+            direction=(
+                SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT
+            ),
             entry_price=candle.close,
             timestamp=candle.timestamp,
-            stop_loss=candle.close * Decimal('0.98'),
-            take_profit=candle.close * Decimal('1.04'),
+            stop_loss=candle.close * Decimal("0.98"),
+            take_profit=candle.close * Decimal("1.04"),
             confidence=0.75,
             metadata={
-                "fvg_zone": [float(candle.close * Decimal('0.995')), 
-                           float(candle.close * Decimal('1.005'))],
-                "timeframe": "5T"
-            }
+                "fvg_zone": [
+                    float(candle.close * Decimal("0.995")),
+                    float(candle.close * Decimal("1.005")),
+                ],
+                "timeframe": "5T",
+            },
         )
         signals.append(signal)
-    
+
     return signals
 
 
 class AsyncContextManager:
     """Helper class for async context managers in tests."""
-    
+
     def __init__(self, return_value):
         self.return_value = return_value
-    
+
     async def __aenter__(self):
         return self.return_value
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
@@ -187,8 +207,10 @@ class AsyncContextManager:
 @pytest.fixture
 def async_mock_context():
     """Factory for creating async context manager mocks."""
+
     def _create_context(return_value):
         return AsyncContextManager(return_value)
+
     return _create_context
 
 
@@ -201,20 +223,30 @@ pytestmark = [
 # Helper functions for tests
 def assert_candle_valid(candle: Candle) -> None:
     """Assert that a candle has valid OHLC relationships."""
-    assert candle.high >= max(candle.open, candle.close), "High must be >= max(open, close)"
-    assert candle.low <= min(candle.open, candle.close), "Low must be <= min(open, close)"
+    assert candle.high >= max(
+        candle.open, candle.close
+    ), "High must be >= max(open, close)"
+    assert candle.low <= min(
+        candle.open, candle.close
+    ), "Low must be <= min(open, close)"
     assert candle.volume >= 0, "Volume must be non-negative"
 
 
 def assert_signal_valid(signal: Signal) -> None:
     """Assert that a signal has valid properties."""
     assert signal.entry_price > 0, "Entry price must be positive"
-    assert signal.confidence >= 0 and signal.confidence <= 1, "Confidence must be between 0 and 1"
+    assert (
+        signal.confidence >= 0 and signal.confidence <= 1
+    ), "Confidence must be between 0 and 1"
     if signal.stop_loss:
         if signal.direction == SignalDirection.LONG:
-            assert signal.stop_loss < signal.entry_price, "Long stop loss must be below entry"
+            assert (
+                signal.stop_loss < signal.entry_price
+            ), "Long stop loss must be below entry"
         else:
-            assert signal.stop_loss > signal.entry_price, "Short stop loss must be above entry"
+            assert (
+                signal.stop_loss > signal.entry_price
+            ), "Short stop loss must be above entry"
 
 
 # Performance testing helpers
@@ -222,22 +254,22 @@ def assert_signal_valid(signal: Signal) -> None:
 def performance_timer():
     """Timer fixture for performance testing."""
     import time
-    
+
     class Timer:
         def __init__(self):
             self.start_time = None
             self.end_time = None
-        
+
         def start(self):
             self.start_time = time.perf_counter()
-        
+
         def stop(self):
             self.end_time = time.perf_counter()
-        
+
         @property
         def elapsed(self):
             if self.start_time is None or self.end_time is None:
                 return None
             return self.end_time - self.start_time
-    
+
     return Timer()

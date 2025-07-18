@@ -13,18 +13,48 @@ The core package contains the fundamental components of the trading system:
 - Real-time data streaming
 """
 
-from .data.models import *
+from .backtesting import (
+    BacktestConfig,
+    BacktestEngine,
+    BacktestRunner,
+    CoreBacktestEngine,
+)
 from .data.adapters import DataAdapter, DataAdapterFactory
-from .data.feeds import DataFeed, LiveDataFeed, BacktestDataFeed, MultiSymbolDataFeed
-from .strategies.base_strategy import BaseStrategy, StrategyRegistry, strategy_registry
-from .strategies.fvg_strategy import FVGStrategy, create_fvg_strategy_config
+from .data.feeds import (
+    BacktestDataFeed,
+    DataFeed,
+    LiveDataFeed,
+    MultiSymbolDataFeed,
+)
+from .data.models import *
 from .indicators.fvg_detector import FVGDetector, FVGFilterPresets
-from .indicators.technical import TechnicalIndicators, EMASystem
-from .signals.signal_processor import SignalProcessor, MultiTimeframeEngine
-from .risk import RiskManager, RiskLimits, PositionSizer, FixedRiskPositionSizer, PortfolioMetrics
-from .backtesting import BacktestEngine, CoreBacktestEngine, BacktestConfig, BacktestRunner
-from .live import LiveTradingEngine, PaperBrokerAdapter, LiveTradingConfig, ExecutionMode
-from .streaming import StreamingManager, StreamingFactory, StreamingConfig, StreamingProvider
+from .indicators.technical import EMASystem, TechnicalIndicators
+from .live import (
+    ExecutionMode,
+    LiveTradingConfig,
+    LiveTradingEngine,
+    PaperBrokerAdapter,
+)
+from .risk import (
+    FixedRiskPositionSizer,
+    PortfolioMetrics,
+    PositionSizer,
+    RiskLimits,
+    RiskManager,
+)
+from .signals.signal_processor import MultiTimeframeEngine, SignalProcessor
+from .strategies.base_strategy import (
+    BaseStrategy,
+    StrategyRegistry,
+    strategy_registry,
+)
+from .strategies.fvg_strategy import FVGStrategy, create_fvg_strategy_config
+from .streaming import (
+    StreamingConfig,
+    StreamingFactory,
+    StreamingManager,
+    StreamingProvider,
+)
 
 __version__ = "3.0.0"
 __author__ = "Algorithmic Trading System"
@@ -32,7 +62,7 @@ __author__ = "Algorithmic Trading System"
 __all__ = [
     # Data models
     "Candle",
-    "MarketData", 
+    "MarketData",
     "Signal",
     "Position",
     "Order",
@@ -43,7 +73,6 @@ __all__ = [
     "SignalDirection",
     "SignalType",
     "OrderStatus",
-    
     # Data integration
     "DataAdapter",
     "DataAdapterFactory",
@@ -51,46 +80,39 @@ __all__ = [
     "LiveDataFeed",
     "BacktestDataFeed",
     "MultiSymbolDataFeed",
-    
     # Strategy system
     "BaseStrategy",
     "StrategyRegistry",
     "strategy_registry",
     "FVGStrategy",
     "create_fvg_strategy_config",
-    
     # Indicators
     "FVGDetector",
     "FVGFilterPresets",
     "TechnicalIndicators",
     "EMASystem",
-    
     # Signal processing
     "SignalProcessor",
     "MultiTimeframeEngine",
-    
     # Risk management
     "RiskManager",
     "RiskLimits",
     "PositionSizer",
     "FixedRiskPositionSizer",
     "PortfolioMetrics",
-    
     # Backtesting
     "BacktestEngine",
     "CoreBacktestEngine",
     "BacktestConfig",
     "BacktestRunner",
-    
     # Live trading
     "LiveTradingEngine",
     "PaperBrokerAdapter",
     "LiveTradingConfig",
     "ExecutionMode",
-    
     # Streaming
     "StreamingManager",
     "StreamingFactory",
     "StreamingConfig",
-    "StreamingProvider"
+    "StreamingProvider",
 ]

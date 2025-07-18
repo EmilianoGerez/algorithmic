@@ -158,3 +158,16 @@ exclude_lines = [
 [tool.bandit]
 exclude_dirs = ["tests", "migrations"]
 skips = ["B101", "B601"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "build",
+    "dist",
+    "migrations",
+    ".eggs",
+]

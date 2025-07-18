@@ -1,19 +1,22 @@
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 import os
 import sys
+from logging.config import fileConfig
+
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Cargar variables desde .env
 load_dotenv()
 
 # Agregar el path del proyecto para importar modelos
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.db import models
 
 # Importar metadatos
 from src.db.base import Base
-from src.db import models
 
 # Configuración de Alembic
 config = context.config

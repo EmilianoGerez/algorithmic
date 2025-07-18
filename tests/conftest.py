@@ -1,21 +1,34 @@
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
-import pytest
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import List, Dict, Any
-import pandas as pd
 import asyncio
-from unittest.mock import Mock, AsyncMock
+import os
 
 # Import your core modules
 import sys
-import os
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, Mock
+
+import pandas as pd
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.data.models import Candle, TimeFrame, MarketData, Signal, SignalDirection, FVGZone
-from core.indicators.fvg_detector import FVGDetector, FVGFilterConfig, FVGQuality
+from core.data.models import (
+    Candle,
+    FVGZone,
+    MarketData,
+    Signal,
+    SignalDirection,
+    TimeFrame,
+)
+from core.indicators.fvg_detector import (
+    FVGDetector,
+    FVGFilterConfig,
+    FVGQuality,
+)
 
 
 # Test Data Fixtures
@@ -24,20 +37,22 @@ def sample_candles():
     """Sample candle data for testing"""
     candles = []
     base_time = datetime(2023, 1, 1, 12, 0, 0)
-    
+
     for i in range(5):
         timestamp = base_time + timedelta(minutes=i)
-        candles.append(Candle(
-            timestamp=timestamp,
-            open=Decimal('50000'),
-            high=Decimal('50100'),
-            low=Decimal('49900'),
-            close=Decimal('50050'),
-            volume=Decimal('1000'),
-            symbol="BTCUSD",
-            timeframe=TimeFrame.MINUTE_1
-        ))
-    
+        candles.append(
+            Candle(
+                timestamp=timestamp,
+                open=Decimal("50000"),
+                high=Decimal("50100"),
+                low=Decimal("49900"),
+                close=Decimal("50050"),
+                volume=Decimal("1000"),
+                symbol="BTCUSD",
+                timeframe=TimeFrame.MINUTE_1,
+            )
+        )
+
     return candles
 
 
@@ -49,14 +64,14 @@ def sample_fvg_zone() -> FVGZone:
         symbol="BTC/USD",
         timeframe=TimeFrame.MINUTE_15,
         direction=SignalDirection.LONG,
-        zone_high=Decimal('50300'),
-        zone_low=Decimal('50200'),
+        zone_high=Decimal("50300"),
+        zone_low=Decimal("50200"),
         strength=0.75,
         confidence=0.85,
         status="active",
         touch_count=0,
         created_candle_index=2,
-        metadata={"quality": "high"}
+        metadata={"quality": "high"},
     )
 
 
@@ -67,7 +82,7 @@ def fvg_detector() -> FVGDetector:
         min_zone_size_percentage=0.01,
         min_strength_threshold=0.5,
         high_quality_threshold=0.7,
-        premium_quality_threshold=0.85
+        premium_quality_threshold=0.85,
     )
     return FVGDetector(config=config)
 
@@ -126,38 +141,40 @@ def assert_fvg_valid(fvg: FVGZone) -> None:
 
 
 def create_test_candles(
-    base_price: Decimal = Decimal('50000'),
+    base_price: Decimal = Decimal("50000"),
     pattern: str = "normal",
     volume_profile: str = "medium",
-    count: int = 10
+    count: int = 10,
 ) -> List[Candle]:
     """Create test candles with specific patterns."""
     candles = []
     base_time = datetime(2025, 1, 1, 9, 0)
-    
+
     for i in range(count):
         timestamp = base_time + timedelta(minutes=15 * i)
-        
+
         if pattern == "bullish_fvg" and i == 2:
             # Create a bullish FVG on the 3rd candle
-            open_price = base_price + Decimal('300')  # Gap up
-            high_price = open_price + Decimal('100')
-            low_price = open_price - Decimal('50')
-            close_price = open_price + Decimal('75')
+            open_price = base_price + Decimal("300")  # Gap up
+            high_price = open_price + Decimal("100")
+            low_price = open_price - Decimal("50")
+            close_price = open_price + Decimal("75")
         elif pattern == "bearish_fvg" and i == 2:
             # Create a bearish FVG on the 3rd candle
-            open_price = base_price - Decimal('300')  # Gap down
-            high_price = open_price + Decimal('50')
-            low_price = open_price - Decimal('100')
-            close_price = open_price - Decimal('75')
+            open_price = base_price - Decimal("300")  # Gap down
+            high_price = open_price + Decimal("50")
+            low_price = open_price - Decimal("100")
+            close_price = open_price - Decimal("75")
         else:
             # Normal price action
             price_variance = Decimal(str(50 * (i % 3 - 1)))
             open_price = base_price + price_variance
-            high_price = open_price + Decimal('50')
-            low_price = open_price - Decimal('50')
-            close_price = open_price + Decimal(str(25 * (1 if i % 2 == 0 else -1)))
-        
+            high_price = open_price + Decimal("50")
+            low_price = open_price - Decimal("50")
+            close_price = open_price + Decimal(
+                str(25 * (1 if i % 2 == 0 else -1))
+            )
+
         # Volume based on profile
         if volume_profile == "high":
             volume = Decimal(str(2000 + i * 100))
@@ -165,16 +182,18 @@ def create_test_candles(
             volume = Decimal(str(500 + i * 25))
         else:  # medium
             volume = Decimal(str(1000 + i * 50))
-        
-        candles.append(Candle(
-            timestamp=timestamp,
-            open=open_price,
-            high=high_price,
-            low=low_price,
-            close=close_price,
-            volume=volume
-        ))
-    
+
+        candles.append(
+            Candle(
+                timestamp=timestamp,
+                open=open_price,
+                high=high_price,
+                low=low_price,
+                close=close_price,
+                volume=volume,
+            )
+        )
+
     return candles
 
 

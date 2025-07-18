@@ -7,10 +7,19 @@ python-dotenv
 black
 isort
 pytest
-# Data providers
+fastapi
+uvicorn
+requests
+redis
+matplotlib
+python-dotenv
+black
+isort
+pytest
+# API packages
 alpaca-trade-api>=3.0.0
 yfinance>=0.2.0
 pandas>=1.5.0
 numpy>=1.21.0
-# WebSocket support
-websockets>=11.0.0
+# WebSocket with compatible version for alpaca-trade-api
+websockets>=9.0,<11.0

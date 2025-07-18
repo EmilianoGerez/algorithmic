@@ -54,7 +54,7 @@ jobs:
 
       - name: Upload bandit results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-report
           path: bandit-report.json
@@ -128,7 +128,7 @@ jobs:
           python -m pytest tests/integration/ -v --cov=core --cov-append --cov-report=xml --cov-report=html
 
       - name: Upload test coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           flags: unittests
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload coverage reports
         if: matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: htmlcov/
@@ -169,7 +169,7 @@ jobs:
           python -m pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: benchmark.json
@@ -210,7 +210,7 @@ jobs:
 
       - name: Upload security reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
@@ -266,7 +266,7 @@ jobs:
           EOF
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |

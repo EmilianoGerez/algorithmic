@@ -6,12 +6,11 @@ Clean implementation with enhanced filtering and quality scoring.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-from ..data.models import Candle, FVGZone, SignalDirection, TimeFrame
+from ..data.models import Candle, FVGZone, SignalDirection
 
 
 class FVGQuality(Enum):

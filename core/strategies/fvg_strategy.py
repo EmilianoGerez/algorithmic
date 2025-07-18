@@ -5,7 +5,7 @@ Implementation of the proven FVG (Fair Value Gap) strategy using the new core sy
 Extracts the successful logic from the legacy system with clean architecture.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -20,8 +20,8 @@ from ..data.models import (
     TimeFrame,
 )
 from ..indicators.fvg_detector import FVGDetector, FVGFilterPresets
-from ..indicators.technical import EMASystem, TechnicalIndicators
-from ..signals.signal_processor import MultiTimeframeEngine, SignalContext
+from ..indicators.technical import EMASystem
+from ..signals.signal_processor import MultiTimeframeEngine
 from ..strategies.base_strategy import BaseStrategy, register_strategy
 
 

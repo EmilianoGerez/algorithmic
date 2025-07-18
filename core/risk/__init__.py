@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional
 
-from ..data.models import Position, Signal, SignalDirection, StrategyConfig
+from ..data.models import Position, Signal, SignalDirection
 
 
 @dataclass
@@ -73,7 +73,6 @@ class PositionSizer(ABC):
         current_positions: List[Position],
     ) -> Decimal:
         """Calculate position size for a signal"""
-        pass
 
 
 class FixedRiskPositionSizer(PositionSizer):

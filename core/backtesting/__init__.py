@@ -6,10 +6,10 @@ and provides unified backtesting capabilities.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..data.adapters import DataAdapter
 from ..data.feeds import BacktestDataFeed
@@ -19,7 +19,6 @@ from ..data.models import (
     MarketData,
     Position,
     Signal,
-    SignalDirection,
     StrategyConfig,
     TimeFrame,
 )
@@ -55,7 +54,6 @@ class BacktestEngine(ABC):
         config: BacktestConfig,
     ) -> BacktestResult:
         """Run a backtest"""
-        pass
 
 
 class CoreBacktestEngine(BacktestEngine):

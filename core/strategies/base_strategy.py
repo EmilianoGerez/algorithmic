@@ -6,15 +6,12 @@ Defines the contract that all strategies must implement.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 from ..data.models import (
-    Candle,
     MarketData,
     Position,
     Signal,
-    SignalDirection,
     StrategyConfig,
     TimeFrame,
 )
@@ -57,7 +54,6 @@ class BaseStrategy(ABC):
         Initialize the strategy.
         Called once before the strategy starts processing data.
         """
-        pass
 
     @abstractmethod
     def generate_signals(
@@ -72,7 +68,6 @@ class BaseStrategy(ABC):
         Returns:
             List of generated signals
         """
-        pass
 
     @abstractmethod
     def validate_signal(self, signal: Signal) -> bool:
@@ -85,7 +80,6 @@ class BaseStrategy(ABC):
         Returns:
             True if signal is valid, False otherwise
         """
-        pass
 
     @abstractmethod
     def get_required_timeframes(self) -> List[TimeFrame]:
@@ -95,7 +89,6 @@ class BaseStrategy(ABC):
         Returns:
             List of required timeframes
         """
-        pass
 
     @abstractmethod
     def get_required_history_length(self) -> int:
@@ -105,7 +98,6 @@ class BaseStrategy(ABC):
         Returns:
             Minimum number of candles needed
         """
-        pass
 
     def on_signal_generated(self, signal: Signal) -> None:
         """
@@ -115,7 +107,6 @@ class BaseStrategy(ABC):
         Args:
             signal: Generated signal
         """
-        pass
 
     def on_position_opened(self, position: Position) -> None:
         """
@@ -125,7 +116,6 @@ class BaseStrategy(ABC):
         Args:
             position: Opened position
         """
-        pass
 
     def on_position_closed(self, position: Position) -> None:
         """
@@ -135,7 +125,6 @@ class BaseStrategy(ABC):
         Args:
             position: Closed position
         """
-        pass
 
     def update_parameters(self, parameters: Dict[str, Any]) -> None:
         """

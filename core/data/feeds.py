@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import Event, Thread
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from .adapters import DataAdapter
 from .models import Candle, MarketData, TimeFrame
@@ -43,12 +43,10 @@ class DataFeed(ABC):
     @abstractmethod
     def start(self) -> None:
         """Start the data feed"""
-        pass
 
     @abstractmethod
     def stop(self) -> None:
         """Stop the data feed"""
-        pass
 
 
 class LiveDataFeed(DataFeed):

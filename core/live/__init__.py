@@ -6,10 +6,7 @@ Provides order management, position tracking, and risk monitoring for live tradi
 """
 
 import asyncio
-import threading
-import time
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -17,8 +14,6 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
 from ..data.models import (
-    Candle,
-    MarketData,
     Order,
     OrderStatus,
     Position,
@@ -26,8 +21,7 @@ from ..data.models import (
     SignalDirection,
     SignalType,
 )
-from ..risk import RiskLimits, RiskManager
-from ..strategies.base_strategy import BaseStrategy
+from ..risk import RiskManager
 
 
 class ExecutionMode(Enum):
@@ -99,47 +93,38 @@ class BrokerAdapter(ABC):
     @abstractmethod
     async def connect(self) -> bool:
         """Connect to broker API"""
-        pass
 
     @abstractmethod
     async def disconnect(self) -> None:
         """Disconnect from broker API"""
-        pass
 
     @abstractmethod
     async def is_connected(self) -> bool:
         """Check if connected to broker"""
-        pass
 
     @abstractmethod
     async def place_order(self, order: Order) -> str:
         """Place an order and return order ID"""
-        pass
 
     @abstractmethod
     async def cancel_order(self, order_id: str) -> bool:
         """Cancel an order"""
-        pass
 
     @abstractmethod
     async def get_order_status(self, order_id: str) -> OrderStatus:
         """Get order status"""
-        pass
 
     @abstractmethod
     async def get_positions(self) -> List[Position]:
         """Get current positions"""
-        pass
 
     @abstractmethod
     async def get_account_balance(self) -> Decimal:
         """Get account balance"""
-        pass
 
     @abstractmethod
     async def get_buying_power(self) -> Decimal:
         """Get available buying power"""
-        pass
 
 
 class PaperBrokerAdapter(BrokerAdapter):

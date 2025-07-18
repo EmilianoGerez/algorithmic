@@ -8,9 +8,9 @@ These adapters handle the integration with different data sources and platforms.
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from .models import Candle, MarketData, SignalDirection, TimeFrame
+from .models import Candle, MarketData, TimeFrame
 
 
 class DataAdapter(ABC):
@@ -26,17 +26,14 @@ class DataAdapter(ABC):
         limit: Optional[int] = None,
     ) -> MarketData:
         """Get historical market data"""
-        pass
 
     @abstractmethod
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
         """Get the latest candle for a symbol"""
-        pass
 
     @abstractmethod
     def validate_symbol(self, symbol: str) -> bool:
         """Validate if symbol is available"""
-        pass
 
 
 class BacktraderAdapter(DataAdapter):
@@ -87,7 +84,6 @@ class BacktraderAdapter(DataAdapter):
         """Convert backtrader data point to our Candle model"""
         # TODO: Implement conversion from backtrader data format
         # This would handle bt_data.open[index], bt_data.high[index], etc.
-        pass
 
 
 class AlpacaAdapter(DataAdapter):

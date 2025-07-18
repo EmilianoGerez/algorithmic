@@ -20,10 +20,10 @@ from decimal import Decimal
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
+    from core import CoreBacktestEngine  # Added concrete implementation
     from core import (  # Phase 1 - Core System; Phase 2 - Integration; Phase 3 - Live Trading
         BacktestConfig,
         Candle,
-        CoreBacktestEngine,  # Added concrete implementation
         ExecutionMode,
         FixedRiskPositionSizer,
         FVGDetector,
@@ -43,7 +43,7 @@ try:
         TimeFrame,
         create_fvg_strategy_config,
     )
-    
+
     # Import additional classes from specific modules that aren't in main __all__
     from core.data.adapters import YahooFinanceAdapter
     from core.indicators.fvg_detector import FVGFilterConfig
@@ -385,10 +385,10 @@ class SystemIntegrationTest:
         try:
             # Create adapter first
             adapter = YahooFinanceAdapter()
-            
+
             # Create multi-symbol feed
             feed = MultiSymbolDataFeed(adapter=adapter)
-            
+
             # Add symbols and timeframes
             feed.add_symbol("AAPL", [TimeFrame.MINUTE_1, TimeFrame.MINUTE_5])
             feed.add_symbol("GOOGL", [TimeFrame.MINUTE_1, TimeFrame.MINUTE_5])

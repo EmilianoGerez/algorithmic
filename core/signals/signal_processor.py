@@ -6,7 +6,7 @@ Handles multi-timeframe analysis and signal validation.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -22,7 +22,7 @@ from ..data.models import (
     TimeFrame,
 )
 from ..indicators.fvg_detector import FVGDetector
-from ..indicators.technical import EMASystem, TechnicalIndicators
+from ..indicators.technical import EMASystem
 
 
 class SignalQuality(Enum):

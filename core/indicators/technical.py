@@ -6,12 +6,9 @@ Clean, efficient implementations with standardized interfaces.
 """
 
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-import numpy as np
-
-from ..data.models import Candle, TimeFrame
+from ..data.models import Candle
 
 
 @dataclass

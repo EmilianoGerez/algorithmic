@@ -16,8 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import websockets
 
-from ..data.adapters import DataAdapter
-from ..data.models import Candle, MarketData, TimeFrame
+from ..data.models import Candle, TimeFrame
 
 
 class StreamingProvider(Enum):
@@ -60,22 +59,18 @@ class StreamingDataProvider(ABC):
     @abstractmethod
     async def connect(self) -> bool:
         """Connect to streaming provider"""
-        pass
 
     @abstractmethod
     async def disconnect(self) -> None:
         """Disconnect from streaming provider"""
-        pass
 
     @abstractmethod
     async def subscribe_symbols(self, symbols: List[str]) -> None:
         """Subscribe to symbols"""
-        pass
 
     @abstractmethod
     async def unsubscribe_symbols(self, symbols: List[str]) -> None:
         """Unsubscribe from symbols"""
-        pass
 
     def add_subscriber(self, callback: Callable[[Candle], None]) -> None:
         """Add data subscriber"""
@@ -312,7 +307,6 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         #     "secret": self.config.secret_key
         # }
         # await self._websocket.send(json.dumps(auth_message))
-        pass
 
     async def _handle_message(self, message: str) -> None:
         """Handle incoming Alpaca message"""

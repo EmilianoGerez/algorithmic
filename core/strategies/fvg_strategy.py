@@ -43,7 +43,7 @@ class FVGStrategy(BaseStrategy):
         
         # Strategy parameters with defaults
         self.htf_timeframes = self.get_parameter("htf_timeframes", [TimeFrame.HOUR_4, TimeFrame.DAY_1])
-        self.ltf_timeframe = self.get_parameter("ltf_timeframe", TimeFrame.MINUTE_15)
+        self.ltf_timeframe = self.get_parameter("ltf_timeframe", TimeFrame.MINUTE_5)
         self.ema_periods = self.get_parameter("ema_periods", {"fast": 9, "medium": 20, "slow": 50})
         self.consecutive_closes = self.get_parameter("consecutive_closes", 2)
         self.fvg_filter_preset = self.get_parameter("fvg_filter_preset", "balanced")
@@ -502,7 +502,7 @@ def create_fvg_strategy_config(symbol: str, **kwargs) -> StrategyConfig:
     """
     default_params = {
         "htf_timeframes": [TimeFrame.HOUR_4, TimeFrame.DAY_1],
-        "ltf_timeframe": TimeFrame.MINUTE_15,
+        "ltf_timeframe": TimeFrame.MINUTE_5,
         "ema_periods": {"fast": 9, "medium": 20, "slow": 50},
         "consecutive_closes": 2,
         "fvg_filter_preset": "balanced",
@@ -516,7 +516,7 @@ def create_fvg_strategy_config(symbol: str, **kwargs) -> StrategyConfig:
     return StrategyConfig(
         name="FVGStrategy",
         symbol=symbol,
-        timeframes=[TimeFrame.HOUR_4, TimeFrame.DAY_1, TimeFrame.MINUTE_15],
+        timeframes=[TimeFrame.HOUR_4, TimeFrame.DAY_1, TimeFrame.MINUTE_5],
         risk_per_trade=0.02,
         risk_reward_ratio=2.0,
         max_positions=1,

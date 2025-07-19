@@ -91,8 +91,8 @@ class CoreBacktestEngine(BacktestEngine):
         # Initialize risk manager
         risk_limits = config.risk_limits or RiskLimits()
         position_sizer = FixedRiskPositionSizer(
-            risk_per_trade=float(risk_limits.max_position_size)
-            / 5  # Conservative sizing
+            risk_per_trade=float(risk_limits.max_position_size) /
+            5  # Conservative sizing
         )
         risk_manager = RiskManager(
             risk_limits=risk_limits,
@@ -243,8 +243,8 @@ class CoreBacktestEngine(BacktestEngine):
             final_capital=risk_manager.metrics.total_value,
             total_trades=risk_manager.metrics.total_trades,
             winning_trades=risk_manager.metrics.winning_trades,
-            losing_trades=risk_manager.metrics.total_trades
-            - risk_manager.metrics.winning_trades,
+            losing_trades=risk_manager.metrics.total_trades -
+            risk_manager.metrics.winning_trades,
             win_rate=risk_manager.metrics.win_rate,
             total_pnl=risk_manager.metrics.realized_pnl,
             max_drawdown=risk_manager.metrics.max_drawdown,

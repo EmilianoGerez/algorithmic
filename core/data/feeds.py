@@ -105,8 +105,8 @@ class LiveDataFeed(DataFeed):
                             last_timestamp = self.last_candles.get(key)
 
                             if (
-                                not last_timestamp
-                                or latest_candle.timestamp > last_timestamp.timestamp
+                                not last_timestamp or
+                                latest_candle.timestamp > last_timestamp.timestamp
                             ):
                                 self.last_candles[key] = latest_candle
                                 self._notify_subscribers(latest_candle)

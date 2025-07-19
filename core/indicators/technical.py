@@ -91,7 +91,7 @@ class TechnicalIndicators:
         results = []
 
         for i in range(period - 1, len(candles)):
-            sma_value = sum(closes[i - period + 1 : i + 1]) / period
+            sma_value = sum(closes[i - period + 1:i + 1]) / period
             results.append(
                 IndicatorResult(
                     value=sma_value,
@@ -312,12 +312,12 @@ class TechnicalIndicators:
 
         for i in range(period - 1, len(candles)):
             # Calculate SMA
-            sma = sum(closes[i - period + 1 : i + 1]) / period
+            sma = sum(closes[i - period + 1:i + 1]) / period
 
             # Calculate standard deviation
             variance = (
-                sum((closes[j] - sma) ** 2 for j in range(i - period + 1, i + 1))
-                / period
+                sum((closes[j] - sma) ** 2 for j in range(i - period + 1, i + 1)) /
+                period
             )
             std = variance**0.5
 
@@ -394,8 +394,8 @@ class TechnicalIndicators:
         if len(k_values) >= d_period:
             for i in range(d_period - 1, len(k_values)):
                 d_value = (
-                    sum(k_values[j].value for j in range(i - d_period + 1, i + 1))
-                    / d_period
+                    sum(k_values[j].value for j in range(i - d_period + 1, i + 1)) /
+                    d_period
                 )
                 d_values.append(
                     IndicatorResult(

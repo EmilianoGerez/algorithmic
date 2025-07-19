@@ -510,8 +510,8 @@ async def get_orders() -> list[OrderResponse]:
             return []
 
         orders = (
-            list(system_state.live_engine.pending_orders.values())
-            + system_state.live_engine.state.filled_orders[
+            list(system_state.live_engine.pending_orders.values()) +
+            system_state.live_engine.state.filled_orders[
                 -50:
             ]  # Last 50 filled orders
         )

@@ -299,7 +299,7 @@ class FVGDetector:
             return False
 
         context_start = max(0, index - period)
-        context_candles = candles[context_start : index + 1]
+        context_candles = candles[context_start:index + 1]
 
         high_prices = [float(c.high) for c in context_candles]
         low_prices = [float(c.low) for c in context_candles]

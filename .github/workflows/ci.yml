@@ -49,7 +49,7 @@ jobs:
         run: pylint core/ tests/ --fail-under=8.0
 
       - name: Type checking with mypy
-        run: mypy core/ --ignore-missing-imports --config-file pyproject.toml
+        run: mypy . --ignore-missing-imports --config-file pyproject.toml --exclude venv
 
       - name: Security check with bandit
         run: bandit -r core/ -f json -o bandit-report.json || true

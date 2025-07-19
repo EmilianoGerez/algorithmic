@@ -165,7 +165,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
     )
 
     # Create backtest engine
-    _engine = CoreBacktestEngine(adapter)
+    __engine = CoreBacktestEngine(adapter)
 
     # Run backtest with simplified approach for demo
     try:
@@ -181,7 +181,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
         if backtest_config.risk_limits is None:
             raise ValueError("Risk limits not configured in backtest config")
 
-        _risk_manager = RiskManager(
+        __risk_manager = RiskManager(
             risk_limits=backtest_config.risk_limits,
             position_sizer=position_sizer,
             initial_capital=backtest_config.initial_capital,

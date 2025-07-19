@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr / bin / env python3
 """
 Test runner script for the algorithmic trading system.
 
@@ -14,9 +14,9 @@ from pathlib import Path
 
 def run_command(cmd, description=""):
     """Run a shell command and handle errors."""
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"Running: {description or cmd}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
 
     try:
         subprocess.run(cmd, shell=True, check=True, capture_output=False)
@@ -58,10 +58,10 @@ def main():
             "pip install -r requirements.txt", "Installing main dependencies"
         )
         success &= run_command(
-            "pip install -r dev-requirements.txt",
+            "pip install -r dev - requirements.txt",
             "Installing dev dependencies",
         )
-        success &= run_command("pre-commit install", "Installing pre-commit hooks")
+        success &= run_command("pre - commit install", "Installing pre - commit hooks")
 
     elif command == "format":
         success &= run_command("black .", "Formatting code with Black")
@@ -70,12 +70,12 @@ def main():
     elif command == "lint":
         success &= run_command("flake8 .", "Linting with Flake8")
         success &= run_command(
-            "pylint core/ tests/ --fail-under=8.0", "Linting with Pylint"
+            "pylint core/ tests/ --fail - under=8.0", "Linting with Pylint"
         )
 
     elif command == "type":
         success &= run_command(
-            "mypy core/ --ignore-missing-imports", "Type checking with Mypy"
+            "mypy core/ --ignore - missing - imports", "Type checking with Mypy"
         )
 
     elif command == "security":
@@ -86,44 +86,44 @@ def main():
         success &= run_command("pytest tests/ -v", "Running all tests")
 
     elif command == "unit":
-        success &= run_command("pytest tests/unit/ -v", "Running unit tests")
+        success &= run_command("pytest tests / unit/ -v", "Running unit tests")
 
     elif command == "integration":
         success &= run_command(
-            "pytest tests/integration/ -v", "Running integration tests"
+            "pytest tests / integration/ -v", "Running integration tests"
         )
 
     elif command == "coverage":
         success &= run_command(
-            "pytest tests/ --cov=core --cov-report=html "
-            "--cov-report=term --cov-report=xml",
+            "pytest tests/ --cov=core --cov - report=html "
+            "--cov - report=term --cov - report=xml",
             "Running tests with coverage",
         )
-        print("\n📊 Coverage report generated in htmlcov/index.html")
+        print("\n📊 Coverage report generated in htmlcov / index.html")
 
     elif command == "quality":
         print("🔍 Running comprehensive quality checks...")
         success &= run_command("black --check .", "Checking code formatting")
-        success &= run_command("isort --check-only .", "Checking import sorting")
+        success &= run_command("isort --check - only .", "Checking import sorting")
         success &= run_command("flake8 .", "Linting with Flake8")
         success &= run_command(
-            "pylint core/ tests/ --fail-under=8.0", "Linting with Pylint"
+            "pylint core/ tests/ --fail - under=8.0", "Linting with Pylint"
         )
-        success &= run_command("mypy core/ --ignore-missing-imports", "Type checking")
+        success &= run_command("mypy core/ --ignore - missing - imports", "Type checking")
         success &= run_command("bandit -r core/ -q", "Security scanning")
 
     elif command == "ci":
         print("🚀 Running full CI pipeline locally...")
         success &= run_command("black --check .", "Checking code formatting")
-        success &= run_command("isort --check-only .", "Checking import sorting")
+        success &= run_command("isort --check - only .", "Checking import sorting")
         success &= run_command("flake8 .", "Linting with Flake8")
         success &= run_command(
-            "pylint core/ tests/ --fail-under=8.0", "Linting with Pylint"
+            "pylint core/ tests/ --fail - under=8.0", "Linting with Pylint"
         )
-        success &= run_command("mypy core/ --ignore-missing-imports", "Type checking")
+        success &= run_command("mypy core/ --ignore - missing - imports", "Type checking")
         success &= run_command("bandit -r core/ -q", "Security scanning")
         success &= run_command(
-            "pytest tests/ --cov=core --cov-report=term --cov-fail-under=70",
+            "pytest tests/ --cov=core --cov - report=term --cov - fail - under=70",
             "Running tests with coverage",
         )
 

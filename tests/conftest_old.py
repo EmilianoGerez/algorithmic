@@ -23,7 +23,7 @@ from core.data.models import (
     TimeFrame,
 )
 from core.indicators.fvg_detector import (
-    FVGFilterConfig,  # noqa: F401
+    FVGDetector,
 )
 from core.strategies.fvg_strategy import FVGStrategy
 from core.risk import FixedRiskPositionSizer, RiskLimits

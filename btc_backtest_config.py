@@ -77,8 +77,7 @@ def get_btc_backtest_summary():
 
 🎯 Strategy Settings:
    Confidence Threshold: {
-       BACKTEST_CONFIG['strategy_params']['confidence_threshold']:.0%
-   }
+       BACKTEST_CONFIG['strategy_params']['confidence_threshold']:.0%}
    24/7 Trading: {not BACKTEST_CONFIG['strategy_params']['nyc_hours_only']}
    Swing Lookback: {BACKTEST_CONFIG['strategy_params']['swing_lookback']} periods
    Filter Preset: {BACKTEST_CONFIG['strategy_params']['fvg_filter_preset']}

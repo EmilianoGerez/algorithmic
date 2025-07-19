@@ -266,7 +266,7 @@ class StrategyConfig:
     confidence_threshold: float = 0.85
     parameters: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration."""
         if not 0.0 < self.risk_per_trade <= 1.0:
             raise ValueError("Risk per trade must be between 0.0 and 1.0")

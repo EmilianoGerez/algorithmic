@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..data.models import (
     Candle,
@@ -124,7 +124,7 @@ class SignalProcessor:
 
     def _generate_entry_signals(self, context: SignalContext) -> list[Signal]:
         """Generate entry signals based on strategy logic."""
-        signals = []
+        signals: List[Signal] = []
 
         if not context.ltf_data.candles or len(context.ltf_data.candles) < 50:
             return signals
@@ -435,7 +435,7 @@ class SignalProcessor:
         else:
             return SignalQuality.LOW
 
-    def get_signal_statistics(self) -> Dict[str, any]:
+    def get_signal_statistics(self) -> Dict[str, Any]:
         """Get signal generation statistics."""
         if not self.generated_signals:
             return {}
@@ -451,7 +451,7 @@ class SignalProcessor:
         )
         avg_strength = sum(s.strength for s in self.generated_signals) / total_signals
 
-        quality_counts = {}
+        quality_counts: Dict[str, int] = {}
         for signal in self.generated_signals:
             quality = signal.metadata.get("quality", SignalQuality.LOW)
             quality_counts[quality.value] = quality_counts.get(quality.value, 0) + 1
@@ -554,7 +554,7 @@ class MultiTimeframeEngine:
         }
         return timeframe_minutes.get(timeframe, 1440)
 
-    def get_engine_status(self) -> Dict[str, any]:
+    def get_engine_status(self) -> Dict[str, Any]:
         """Get engine status and statistics."""
         return {
             "timeframes": [tf.value for tf in self.timeframe_data.keys()],

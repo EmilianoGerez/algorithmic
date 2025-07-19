@@ -17,9 +17,9 @@ class IndicatorResult:
 
     value: float
     timestamp: Optional[object] = None
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.metadata is None:
             self.metadata = {}
 
@@ -140,7 +140,7 @@ class TechnicalIndicators:
 
             # Calculate RSI
             if avg_loss == 0:
-                rsi_value = 100
+                rsi_value = 100.0
             else:
                 rs = avg_gain / avg_loss
                 rsi_value = 100 - (100 / (1 + rs))

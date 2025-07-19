@@ -89,12 +89,13 @@ class CoreBacktestEngine(BacktestEngine):
         self.reset()
 
         # Initialize risk manager
+        risk_limits = config.risk_limits or RiskLimits()
         position_sizer = FixedRiskPositionSizer(
-            risk_per_trade=float(config.risk_limits.max_position_size)
+            risk_per_trade=float(risk_limits.max_position_size)
             / 5  # Conservative sizing
         )
         risk_manager = RiskManager(
-            risk_limits=config.risk_limits,
+            risk_limits=risk_limits,
             position_sizer=position_sizer,
             initial_capital=config.initial_capital,
         )
@@ -217,7 +218,7 @@ class CoreBacktestEngine(BacktestEngine):
         for position in self.positions[
             :
         ]:  # Copy list to avoid modification during iteration
-            if position.symbol in self.current_prices:
+            if position.symbol in self.current_prices and self.current_time:
                 exit_price = self._apply_costs(
                     self.current_prices[position.symbol], config, "exit"
                 )

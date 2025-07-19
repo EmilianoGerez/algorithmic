@@ -6,7 +6,7 @@ Defines the contract that all strategies must implement.
 ."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from ..data.models import (
     MarketData,
@@ -37,7 +37,7 @@ class BaseStrategy(ABC):
         self.symbol = config.symbol
         self.timeframes = config.timeframes
         self.active_positions: list[Position] = []
-        self.signal_callback = None  # For backtesting
+        self.signal_callback: Optional[Callable[[Signal], None]] = None  # For backtesting
         self.is_initialized = False
 
         # Performance tracking
@@ -47,6 +47,7 @@ class BaseStrategy(ABC):
 
         # Strategy-specific data
         self.strategy_data: Dict[str, Any] = {}
+        self.metadata: Dict[str, Any] = {}
 
     @abstractmethod
     def initialize(self) -> None:
@@ -168,7 +169,7 @@ class BaseStrategy(ABC):
             "metadata": self.metadata,
         }
 
-    def set_signal_callback(self, callback):
+    def set_signal_callback(self, callback: Callable[[Signal], None]) -> None:
         """
         Set callback function for signal generation.
         Used by backtesting engine to receive signals.
@@ -211,7 +212,7 @@ class StrategyRegistry:
     trading strategies.
     ."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._strategies: Dict[str, type] = {}
         self._instances: Dict[str, BaseStrategy] = {}
 

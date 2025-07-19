@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ..data.models import Position, Signal, SignalDirection
 
@@ -232,19 +232,20 @@ class RiskManager:
         self.peak_balance = initial_capital
         self.trade_history: list[Dict] = []
 
-    def evaluate_signal(self, signal: Signal) -> Dict[str, any]:
+    def evaluate_signal(self, signal: Signal) -> Dict[str, Any]:
         """Evaluate a signal and return risk assessment."""
+        reasons: List[str] = []
         assessment = {
             "signal": signal,
             "approved": False,
             "position_size": Decimal("0"),
             "risk_amount": Decimal("0"),
-            "reasons": [],
+            "reasons": reasons,
         }
 
         # Check if we can take new positions
         if len(self.positions) >= self.risk_limits.max_positions:
-            assessment["reasons"].append("Maximum positions reached")
+            reasons.append("Maximum positions reached")
             return assessment
 
         # Check daily loss limit
@@ -252,18 +253,18 @@ class RiskManager:
             self.metrics.daily_pnl
             <= -self.risk_limits.max_daily_loss * self.daily_start_balance
         ):
-            assessment["reasons"].append("Daily loss limit exceeded")
+            reasons.append("Daily loss limit exceeded")
             return assessment
 
         # Check drawdown limit
         if self.metrics.drawdown >= self.risk_limits.max_drawdown:
-            assessment["reasons"].append("Maximum drawdown exceeded")
+            reasons.append("Maximum drawdown exceeded")
             return assessment
 
         # Check if we already have a position in this symbol
         existing_position = self.get_position_by_symbol(signal.symbol)
         if existing_position:
-            assessment["reasons"].append("Position already exists for this symbol")
+            reasons.append("Position already exists for this symbol")
             return assessment
 
         # Calculate position size
@@ -275,7 +276,7 @@ class RiskManager:
         )
 
         if position_size <= 0:
-            assessment["reasons"].append("Position size is zero or negative")
+            reasons.append("Position size is zero or negative")
             return assessment
 
         # Calculate required capital
@@ -283,7 +284,7 @@ class RiskManager:
 
         # Check if we have enough capital
         if required_capital > self.metrics.available_cash:
-            assessment["reasons"].append("Insufficient capital")
+            reasons.append("Insufficient capital")
             return assessment
 
         # Calculate risk amount

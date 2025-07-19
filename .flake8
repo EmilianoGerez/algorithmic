@@ -18,7 +18,7 @@ exclude =
     alembic/versions
 
 # Ignore specific error codes - using command line format for compatibility with plugins
-ignore = D,E402,E501,I100,I101,I201,I202
+ignore = D,E203,E402,E501,I100,I101,I201,I202,W503
 
 # Maximum cyclomatic complexity
 max-complexity = 10

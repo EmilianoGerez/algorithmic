@@ -81,6 +81,7 @@ class BacktraderAdapter(DataAdapter):
         # TODO: Implement symbol validation
         return True
 
+    @abstractmethod
     def convert_backtrader_candle(self, bt_data: Any, index: int) -> Candle:
         """Convert backtrader data point to our Candle model."""
         # TODO: Implement conversion from backtrader data format

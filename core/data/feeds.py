@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import Event, Thread
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .adapters import DataAdapter
 from .models import Candle, MarketData, TimeFrame
@@ -20,7 +20,7 @@ class DataFeed(ABC):
 
     def __init__(self, adapter: DataAdapter):
         self.adapter = adapter
-        self.subscribers = []
+        self.subscribers: List[Callable[[Candle], None]] = []
         self.is_running = False
 
     def subscribe(self, callback: Callable[[Candle], None]) -> None:
@@ -63,8 +63,8 @@ class LiveDataFeed(DataFeed):
         self.timeframes = timeframes
         self.update_interval = 1.0  # seconds
         self._stop_event = Event()
-        self._thread = None
-        self.last_candles = {}
+        self._thread: Optional[Thread] = None
+        self.last_candles: Dict[str, Candle] = {}
 
     def start(self) -> None:
         """Start live data feed."""
@@ -106,9 +106,9 @@ class LiveDataFeed(DataFeed):
 
                             if (
                                 not last_timestamp
-                                or latest_candle.timestamp > last_timestamp
+                                or latest_candle.timestamp > last_timestamp.timestamp
                             ):
-                                self.last_candles[key] = latest_candle.timestamp
+                                self.last_candles[key] = latest_candle
                                 self._notify_subscribers(latest_candle)
 
                 # Wait before next update
@@ -129,7 +129,7 @@ class BacktestDataFeed(DataFeed):
         self.current_index = 0
         self.playback_speed = 1.0  # 1.0 = real-time, 0 = instant
         self._stop_event = Event()
-        self._thread = None
+        self._thread: Optional[Thread] = None
         self.is_complete = False
 
     def start(self) -> None:
@@ -222,7 +222,7 @@ class MultiSymbolDataFeed(DataFeed):
 
     def __init__(self, adapter: DataAdapter):
         super().__init__(adapter)
-        self.feeds = {}
+        self.feeds: Dict[str, Dict[str, Any]] = {}
         self.is_live = False
 
     def add_symbol(self, symbol: str, timeframes: list[TimeFrame]) -> None:

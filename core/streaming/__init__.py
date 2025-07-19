@@ -15,6 +15,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Optional
 
 import websockets
+import websockets.legacy.protocol
 
 from ..data.models import Candle, TimeFrame
 
@@ -225,7 +226,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
 
     def __init__(self, config: StreamingConfig):
         super().__init__(config)
-        self._websocket: Optional[websockets.WebSocketServerProtocol] = None
+        self._websocket: Optional[websockets.legacy.protocol.WebSocketCommonProtocol] = None
         self._streaming_task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
 

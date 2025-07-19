@@ -8,9 +8,10 @@ Period: May 18, 2025 to July 18, 2025
 
 import os
 from datetime import datetime
+from typing import Any, Dict
 
 # BTC/USD Backtest Configuration
-BACKTEST_CONFIG = {
+BACKTEST_CONFIG: Dict[str, Any] = {
     "symbol": "BTCUSD",
     "start_date": "2025-05-18",
     "end_date": "2025-07-18",
@@ -30,7 +31,7 @@ BACKTEST_CONFIG = {
 }
 
 # Alpaca API Settings
-ALPACA_CONFIG = {
+ALPACA_CONFIG: Dict[str, Any] = {
     "base_url": "https://paper-api.alpaca.markets",
     "data_source": "crypto",  # Alpaca crypto data
     "rate_limit": 200,  # requests per minute
@@ -38,7 +39,7 @@ ALPACA_CONFIG = {
 }
 
 # Expected Performance Metrics (for validation)
-EXPECTED_METRICS = {
+EXPECTED_METRICS: Dict[str, Any] = {
     "min_total_return": 0.05,  # 5% minimum return
     "max_drawdown_limit": 0.25,  # 25% max acceptable drawdown
     "min_win_rate": 0.45,  # 45% minimum win rate
@@ -47,7 +48,7 @@ EXPECTED_METRICS = {
 }
 
 # Risk Management Rules
-RISK_RULES = {
+RISK_RULES: Dict[str, Any] = {
     "max_position_size": 0.05,  # 5% max position size
     "max_portfolio_risk": 0.015,  # 1.5% max portfolio risk
     "max_correlation": 0.8,  # 80% max correlation

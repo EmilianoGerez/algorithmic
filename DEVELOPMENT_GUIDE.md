@@ -225,6 +225,7 @@ Configures pre-commit hooks for automated quality checks.
 #### `.flake8`
 
 Flake8 configuration with:
+
 - Line length: 88 (black-compatible)
 - Complexity limit: 10
 - Docstring checking enabled
@@ -327,27 +328,32 @@ The project prioritizes **development velocity** while maintaining **production 
 #### Specific Tool Settings
 
 **Black (Code Formatting)**:
+
 - Line length: 88 characters (balance readability vs. screen width)
 - Target Python: 3.9+ (modern syntax features)
 - Automatic string quote normalization
 
 **isort (Import Sorting)**:
+
 - Profile: "black" (ensures compatibility)
 - Multi-line output mode 3 (vertical hanging indent)
 - Trailing commas for cleaner diffs
 
 **flake8 (Linting)**:
+
 - Max line length: 88 (matches black)
 - Complexity limit: 10 (reasonable function complexity)
 - Docstring validation enabled
 - Import order checking
 
 **mypy (Type Checking)**:
+
 - Permissive configuration for development speed
 - Incremental adoption of stricter typing
 - External library stubs for common packages
 
 **bandit (Security)**:
+
 - Recursive scanning of core modules
 - Test directories excluded
 - JSON output for CI integration
@@ -355,6 +361,7 @@ The project prioritizes **development velocity** while maintaining **production 
 #### Development Workflow Integration
 
 **Local Development**:
+
 ```bash
 # Format and check before commit
 black . && isort .
@@ -369,12 +376,14 @@ git commit -m "feature: new functionality"
 ```
 
 **IDE Integration**:
+
 - VS Code settings for black/isort on save
 - flake8 problems highlighting
 - mypy type checking integration
 - Pre-commit hooks prevent bad commits
 
 **CI/CD Quality Gates**:
+
 - All tools run in GitHub Actions
 - Pull requests blocked on quality failures
 - Security vulnerabilities reported as artifacts

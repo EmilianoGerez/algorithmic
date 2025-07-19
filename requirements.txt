@@ -12,8 +12,8 @@ alpaca-trade-api>=3.0.0
 yfinance>=0.2.0
 pandas>=1.5.0
 numpy>=1.21.0
-# WebSocket packages
-websockets>=11.0.0
+# WebSocket packages - compatible with alpaca-trade-api
+websockets>=9.0,<11.0
 # Database packages
 sqlalchemy>=2.0.0
 alembic>=1.11.0

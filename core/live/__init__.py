@@ -346,10 +346,10 @@ class LiveTradingEngine:
             print(f"✅ Live Trading Engine started in {self.config.mode.value} mode")
             return True
 
-        except Exception as e:
-            self.state.last_error = str(e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.state.last_error = str(exc)
             self.state.error_count += 1
-            self._notify_error(f"Failed to start trading engine: {e}")
+            self._notify_error(f"Failed to start trading engine: {exc}")
             return False
 
     async def stop(self) -> None:
@@ -408,14 +408,15 @@ class LiveTradingEngine:
             self._notify_order_placed(order)
 
             print(
-                f"📋 Order placed: {order.symbol} {order.direction.value} {order.quantity} @ {order.price}"
+                f"📋 Order placed: {order.symbol} {order.direction.value} "
+                f"{order.quantity} @ {order.price}"
             )
             return order
 
-        except Exception as e:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             self.state.error_count += 1
-            self.state.last_error = str(e)
-            self._notify_error(f"Error processing signal: {e}")
+            self.state.last_error = str(exc)
+            self._notify_error(f"Error processing signal: {exc}")
             return None
 
     async def emergency_stop(self, reason: str) -> None:
@@ -473,8 +474,8 @@ class LiveTradingEngine:
 
                 await asyncio.sleep(self.config.heartbeat_interval)
 
-            except Exception as e:
-                self._notify_error(f"Heartbeat error: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._notify_error(f"Heartbeat error: {exc}")
                 await asyncio.sleep(5)
 
     async def _order_monitoring_task(self) -> None:
@@ -518,8 +519,8 @@ class LiveTradingEngine:
 
                 await asyncio.sleep(1)  # Check every second
 
-            except Exception as e:
-                self._notify_error(f"Order monitoring error: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._notify_error(f"Order monitoring error: {exc}")
                 await asyncio.sleep(5)
 
     async def _risk_monitoring_task(self) -> None:
@@ -556,8 +557,8 @@ class LiveTradingEngine:
 
                 await asyncio.sleep(self.config.risk_check_interval)
 
-            except Exception as e:
-                self._notify_error(f"Risk monitoring error: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._notify_error(f"Risk monitoring error: {exc}")
                 await asyncio.sleep(5)
 
     async def _position_monitoring_task(self) -> None:
@@ -571,8 +572,8 @@ class LiveTradingEngine:
 
                 await asyncio.sleep(5)  # Check every 5 seconds
 
-            except Exception as e:
-                self._notify_error(f"Position monitoring error: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._notify_error(f"Position monitoring error: {exc}")
                 await asyncio.sleep(5)
 
     def _check_rate_limits(self) -> bool:
@@ -612,8 +613,8 @@ class LiveTradingEngine:
         for order_id in list(self.pending_orders.keys()):
             try:
                 await self.broker.cancel_order(order_id)
-            except Exception as e:
-                self._notify_error(f"Error cancelling order {order_id}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._notify_error(f"Error cancelling order {order_id}: {exc}")
 
     async def _close_all_positions(self) -> None:
         """Close all positions"""
@@ -636,46 +637,48 @@ class LiveTradingEngine:
 
                 await self.broker.place_order(closing_order)
 
-        except Exception as e:
-            self._notify_error(f"Error closing positions: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self._notify_error(f"Error closing positions: {exc}")
 
     def _notify_order_placed(self, order: Order) -> None:
         """Notify order placed"""
         for handler in self.order_handlers:
             try:
                 handler(order)
-            except Exception as e:
-                print(f"Error in order handler: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in order handler: {exc}")
 
     def _notify_order_filled(self, order: Order) -> None:
         """Notify order filled"""
         print(
-            f"✅ Order filled: {order.symbol} {order.direction.value} {order.quantity} @ {order.filled_price}"
+            f"✅ Order filled: {order.symbol} {order.direction.value} "
+            f"{order.quantity} @ {order.filled_price}"
         )
         for handler in self.order_handlers:
             try:
                 handler(order)
-            except Exception as e:
-                print(f"Error in order handler: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in order handler: {exc}")
 
     def _notify_order_cancelled(self, order: Order) -> None:
         """Notify order cancelled"""
         print(
-            f"❌ Order cancelled: {order.symbol} {order.direction.value} {order.quantity}"
+            f"❌ Order cancelled: {order.symbol} {order.direction.value} "
+            f"{order.quantity}"
         )
         for handler in self.order_handlers:
             try:
                 handler(order)
-            except Exception as e:
-                print(f"Error in order handler: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in order handler: {exc}")
 
     def _notify_position_update(self, position: Position) -> None:
         """Notify position update"""
         for handler in self.position_handlers:
             try:
                 handler(position)
-            except Exception as e:
-                print(f"Error in position handler: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in position handler: {exc}")
 
     def _notify_error(self, error: str) -> None:
         """Notify error"""
@@ -683,8 +686,8 @@ class LiveTradingEngine:
         for handler in self.error_handlers:
             try:
                 handler(error)
-            except Exception as e:
-                print(f"Error in error handler: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in error handler: {exc}")
 
     def get_status(self) -> Dict[str, Any]:
         """Get current trading status"""

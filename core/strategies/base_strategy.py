@@ -6,7 +6,7 @@ Defines the contract that all strategies must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..data.models import (
     MarketData,
@@ -196,25 +196,6 @@ class BaseStrategy(ABC):
         self.is_initialized = False
         self.metadata.clear()
 
-    def set_signal_callback(self, callback: Callable[[Signal], None]) -> None:
-        """
-        Set callback for signal emission (used in backtesting/live trading).
-
-        Args:
-            callback: Function to call when signals are emitted
-        """
-        self.signal_callback = callback
-
-    def emit_signal(self, signal: Signal) -> None:
-        """
-        Emit a signal to the callback if set.
-
-        Args:
-            signal: Signal to emit
-        """
-        if self.signal_callback:
-            self.signal_callback(signal)
-
     def __str__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, symbol={self.symbol})"
 
@@ -242,7 +223,7 @@ class StrategyRegistry:
             strategy_class: Strategy class to register
         """
         if not issubclass(strategy_class, BaseStrategy):
-            raise ValueError(f"Strategy class must inherit from BaseStrategy")
+            raise ValueError("Strategy class must inherit from BaseStrategy")
 
         strategy_name = strategy_class.__name__
         if strategy_name in self._strategies:

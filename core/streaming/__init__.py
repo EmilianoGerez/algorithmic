@@ -86,8 +86,8 @@ class StreamingDataProvider(ABC):
         for callback in self.subscribers:
             try:
                 callback(candle)
-            except Exception as e:
-                print(f"Error in streaming subscriber: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in streaming subscriber: {exc}")
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic"""
@@ -100,7 +100,8 @@ class StreamingDataProvider(ABC):
 
         self.reconnect_attempts += 1
         print(
-            f"Reconnecting to {self.config.provider.value} (attempt {self.reconnect_attempts})..."
+            f"Reconnecting to {self.config.provider.value} "
+            f"(attempt {self.reconnect_attempts})..."
         )
 
         await asyncio.sleep(self.config.reconnect_delay)
@@ -112,8 +113,8 @@ class StreamingDataProvider(ABC):
                 print(f"Successfully reconnected to {self.config.provider.value}")
             else:
                 await self._handle_reconnect()
-        except Exception as e:
-            print(f"Reconnection failed: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"Reconnection failed: {exc}")
             await self._handle_reconnect()
 
 
@@ -128,7 +129,7 @@ class MockStreamingProvider(StreamingDataProvider):
 
     async def connect(self) -> bool:
         """Connect to mock provider"""
-        print(f"📡 Connecting to Mock streaming provider...")
+        print("📡 Connecting to Mock streaming provider...")
         await asyncio.sleep(0.1)  # Simulate connection delay
 
         self.is_connected = True
@@ -137,12 +138,12 @@ class MockStreamingProvider(StreamingDataProvider):
         # Start streaming simulation
         self._streaming_task = asyncio.create_task(self._simulate_streaming())
 
-        print(f"✅ Connected to Mock streaming provider")
+        print("✅ Connected to Mock streaming provider")
         return True
 
     async def disconnect(self) -> None:
         """Disconnect from mock provider"""
-        print(f"🔌 Disconnecting from Mock streaming provider...")
+        print("🔌 Disconnecting from Mock streaming provider...")
 
         self.is_connected = False
         self._stop_event.set()
@@ -150,7 +151,7 @@ class MockStreamingProvider(StreamingDataProvider):
         if self._streaming_task:
             await self._streaming_task
 
-        print(f"✅ Disconnected from Mock streaming provider")
+        print("✅ Disconnected from Mock streaming provider")
 
     async def subscribe_symbols(self, symbols: List[str]) -> None:
         """Subscribe to symbols"""
@@ -214,8 +215,8 @@ class MockStreamingProvider(StreamingDataProvider):
                 # Wait before next update
                 await asyncio.sleep(1.0)  # 1 second interval
 
-            except Exception as e:
-                print(f"Error in mock streaming: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in mock streaming: {exc}")
                 await asyncio.sleep(1.0)
 
 
@@ -233,7 +234,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         try:
             # This would connect to Alpaca's WebSocket API
             # For now, we'll simulate the connection
-            print(f"📡 Connecting to Alpaca streaming...")
+            print("📡 Connecting to Alpaca streaming...")
             await asyncio.sleep(0.2)  # Simulate connection delay
 
             self.is_connected = True
@@ -244,16 +245,16 @@ class AlpacaStreamingProvider(StreamingDataProvider):
             # self._websocket = await websockets.connect(uri)
             # await self._authenticate()
 
-            print(f"✅ Connected to Alpaca streaming")
+            print("✅ Connected to Alpaca streaming")
             return True
 
-        except Exception as e:
-            print(f"❌ Failed to connect to Alpaca: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"❌ Failed to connect to Alpaca: {exc}")
             return False
 
     async def disconnect(self) -> None:
         """Disconnect from Alpaca streaming"""
-        print(f"🔌 Disconnecting from Alpaca streaming...")
+        print("🔌 Disconnecting from Alpaca streaming...")
 
         self.is_connected = False
         self._stop_event.set()
@@ -264,7 +265,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         if self._streaming_task:
             await self._streaming_task
 
-        print(f"✅ Disconnected from Alpaca streaming")
+        print("✅ Disconnected from Alpaca streaming")
 
     async def subscribe_symbols(self, symbols: List[str]) -> None:
         """Subscribe to Alpaca symbols"""
@@ -319,8 +320,8 @@ class AlpacaStreamingProvider(StreamingDataProvider):
                     candle = self._convert_alpaca_bar(bar_data)
                     self._notify_subscribers(candle)
 
-        except Exception as e:
-            print(f"Error handling Alpaca message: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"Error handling Alpaca message: {exc}")
 
     def _convert_alpaca_bar(self, bar_data: Dict) -> Candle:
         """Convert Alpaca bar data to Candle"""
@@ -377,8 +378,8 @@ class StreamingManager:
                 success = await provider.connect()
                 if success:
                     success_count += 1
-            except Exception as e:
-                print(f"Failed to start provider {provider.config.provider.value}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Failed to start provider {provider.config.provider.value}: {exc}")
 
         self.is_running = success_count > 0
         return self.is_running
@@ -391,8 +392,8 @@ class StreamingManager:
         for provider in self.providers.values():
             try:
                 await provider.disconnect()
-            except Exception as e:
-                print(f"Error stopping provider {provider.config.provider.value}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error stopping provider {provider.config.provider.value}: {exc}")
 
         self.is_running = False
 
@@ -438,8 +439,8 @@ class StreamingManager:
         for callback in self.subscribers:
             try:
                 callback(candle)
-            except Exception as e:
-                print(f"Error in streaming subscriber: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in streaming subscriber: {exc}")
 
     def get_status(self) -> Dict[str, Any]:
         """Get streaming status"""

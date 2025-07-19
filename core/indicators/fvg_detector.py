@@ -88,7 +88,7 @@ class FVGDetector:
 
         for i in range(1, len(candles) - 1):
             prev_candle = candles[i - 1]
-            current_candle = candles[i]
+            _ = candles[i]  # Current candle (not used in basic FVG detection)
             next_candle = candles[i + 1]
 
             # Check for bullish FVG: previous high < next low

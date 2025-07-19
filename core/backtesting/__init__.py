@@ -5,6 +5,7 @@ Integrates the core system with different backtesting platforms
 and provides unified backtesting capabilities.
 """
 
+import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -99,7 +100,7 @@ class CoreBacktestEngine(BacktestEngine):
         )
 
         # Initialize strategy
-        strategy_config = StrategyConfig(
+        _ = StrategyConfig(  # Used for validation but not stored
             name=strategy.__class__.__name__,
             symbol=market_data.symbol,
             timeframes=[market_data.timeframe],
@@ -159,7 +160,7 @@ class CoreBacktestEngine(BacktestEngine):
         try:
             if hasattr(self, "current_strategy"):
                 self.current_strategy.generate_signals(market_data)
-        except Exception as e:
+        except Exception:  # pylint: disable=broad-exception-caught
             pass  # Ignore errors for demo
 
     def _on_signal(self, signal: Signal) -> None:
@@ -359,8 +360,8 @@ class OptimizationEngine:
                     best_params = params
                     best_result = result
 
-            except Exception as e:
-                print(f"Error optimizing parameters {params}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error optimizing parameters {params}: {exc}")
                 continue
 
         return {
@@ -374,8 +375,6 @@ class OptimizationEngine:
         self, parameter_ranges: Dict[str, List[Any]]
     ) -> List[Dict]:
         """Generate all combinations of parameters"""
-        import itertools
-
         keys = list(parameter_ranges.keys())
         values = list(parameter_ranges.values())
 
@@ -464,8 +463,8 @@ class BacktestRunner:
                     initial_capital,
                 )
                 results.append(result)
-            except Exception as e:
-                print(f"Error backtesting {symbol}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error backtesting {symbol}: {exc}")
                 continue
 
         return results

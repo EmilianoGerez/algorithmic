@@ -102,7 +102,7 @@ class SignalProcessor:
         new_fvgs = []
 
         # Process each higher timeframe
-        for timeframe, market_data in context.htf_data.items():
+        for _, market_data in context.htf_data.items():
             if not market_data.candles:
                 continue
 

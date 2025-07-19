@@ -20,8 +20,10 @@ from decimal import Decimal
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from core import CoreBacktestEngine  # Added concrete implementation
-    from core import (  # Phase 1 - Core System; Phase 2 - Integration; Phase 3 - Live Trading
+    # Added concrete implementation
+    from core import CoreBacktestEngine
+    # Phase 1 - Core System; Phase 2 - Integration; Phase 3 - Live Trading
+    from core import (
         BacktestConfig,
         Candle,
         ExecutionMode,
@@ -50,9 +52,9 @@ try:
 
     IMPORT_SUCCESS = True
     IMPORT_ERRORS = []
-except Exception as e:
+except Exception as exc:  # pylint: disable=broad-exception-caught
     IMPORT_SUCCESS = False
-    IMPORT_ERRORS = [str(e)]
+    IMPORT_ERRORS = [str(exc)]
     # Import minimal required for error reporting
     try:
         from core.data.models import SignalDirection, SignalType, TimeFrame
@@ -215,9 +217,9 @@ class SystemIntegrationTest:
             self.record_test_result("phase1_core", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase1_core", test_name, False, str(e))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase1_core", test_name, False, str(exc))
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_strategy_framework(self):
         """Test strategy framework"""
@@ -245,8 +247,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase1_core", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase1_core", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase1_core", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_indicators(self):
@@ -265,8 +267,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase1_core", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase1_core", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase1_core", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_signal_processing(self):
@@ -295,8 +297,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase1_core", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase1_core", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase1_core", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_data_adapters(self):
@@ -313,8 +315,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase2_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase2_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase2_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_risk_management(self):
@@ -347,8 +349,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase2_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase2_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase2_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_backtesting_engine(self):
@@ -375,8 +377,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase2_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase2_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase2_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_multi_symbol_feeds(self):
@@ -403,8 +405,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase2_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase2_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase2_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_live_trading_engine(self):
@@ -451,8 +453,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase3_live", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase3_live", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase3_live", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_streaming_system(self):
@@ -460,7 +462,7 @@ class SystemIntegrationTest:
         test_name = "Streaming System"
         try:
             # Create streaming config
-            config = StreamingConfig(
+            streaming_config = StreamingConfig(
                 provider=StreamingProvider.MOCK,
                 symbols=["AAPL", "GOOGL", "MSFT"],
                 timeframes=[TimeFrame.MINUTE_1],
@@ -479,8 +481,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase3_live", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase3_live", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase3_live", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_order_management(self):
@@ -499,8 +501,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase3_live", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase3_live", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase3_live", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_realtime_integration(self):
@@ -526,8 +528,8 @@ class SystemIntegrationTest:
             self.record_test_result("phase3_live", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("phase3_live", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("phase3_live", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_end_to_end_signal_flow(self):
@@ -540,7 +542,7 @@ class SystemIntegrationTest:
             config = create_fvg_strategy_config(
                 symbol="AAPL", timeframe=TimeFrame.MINUTE_5
             )
-            strategy = FVGStrategy(config)
+            _ = FVGStrategy(config)  # Test instantiation
 
             # 2. Create signal
             signal = Signal(
@@ -563,8 +565,8 @@ class SystemIntegrationTest:
             self.record_test_result("system_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("system_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("system_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_multi_component_integration(self):
@@ -593,8 +595,8 @@ class SystemIntegrationTest:
             self.record_test_result("system_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("system_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("system_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_error_handling(self):
@@ -629,8 +631,8 @@ class SystemIntegrationTest:
             self.record_test_result("system_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED")
 
-        except Exception as e:
-            self.record_test_result("system_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("system_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     async def test_performance_integration(self):
@@ -638,13 +640,13 @@ class SystemIntegrationTest:
         test_name = "Performance Integration"
         try:
             # Test that all components can be imported and instantiated quickly
-            import time
+            import time  # pylint: disable=import-outside-toplevel
 
             start_time = time.time()
 
-            # Create all major components
-            broker = PaperBrokerAdapter(initial_balance=Decimal("100000"))
-            risk_manager = RiskManager(
+            # Create all major components (test instantiation performance)
+            _ = PaperBrokerAdapter(initial_balance=Decimal("100000"))
+            _ = RiskManager(
                 risk_limits=RiskLimits(
                     max_position_size=Decimal("0.1"),
                     max_daily_loss=Decimal("0.05"),
@@ -658,7 +660,7 @@ class SystemIntegrationTest:
             config = create_fvg_strategy_config(
                 symbol="AAPL", timeframe=TimeFrame.MINUTE_5
             )
-            strategy = FVGStrategy(config)
+            _ = FVGStrategy(config)
 
             end_time = time.time()
             creation_time = end_time - start_time
@@ -669,8 +671,8 @@ class SystemIntegrationTest:
             self.record_test_result("system_integration", test_name, True)
             print(f"  ✅ {test_name}: PASSED (creation time: {creation_time:.3f}s)")
 
-        except Exception as e:
-            self.record_test_result("system_integration", test_name, False, str(e))
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.record_test_result("system_integration", test_name, False, str(exc))
             print(f"  ❌ {test_name}: FAILED - {e}")
 
     def record_test_result(
@@ -728,11 +730,11 @@ class SystemIntegrationTest:
 
         # System status
         if total_failed == 0:
-            print(f"\n✅ All tests passed! System is ready for production.")
+            print("\n✅ All tests passed! System is ready for production.")
         elif total_failed <= 2:
-            print(f"\n⚠️  Minor issues detected. System is mostly functional.")
+            print("\n⚠️  Minor issues detected. System is mostly functional.")
         else:
-            print(f"\n❌ Multiple issues detected. System needs attention.")
+            print("\n❌ Multiple issues detected. System needs attention.")
 
         print("=" * 80)
 

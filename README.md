@@ -1,11 +1,11 @@
 # Algorithmic Trading System 🚀
 
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
-[![Tests](https://img.shields.io/badge/tests-85%25%20coverage-brightgreen.svg)](tests/)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
+[![Tests](https://img.shields.io/badge/tests-35%25%20coverage-yellow.svg)](tests/)
 [![Code Quality](https://img.shields.io/badge/code%20quality-automated-brightgreen.svg)](pyproject.toml)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg)](.github/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](PROJECT_MANIFEST.md)
+[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](PROJECT_MANIFEST.md)
 [![Status](https://img.shields.io/badge/status-production%20ready-brightgreen.svg)](PHASE3_COMPLETE_SUMMARY.md)
 
 **A production-ready algorithmic trading system with live trading, real-time data streaming, comprehensive risk management, and modern development infrastructure.**

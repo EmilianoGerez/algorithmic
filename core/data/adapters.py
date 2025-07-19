@@ -115,17 +115,21 @@ class AlpacaAdapter(DataAdapter):
         """Get or create Alpaca client"""
         if self._client is None:
             try:
-                from alpaca_trade_api import REST
-                from alpaca_trade_api.common import URL
+                from alpaca_trade_api import (  # pylint: disable=import-outside-toplevel
+                    REST,
+                )
+                from alpaca_trade_api.common import (  # pylint: disable=import-outside-toplevel
+                    URL,
+                )
 
                 self._client = REST(
                     self.api_key, self.secret_key, base_url=URL(self.base_url)
                 )
-            except ImportError:
+            except ImportError as exc:
                 raise ImportError(
                     "alpaca-trade-api package required for AlpacaAdapter. "
                     "Install with: pip install alpaca-trade-api"
-                )
+                ) from exc
         return self._client
 
     def get_historical_data(
@@ -219,7 +223,7 @@ class AlpacaAdapter(DataAdapter):
             return False
 
     def _convert_alpaca_bar(
-        self, bar, symbol: str, timeframe: TimeFrame, timestamp
+        self, price_bar, symbol: str, timeframe: TimeFrame, timestamp
     ) -> Candle:
         """Convert Alpaca bar to our Candle model"""
         return Candle(
@@ -228,11 +232,11 @@ class AlpacaAdapter(DataAdapter):
                 if hasattr(timestamp, "to_pydatetime")
                 else timestamp
             ),
-            open=Decimal(str(bar["open"])),
-            high=Decimal(str(bar["high"])),
-            low=Decimal(str(bar["low"])),
-            close=Decimal(str(bar["close"])),
-            volume=Decimal(str(bar["volume"])),
+            open=Decimal(str(price_bar["open"])),
+            high=Decimal(str(price_bar["high"])),
+            low=Decimal(str(price_bar["low"])),
+            close=Decimal(str(price_bar["close"])),
+            volume=Decimal(str(price_bar["volume"])),
             symbol=symbol,
             timeframe=timeframe,
         )
@@ -248,11 +252,13 @@ class YahooFinanceAdapter(DataAdapter):
         """Get or import yfinance"""
         if self._yfinance is None:
             try:
-                import yfinance as yf
+                import yfinance as yf  # pylint: disable=import-outside-toplevel
 
                 self._yfinance = yf
-            except ImportError:
-                raise ImportError("yfinance package required for YahooFinanceAdapter")
+            except ImportError as exc:
+                raise ImportError(
+                    "yfinance package required for YahooFinanceAdapter"
+                ) from exc
         return self._yfinance
 
     def get_historical_data(
@@ -264,7 +270,7 @@ class YahooFinanceAdapter(DataAdapter):
         limit: Optional[int] = None,
     ) -> MarketData:
         """Get historical data from Yahoo Finance"""
-        yf = self._get_yfinance()
+        yahoo_finance = self._get_yfinance()
 
         # Convert our timeframe to Yahoo Finance interval
         interval_map = {
@@ -294,11 +300,13 @@ class YahooFinanceAdapter(DataAdapter):
 
         try:
             # Get data from Yahoo Finance
-            ticker = yf.Ticker(symbol)
-            df = ticker.history(start=start_date, end=end_date, interval=interval)
+            ticker = yahoo_finance.Ticker(symbol)
+            data_frame = ticker.history(
+                start=start_date, end=end_date, interval=interval
+            )
 
             # Convert to our candle format
-            for timestamp, row in df.iterrows():
+            for timestamp, row in data_frame.iterrows():
                 candle = Candle(
                     timestamp=timestamp.to_pydatetime(),
                     open=Decimal(str(row["Open"])),
@@ -314,8 +322,11 @@ class YahooFinanceAdapter(DataAdapter):
                 if limit and len(market_data.candles) >= limit:
                     break
 
-        except Exception as e:
-            market_data.metadata["error"] = str(e)
+        except (ValueError, KeyError, ImportError) as exc:
+            market_data.metadata["error"] = str(exc)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            # Catch any other unexpected errors
+            market_data.metadata["error"] = str(exc)
 
         return market_data
 
@@ -338,17 +349,27 @@ class YahooFinanceAdapter(DataAdapter):
 
             return market_data.get_latest_candle()
 
-        except Exception:
+        except (ValueError, KeyError, AttributeError) as exc:
+            self.logger.warning(f"Error getting latest candle for {symbol}: {exc}")
+            return None
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.logger.error(
+                f"Unexpected error getting latest candle for {symbol}: {exc}"
+            )
             return None
 
     def validate_symbol(self, symbol: str) -> bool:
         """Validate symbol with Yahoo Finance"""
         try:
-            yf = self._get_yfinance()
-            ticker = yf.Ticker(symbol)
+            yahoo_finance = self._get_yfinance()
+            ticker = yahoo_finance.Ticker(symbol)
             info = ticker.info
             return bool(info and "symbol" in info)
-        except Exception:
+        except (ValueError, KeyError, AttributeError) as exc:
+            self.logger.warning(f"Error validating symbol {symbol}: {exc}")
+            return False
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            self.logger.error(f"Unexpected error validating symbol {symbol}: {exc}")
             return False
 
 

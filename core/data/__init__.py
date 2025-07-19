@@ -33,7 +33,6 @@ __all__ = [
     "SignalDirection",
     "SignalType",
     "OrderStatus",
-    "IndicatorResult",
     # Adapters
     "DataAdapter",
     "BacktraderAdapter",

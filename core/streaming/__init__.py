@@ -379,7 +379,9 @@ class StreamingManager:
                 if success:
                     success_count += 1
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                print(f"Failed to start provider {provider.config.provider.value}: {exc}")
+                print(
+                    f"Failed to start provider {provider.config.provider.value}: {exc}"
+                )
 
         self.is_running = success_count > 0
         return self.is_running
@@ -393,7 +395,9 @@ class StreamingManager:
             try:
                 await provider.disconnect()
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                print(f"Error stopping provider {provider.config.provider.value}: {exc}")
+                print(
+                    f"Error stopping provider {provider.config.provider.value}: {exc}"
+                )
 
         self.is_running = False
 

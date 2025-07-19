@@ -21,11 +21,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
     # Added concrete implementation
-    from core import CoreBacktestEngine
     # Phase 1 - Core System; Phase 2 - Integration; Phase 3 - Live Trading
     from core import (
         BacktestConfig,
         Candle,
+        CoreBacktestEngine,
         ExecutionMode,
         FixedRiskPositionSizer,
         FVGDetector,

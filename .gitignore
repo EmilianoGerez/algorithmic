@@ -1,9 +1,17 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
 
 # Virtualenv
 venv/
+.venv/
+env/
+.env/
 
 # Env files
 .env
@@ -12,3 +20,90 @@ venv/
 # IDE/Editor files
 .idea/
 .vscode/
+
+# Test and Coverage Reports
+htmlcov/
+.coverage
+coverage.xml
+coverage.html
+.coverage.*
+test-results/
+test-output/
+pytest-report.html
+pytest-report.xml
+
+# Code Quality Reports
+.mypy_cache/
+.pylint.d/
+bandit-report.txt
+bandit-report.json
+flake8-report.txt
+code-quality-report.html
+
+# Documentation Reports
+docs/_build/
+docs/build/
+site/
+
+# Backup and Temporary Files
+*.backup
+*.bak
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+temp_ci_database.db
+
+# Local configuration
+local_config.py
+config_local.py
+settings_local.py
+
+# Performance and profiling
+.prof
+*.prof
+profile_*.txt
+
+# Security and secrets
+*.key
+*.pem
+*.crt
+secrets/
+
+# Editor swap files
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Research and experimental files
+scratch/
+experiments/
+playground/

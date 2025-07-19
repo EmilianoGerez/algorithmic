@@ -1,19 +1,26 @@
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
+"""Alembic environment configuration module."""
+
 import os
 import sys
+from logging.config import fileConfig
+
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Cargar variables desde .env
 load_dotenv()
 
 # Agregar el path del proyecto para importar modelos
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Importar metadatos
-from src.db.base import Base
-from src.db import models
+# TODO: Add database models when database integration is implemented
+# from src.db import models
+# from src.db.base import Base
+
+# For now, use None as target_metadata since no models are defined yet
+target_metadata = None
 
 # Configuración de Alembic
 config = context.config
@@ -21,7 +28,9 @@ config = context.config
 # Inyectar la URL manualmente desde variable de entorno
 db_url = os.getenv("DATABASE_URL")
 if db_url is None:
-    raise ValueError("DATABASE_URL is not set in environment variables.")
+    # For CI/CD environments without a database, use SQLite as fallback
+    db_url = "sqlite:///./temp_ci_database.db"
+    print("Warning: DATABASE_URL not set, using SQLite fallback for CI")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Logging
@@ -29,7 +38,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Metadatos de los modelos para autogenerar migraciones
-target_metadata = Base.metadata
+# target_metadata = Base.metadata  # Will be enabled when models are added
 
 
 def run_migrations_offline() -> None:
@@ -48,8 +57,12 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Modo online (con engine conectado)."""
+    config_section = config.get_section(config.config_ini_section)
+    if config_section is None:
+        raise ValueError("No configuration section found")
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        config_section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

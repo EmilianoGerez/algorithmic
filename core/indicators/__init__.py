@@ -2,17 +2,17 @@
 Core Indicators Package
 
 Contains technical indicators and analysis tools.
-"""
+."""
 
 from .fvg_detector import FVGDetector, FVGFilterConfig, FVGFilterPresets, FVGQuality
-from .technical import TechnicalIndicators, EMASystem, IndicatorResult
+from .technical import EMASystem, IndicatorResult, TechnicalIndicators
 
 __all__ = [
     "FVGDetector",
-    "FVGFilterConfig", 
+    "FVGFilterConfig",
     "FVGFilterPresets",
     "FVGQuality",
     "TechnicalIndicators",
     "EMASystem",
-    "IndicatorResult"
+    "IndicatorResult",
 ]

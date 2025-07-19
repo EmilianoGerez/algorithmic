@@ -1,0 +1,38 @@
+[flake8]
+# Maximum line length
+max-line-length = 88
+
+# Exclude directories
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    .env,
+    dist,
+    build,
+    .tox,
+    .pytest_cache,
+    *.egg-info,
+    alembic/versions
+
+# Ignore specific error codes - using command line format for compatibility with plugins
+# E203: whitespace before ':' (conflicts with black formatting)
+# E222, E231, E241: whitespace issues handled by black
+# E402: module level import not at top of file (common in __init__.py)
+# E501: line too long (handled by black)
+# W503: line break before binary operator (conflicts with black, prefer W503 over W504)
+# W504: line break after binary operator (W503 takes precedence)
+# D*: docstring errors (using flake8-docstrings for selective checking)
+# I100, I101, I201, I202: import errors (handled by isort)
+ignore = D,E203,E222,E231,E241,E402,E501,I100,I101,I201,I202,W503,W504
+
+# Maximum cyclomatic complexity
+max-complexity = 10
+
+# Show source code for each error
+show-source = True
+
+# Count the number of occurrences of each error/warning code
+count = True

@@ -1,0 +1,52 @@
+# .pylintrc
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+ignore=migrations,venv,__pycache__
+persistent=yes
+jobs=1
+unsafe-load-any-extension=no
+
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-instance-attributes,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    duplicate-code,
+    import-error,
+    no-member,
+    logging-fstring-interpolation,
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring
+
+[REPORTS]
+output-format=text
+reports=no
+score=yes
+
+[REFACTORING]
+max-nested-blocks=5
+never-returning-functions=sys.exit
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,db,id,logger,app,api
+
+[FORMAT]
+max-line-length=88
+indent-string='    '
+
+[VARIABLES]
+init-import=no
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
+
+[SIMILARITIES]
+min-similarity-lines=4
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=no
+
+[MISCELLANEOUS]
+notes=FIXME,XXX,TODO

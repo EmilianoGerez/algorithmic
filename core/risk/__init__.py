@@ -250,8 +250,8 @@ class RiskManager:
 
         # Check daily loss limit
         if (
-            self.metrics.daily_pnl
-            <= -self.risk_limits.max_daily_loss * self.daily_start_balance
+            self.metrics.daily_pnl <=
+            -self.risk_limits.max_daily_loss * self.daily_start_balance
         ):
             reasons.append("Daily loss limit exceeded")
             return assessment
@@ -370,9 +370,9 @@ class RiskManager:
 
         self.metrics.unrealized_pnl = total_unrealized_pnl
         self.metrics.total_value = (
-            self.metrics.available_cash
-            + self.metrics.invested_capital
-            + self.metrics.unrealized_pnl
+            self.metrics.available_cash +
+            self.metrics.invested_capital +
+            self.metrics.unrealized_pnl
         )
 
         # Update drawdown
@@ -408,9 +408,9 @@ class RiskManager:
             "win_rate": self.metrics.win_rate,
             "active_positions": len(self.positions),
             "return_pct": float(
-                (self.metrics.total_value - self.initial_capital)
-                / self.initial_capital
-                * 100
+                (self.metrics.total_value - self.initial_capital) /
+                self.initial_capital *
+                100
             ),
         }
 
@@ -422,7 +422,7 @@ class RiskManager:
     def should_stop_trading(self) -> bool:
         """Check if trading should be stopped due to risk limits."""
         return (
-            self.metrics.daily_pnl
-            <= -self.risk_limits.max_daily_loss * self.daily_start_balance
-            or self.metrics.drawdown >= self.risk_limits.max_drawdown
+            self.metrics.daily_pnl <=
+            -self.risk_limits.max_daily_loss * self.daily_start_balance or
+            self.metrics.drawdown >= self.risk_limits.max_drawdown
         )

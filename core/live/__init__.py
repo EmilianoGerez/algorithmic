@@ -244,8 +244,8 @@ class PaperBrokerAdapter(BrokerAdapter):
                 # Add to position
                 total_quantity = position.quantity + order.quantity
                 weighted_price = (
-                    (position.entry_price * position.quantity)
-                    + (fill_price * order.quantity)
+                    (position.entry_price * position.quantity) +
+                    (fill_price * order.quantity)
                 ) / total_quantity
                 position.quantity = total_quantity
                 position.entry_price = weighted_price
@@ -498,8 +498,8 @@ class LiveTradingEngine:
                         self._notify_order_filled(order)
 
                     elif (
-                        status == OrderStatus.CANCELLED
-                        or status == OrderStatus.REJECTED
+                        status == OrderStatus.CANCELLED or
+                        status == OrderStatus.REJECTED
                     ):
                         # Order cancelled or rejected
                         order.status = status

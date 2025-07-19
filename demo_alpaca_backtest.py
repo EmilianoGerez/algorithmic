@@ -15,7 +15,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -36,7 +36,7 @@ from core import (  # Data models; Data adapters; Strategy; Backtesting; Risk ma
 )
 
 
-def setup_alpaca_credentials():
+def setup_alpaca_credentials() -> tuple[Optional[str], Optional[str]]:
     """Setup Alpaca credentials from environment or prompt user"""
     import os
 
@@ -61,16 +61,14 @@ def setup_alpaca_credentials():
 
 def fetch_alpaca_data(
     symbol: str = "BTCUSD",
-    days: int = None,
-    start_date: str = None,
-    end_date: str = None,
-):
+    days: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Any:
     """Fetch historical data from Alpaca"""
 
     # Use specific date range if provided, otherwise use days parameter
     if start_date and end_date:
-        from datetime import datetime
-
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         print(f"📊 Fetching {symbol} data from {start_date} to {end_date}...")
@@ -131,7 +129,7 @@ def fetch_alpaca_data(
         return None
 
 
-def run_fvg_backtest(market_data: MarketData):
+def run_fvg_backtest(market_data: MarketData) -> Any:
     """Run FVG strategy backtest"""
     print("\\n🧠 Running FVG Strategy Backtest on BTC/USD...")
 
@@ -179,6 +177,11 @@ def run_fvg_backtest(market_data: MarketData):
         position_sizer = FixedRiskPositionSizer(
             risk_per_trade=0.02
         )  # 2% risk per trade
+        
+        # Ensure risk_limits is not None
+        if backtest_config.risk_limits is None:
+            raise ValueError("Risk limits not configured in backtest config")
+            
         risk_manager = RiskManager(
             risk_limits=backtest_config.risk_limits,
             position_sizer=position_sizer,
@@ -251,7 +254,7 @@ def run_fvg_backtest(market_data: MarketData):
         return None
 
 
-def analyze_results(results):
+def analyze_results(results: Any) -> None:
     """Analyze and display backtest results"""
     if not results:
         print("❌ No results to analyze")
@@ -301,7 +304,7 @@ def analyze_results(results):
         print("🔴 POOR - Underperforming in crypto market conditions")
 
 
-def create_sample_data_fallback():
+def create_sample_data_fallback() -> MarketData:
     """Create sample data if Alpaca is not available"""
     print("📊 Creating sample BTC/USD data for demonstration...")
 
@@ -348,7 +351,7 @@ def create_sample_data_fallback():
     return market_data
 
 
-def main():
+def main() -> None:
     """Main demo function"""
     print("🚀 Alpaca Backtesting Demo - BTC/USD Analysis")
     print("=" * 50)

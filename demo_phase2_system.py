@@ -14,6 +14,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -79,7 +80,7 @@ def create_sample_market_data(symbol: str, days: int = 30) -> MarketData:
     return market_data
 
 
-def demo_data_adapters():
+def demo_data_adapters() -> None:
     """Demonstrate data adapter system"""
     print("🔌 Data Adapters Demo")
     print("=" * 50)
@@ -111,7 +112,7 @@ def demo_data_adapters():
     print()
 
 
-def demo_risk_management():
+def demo_risk_management() -> None:
     """Demonstrate risk management system"""
     print("🛡️ Risk Management Demo")
     print("=" * 50)
@@ -176,7 +177,7 @@ def demo_risk_management():
     print()
 
 
-def demo_backtesting_engine():
+def demo_backtesting_engine() -> None:
     """Demonstrate backtesting engine"""
     print("🔄 Backtesting Engine Demo")
     print("=" * 50)
@@ -222,7 +223,7 @@ def demo_backtesting_engine():
     print()
 
 
-def demo_multi_symbol_feed():
+def demo_multi_symbol_feed() -> None:
     """Demonstrate multi-symbol data feed"""
     print("📡 Multi-Symbol Data Feed Demo")
     print("=" * 50)
@@ -249,7 +250,7 @@ def demo_multi_symbol_feed():
     # Set up signal receiver
     received_signals = []
 
-    def on_candle_received(candle):
+    def on_candle_received(candle: Any) -> None:
         received_signals.append(candle)
         if len(received_signals) <= 5:  # Show first 5 only
             print(
@@ -270,7 +271,7 @@ def demo_multi_symbol_feed():
     print()
 
 
-def demo_portfolio_management():
+def demo_portfolio_management() -> None:
     """Demonstrate portfolio management features"""
     print("💼 Portfolio Management Demo")
     print("=" * 50)
@@ -328,7 +329,7 @@ def demo_portfolio_management():
     print()
 
 
-def main():
+def main() -> None:
     """Main demonstration function"""
     print("🚀 Phase 2 Core System Demonstration")
     print("=" * 60)

@@ -28,7 +28,7 @@ from core import (  # Data models; Strategy system; Indicators; Signal processin
 )
 
 
-def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -> list:
+def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -> list[Candle]:
     """Create sample candle data for testing"""
     candles = []
     base_price = Decimal("50000")  # BTC price
@@ -61,7 +61,7 @@ def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -
     return candles
 
 
-def demonstrate_fvg_detection():
+def demonstrate_fvg_detection() -> None:
     """Demonstrate FVG detection with the new system"""
     print("🔍 FVG Detection Demo")
     print("=" * 50)
@@ -94,7 +94,7 @@ def demonstrate_fvg_detection():
     print(f"  Average Confidence: {metrics.get('average_confidence', 0):.2f}")
 
 
-def demonstrate_ema_system():
+def demonstrate_ema_system() -> None:
     """Demonstrate EMA calculations"""
     print("\n📊 EMA System Demo")
     print("=" * 50)
@@ -120,7 +120,7 @@ def demonstrate_ema_system():
         print(f"  EMA 50: {ema_50[-1].value:.2f}")
 
 
-def demonstrate_strategy_system():
+def demonstrate_strategy_system() -> None:
     """Demonstrate the strategy system"""
     print("\n🎯 Strategy System Demo")
     print("=" * 50)
@@ -182,7 +182,7 @@ def demonstrate_strategy_system():
     print(f"  Initialized: {status['is_initialized']}")
 
 
-def demonstrate_strategy_registry():
+def demonstrate_strategy_registry() -> None:
     """Demonstrate strategy registry"""
     print("\n📚 Strategy Registry Demo")
     print("=" * 50)
@@ -200,7 +200,7 @@ def demonstrate_strategy_registry():
     print(f"   Strategy name: {strategy.name}")
 
 
-def main():
+def main() -> None:
     """Main demonstration function"""
     print("🚀 New Core System Demonstration")
     print("=" * 60)

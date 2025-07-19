@@ -17,6 +17,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import Any, Optional
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -47,14 +48,14 @@ from core import (  # Data models; Strategy system; Risk management; Live tradin
 class Phase3Demo:
     """Phase 3 system demonstration"""
 
-    def __init__(self):
-        self.live_engine = None
-        self.streaming_manager = None
-        self.demo_signals = []
-        self.demo_orders = []
-        self.demo_positions = []
+    def __init__(self) -> None:
+        self.live_engine: Optional[LiveTradingEngine] = None
+        self.streaming_manager: Optional[Any] = None  # StreamingManager
+        self.demo_signals: list[Any] = []  # list[Signal]
+        self.demo_orders: list[Order] = []
+        self.demo_positions: list[Position] = []
 
-    async def run_complete_demo(self):
+    async def run_complete_demo(self) -> None:
         """Run the complete Phase 3 demonstration"""
         print("🚀 Phase 3 Complete System Demonstration")
         print("=" * 70)
@@ -92,7 +93,7 @@ class Phase3Demo:
 
             traceback.print_exc()
 
-    async def demo_live_trading_engine(self):
+    async def demo_live_trading_engine(self) -> None:
         """Demonstrate live trading engine"""
         print("🔥 Live Trading Engine Demo")
         print("=" * 50)
@@ -146,7 +147,7 @@ class Phase3Demo:
 
         print()
 
-    async def demo_streaming_integration(self):
+    async def demo_streaming_integration(self) -> None:
         """Demonstrate streaming integration"""
         print("📡 Real-time Data Streaming Demo")
         print("=" * 50)
@@ -189,7 +190,7 @@ class Phase3Demo:
 
         print()
 
-    async def demo_signal_processing(self):
+    async def demo_signal_processing(self) -> None:
         """Demonstrate signal processing"""
         print("🎯 Signal Processing Demo")
         print("=" * 50)
@@ -258,7 +259,7 @@ class Phase3Demo:
 
         print()
 
-    async def demo_risk_integration(self):
+    async def demo_risk_integration(self) -> None:
         """Demonstrate risk management integration"""
         print("🛡️ Risk Management Integration Demo")
         print("=" * 50)
@@ -298,7 +299,7 @@ class Phase3Demo:
 
         print()
 
-    async def demo_order_management(self):
+    async def demo_order_management(self) -> None:
         """Demonstrate order management"""
         print("📋 Order Management Demo")
         print("=" * 50)
@@ -340,7 +341,7 @@ class Phase3Demo:
 
         print()
 
-    async def demo_real_time_updates(self):
+    async def demo_real_time_updates(self) -> None:
         """Demonstrate real-time updates"""
         print("📊 Real-time Updates Demo")
         print("=" * 50)
@@ -363,7 +364,7 @@ class Phase3Demo:
 
         print()
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up resources"""
         print("🧹 Cleaning up resources...")
 
@@ -376,21 +377,21 @@ class Phase3Demo:
         print("✅ Cleanup complete")
 
     # Event handlers
-    def _on_order_event(self, order: Order):
+    def _on_order_event(self, order: Order) -> None:
         """Handle order events"""
         print(f"  📋 Order event: {order.order_id} - {order.status.value}")
 
-    def _on_position_event(self, position: Position):
+    def _on_position_event(self, position: Position) -> None:
         """Handle position events"""
         print(
             f"  📊 Position update: {position.symbol} - P&L: ${position.unrealized_pnl:.2f}"
         )
 
-    def _on_error_event(self, error: str):
+    def _on_error_event(self, error: str) -> None:
         """Handle error events"""
         print(f"  ❌ Error: {error}")
 
-    def _on_streaming_data(self, candle):
+    def _on_streaming_data(self, candle: Any) -> None:
         """Handle streaming data"""
         # Only show first few candles to avoid spam
         if len(self.demo_signals) < 3:
@@ -399,7 +400,7 @@ class Phase3Demo:
             )
 
 
-async def demo_api_integration():
+async def demo_api_integration() -> None:
     """Demonstrate API integration concepts"""
     print("🌐 API Integration Demo")
     print("=" * 50)
@@ -440,7 +441,7 @@ async def demo_api_integration():
     print()
 
 
-async def main():
+async def main() -> None:
     """Main demonstration function"""
     demo = Phase3Demo()
 

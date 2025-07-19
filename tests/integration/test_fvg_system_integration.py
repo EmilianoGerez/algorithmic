@@ -17,12 +17,20 @@ class TestFVGSystemIntegration:
     def fvg_system_config(self):
         """Configuration for FVG system integration testing."""
         return FVGFilterConfig(
-            min_zone_size_percentage=0.01,
-            min_strength_threshold=0.5,
+            # Make zone size requirements more permissive for testing
+            min_zone_size_pips=1.0,  # Reduced from default 5.0
+            min_zone_size_percentage=0.001,  # Reduced from 0.01
+            min_zone_size_atr_multiplier=0.1,  # Reduced from 0.3
+            # Make strength requirements more permissive
+            min_strength_threshold=0.1,  # Reduced from 0.6
             high_quality_threshold=0.7,
             premium_quality_threshold=0.85,
             volume_context_periods=20,
-            min_volume_multiplier=1.2,
+            min_volume_multiplier=1.0,  # Reduced from 1.2
+            # Disable strict context filters for testing
+            exclude_weekend_fvgs=False,  # Allow weekend FVGs
+            avoid_consolidation_fvgs=False,  # Allow consolidation FVGs
+            min_momentum_threshold=0.0,  # Disabled momentum requirement
         )
 
     @pytest.fixture

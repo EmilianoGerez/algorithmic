@@ -13,10 +13,12 @@ load_dotenv()
 # Agregar el path del proyecto para importar modelos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.db import models
+# TODO: Add database models when database integration is implemented
+# from src.db import models
+# from src.db.base import Base
 
-# Importar metadatos
-from src.db.base import Base
+# For now, use None as target_metadata since no models are defined yet
+target_metadata = None
 
 # Configuración de Alembic
 config = context.config
@@ -32,7 +34,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Metadatos de los modelos para autogenerar migraciones
-target_metadata = Base.metadata
+# target_metadata = Base.metadata  # Will be enabled when models are added
 
 
 def run_migrations_offline() -> None:

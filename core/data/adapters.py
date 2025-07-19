@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
+import logging
 
 from .models import Candle, MarketData, TimeFrame
 
@@ -115,12 +116,10 @@ class AlpacaAdapter(DataAdapter):
         """Get or create Alpaca client"""
         if self._client is None:
             try:
-                from alpaca_trade_api import (  # pylint: disable=import-outside-toplevel
-                    REST,
-                )
-                from alpaca_trade_api.common import (  # pylint: disable=import-outside-toplevel
-                    URL,
-                )
+                # pylint: disable=import-outside-toplevel
+                from alpaca_trade_api import REST
+                # pylint: disable=import-outside-toplevel
+                from alpaca_trade_api.common import URL
 
                 self._client = REST(
                     self.api_key, self.secret_key, base_url=URL(self.base_url)
@@ -247,6 +246,7 @@ class YahooFinanceAdapter(DataAdapter):
 
     def __init__(self):
         self._yfinance = None
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def _get_yfinance(self):
         """Get or import yfinance"""

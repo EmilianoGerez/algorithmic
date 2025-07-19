@@ -94,7 +94,7 @@ class TestFVGDetector:
             Candle(
                 timestamp=datetime(2025, 1, 1, 9, 15),
                 open=Decimal("50050"),
-                high=Decimal("50000"),
+                high=Decimal("50100"),  # Fixed: high must be >= max(open, close)
                 low=Decimal("49700"),
                 close=Decimal("49750"),
                 volume=Decimal("1500"),

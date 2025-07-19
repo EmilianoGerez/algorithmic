@@ -45,7 +45,6 @@ from core import (  # Data models; Strategy system; Risk management; Live tradin
     SignalType,
     StrategyRegistry,
     strategy_registry,
-    StrategyRegistry,
     TimeFrame,
     create_fvg_strategy_config,
 )
@@ -179,7 +178,7 @@ class LiveTradingRequest(BaseModel):
 class SystemState:
     """Global system state"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.live_engine: Optional[LiveTradingEngine] = None
         self.risk_manager: Optional[RiskManager] = None
         self.active_strategies: Dict[str, BaseStrategy] = {}
@@ -196,25 +195,25 @@ system_state = SystemState()
 class ConnectionManager:
     """WebSocket connection manager"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_connections: list[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
+    async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
         await websocket.send_text(message)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: str) -> None:
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except Exception as e:
-                print(f"Error broadcasting to WebSocket: {e}")
+            except Exception as exc:
+                print(f"Error broadcasting to WebSocket: {exc}")
 
 
 # Global connection manager
@@ -223,7 +222,7 @@ connection_manager = ConnectionManager()
 
 # Lifespan manager for FastAPI
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     """Lifespan manager for FastAPI app"""
     # Startup
     print("🚀 Starting Algorithmic Trading API...")
@@ -268,7 +267,7 @@ app.add_middleware(
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """Health check endpoint"""
     return {
         "status": "healthy",
@@ -319,8 +318,8 @@ async def activate_strategy(strategy_name: str, config: StrategyConfigRequest) -
             "strategy_id": config.name,
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.delete("/strategies/{strategy_id}")
@@ -384,8 +383,8 @@ async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
         else:
             raise HTTPException(status_code=500, detail="Failed to start live trading")
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.post("/live-trading/stop")
@@ -401,8 +400,8 @@ async def stop_live_trading() -> Dict[str, str]:
 
         return {"message": "Live trading stopped successfully"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/live-trading/status")
@@ -426,8 +425,8 @@ async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any
 
         return {"message": "Emergency stop executed"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # Signal endpoints
@@ -471,8 +470,8 @@ async def send_manual_signal(signal_data: Dict[str, Any]) -> Dict[str, Any]:
         else:
             return {"message": "Signal rejected by risk management"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # Position endpoints
@@ -486,8 +485,8 @@ async def get_positions() -> list[PositionResponse]:
         positions = await system_state.live_engine.broker.get_positions()
         return [PositionResponse.from_position(pos) for pos in positions]
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # Order endpoints
@@ -506,8 +505,8 @@ async def get_orders() -> list[OrderResponse]:
         )
         return [OrderResponse.from_order(order) for order in orders]
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # Backtesting endpoints
@@ -558,8 +557,8 @@ async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
             "signals_count": len(result.signals),
         }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # Portfolio endpoints
@@ -572,8 +571,8 @@ async def get_portfolio_summary() -> Dict[str, Any]:
 
         return system_state.risk_manager.get_portfolio_summary()
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # WebSocket endpoint for real-time updates

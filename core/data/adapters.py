@@ -8,7 +8,7 @@ These adapters handle the integration with different data sources and platforms.
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Dict, Optional
 import logging
 
 from .models import Candle, MarketData, TimeFrame
@@ -40,9 +40,9 @@ class DataAdapter(ABC):
 class BacktraderAdapter(DataAdapter):
     """Adapter for Backtrader platform"""
 
-    def __init__(self, cerebro_instance=None):
+    def __init__(self, cerebro_instance=None) -> None:
         self.cerebro = cerebro_instance
-        self._data_cache = {}
+        self._data_cache: Dict[str, Any] = {}
 
     def get_historical_data(
         self,
@@ -81,10 +81,11 @@ class BacktraderAdapter(DataAdapter):
         # TODO: Implement symbol validation
         return True
 
-    def convert_backtrader_candle(self, bt_data, index: int) -> Candle:
+    def convert_backtrader_candle(self, bt_data: Any, index: int) -> Candle:
         """Convert backtrader data point to our Candle model"""
         # TODO: Implement conversion from backtrader data format
         # This would handle bt_data.open[index], bt_data.high[index], etc.
+        pass
 
 
 class AlpacaAdapter(DataAdapter):
@@ -110,9 +111,9 @@ class AlpacaAdapter(DataAdapter):
         self.secret_key = secret_key
         self.base_url = base_url
         self._client = None
-        self._data_cache = {}
+        self._data_cache: Dict[str, Any] = {}
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
         """Get or create Alpaca client"""
         if self._client is None:
             try:
@@ -222,7 +223,7 @@ class AlpacaAdapter(DataAdapter):
             return False
 
     def _convert_alpaca_bar(
-        self, price_bar, symbol: str, timeframe: TimeFrame, timestamp
+        self, price_bar: Any, symbol: str, timeframe: TimeFrame, timestamp: Any
     ) -> Candle:
         """Convert Alpaca bar to our Candle model"""
         return Candle(
@@ -244,11 +245,11 @@ class AlpacaAdapter(DataAdapter):
 class YahooFinanceAdapter(DataAdapter):
     """Adapter for Yahoo Finance data"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._yfinance = None
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def _get_yfinance(self):
+    def _get_yfinance(self) -> Any:
         """Get or import yfinance"""
         if self._yfinance is None:
             try:

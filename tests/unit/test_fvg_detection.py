@@ -8,7 +8,7 @@ from decimal import Decimal
 import pytest
 
 from core.data.models import Candle, FVGZone, SignalDirection, TimeFrame
-from core.indicators.fvg_detector import FVGDetector
+from core.indicators.fvg_detector import FVGDetector, FVGFilterConfig
 
 
 class TestFVGDetector:
@@ -16,14 +16,22 @@ class TestFVGDetector:
 
     def test_fvg_detector_creation(self):
         """Test FVG detector instantiation."""
-        config = {"gap_threshold": 0.001, "min_gap_size": 10, "max_zones": 5}
+        config = FVGFilterConfig(
+            min_zone_size_pips=10.0,
+            min_zone_size_percentage=0.001,
+            max_age_hours=24
+        )
         detector = FVGDetector(config=config)
         assert detector is not None
         assert detector.config == config
 
     def test_bullish_fvg_detection(self):
         """Test detection of bullish FVG patterns."""
-        config = {"gap_threshold": 0.001, "min_gap_size": 10, "max_zones": 5}
+        config = FVGFilterConfig(
+            min_zone_size_pips=10.0,
+            min_zone_size_percentage=0.001,
+            max_age_hours=24
+        )
         detector = FVGDetector(config=config)
 
         # Create candles with bullish FVG pattern
@@ -70,7 +78,11 @@ class TestFVGDetector:
 
     def test_bearish_fvg_detection(self):
         """Test detection of bearish FVG patterns."""
-        config = {"gap_threshold": 0.001, "min_gap_size": 10, "max_zones": 5}
+        config = FVGFilterConfig(
+            min_zone_size_pips=10.0,
+            min_zone_size_percentage=0.001,
+            max_age_hours=24
+        )
         detector = FVGDetector(config=config)
 
         # Create candles with bearish FVG pattern
@@ -117,7 +129,11 @@ class TestFVGDetector:
 
     def test_no_fvg_detection(self):
         """Test scenario where no FVG is detected."""
-        config = {"gap_threshold": 0.001, "min_gap_size": 10, "max_zones": 5}
+        config = FVGFilterConfig(
+            min_zone_size_pips=10.0,
+            min_zone_size_percentage=0.001,
+            max_age_hours=24
+        )
         detector = FVGDetector(config=config)
 
         # Create candles without FVG pattern (continuous price action)
@@ -161,11 +177,11 @@ class TestFVGDetector:
 
     def test_fvg_gap_ratio_filtering(self):
         """Test FVG filtering based on gap ratio."""
-        config = {
-            "gap_threshold": 0.05,  # 5% minimum gap
-            "min_gap_size": 100,  # Large minimum gap
-            "max_zones": 5,
-        }
+        config = FVGFilterConfig(
+            min_zone_size_pips=100.0,  # Large minimum gap
+            min_zone_size_percentage=0.05,  # 5% minimum gap
+            max_age_hours=24
+        )
         detector = FVGDetector(config=config)
 
         # Create candles with small gap that should be filtered out
@@ -214,75 +230,89 @@ class TestFVGZone:
     def test_fvg_zone_creation(self):
         """Test FVG zone creation."""
         zone = FVGZone(
-            id="test-zone-1",
-            direction=SignalDirection.LONG,
-            high=Decimal("50500"),
-            low=Decimal("50300"),
             timestamp=datetime(2025, 1, 1, 9, 30),
+            symbol="BTCUSD",
+            timeframe=TimeFrame.MINUTE_1,
+            direction=SignalDirection.LONG,
+            zone_high=Decimal("50500"),
+            zone_low=Decimal("50300"),
+            strength=0.8,
+            confidence=0.9,
             status="active",
         )
 
-        assert zone.id == "test-zone-1"
         assert zone.direction == SignalDirection.LONG
-        assert zone.high == Decimal("50500")
-        assert zone.low == Decimal("50300")
+        assert zone.zone_high == Decimal("50500")
+        assert zone.zone_low == Decimal("50300")
         assert zone.status == "active"
 
     def test_fvg_zone_properties(self):
         """Test FVG zone calculated properties."""
         zone = FVGZone(
-            id="test-zone-1",
-            direction=SignalDirection.LONG,
-            high=Decimal("50500"),
-            low=Decimal("50300"),
             timestamp=datetime(2025, 1, 1, 9, 30),
+            symbol="BTCUSD",
+            timeframe=TimeFrame.MINUTE_1,
+            direction=SignalDirection.LONG,
+            zone_high=Decimal("50500"),
+            zone_low=Decimal("50300"),
+            strength=0.8,
+            confidence=0.9,
             status="active",
         )
 
         # Test calculated properties
-        assert zone.size == Decimal("200")  # high - low
-        assert zone.mid_point == Decimal("50400")  # (high + low) / 2
+        assert zone.get_zone_size() == Decimal("200")  # high - low
+        assert zone.get_zone_midpoint() == Decimal("50400")  # (high + low) / 2
 
     def test_fvg_zone_price_tests(self):
         """Test FVG zone price level tests."""
         zone = FVGZone(
-            id="test-zone-1",
-            direction=SignalDirection.LONG,
-            high=Decimal("50500"),
-            low=Decimal("50300"),
             timestamp=datetime(2025, 1, 1, 9, 30),
+            symbol="BTCUSD",
+            timeframe=TimeFrame.MINUTE_1,
+            direction=SignalDirection.LONG,
+            zone_high=Decimal("50500"),
+            zone_low=Decimal("50300"),
+            strength=0.8,
+            confidence=0.9,
             status="active",
         )
 
         # Test price level checks
-        assert zone.contains_price(Decimal("50400")) is True
-        assert zone.contains_price(Decimal("50600")) is False
-        assert zone.contains_price(Decimal("50200")) is False
-        assert zone.contains_price(Decimal("50300")) is True  # Boundary
-        assert zone.contains_price(Decimal("50500")) is True  # Boundary
+        assert zone.is_price_in_zone(Decimal("50400")) is True
+        assert zone.is_price_in_zone(Decimal("50600")) is False
+        assert zone.is_price_in_zone(Decimal("50200")) is False
+        assert zone.is_price_in_zone(Decimal("50300")) is True  # Boundary
+        assert zone.is_price_in_zone(Decimal("50500")) is True  # Boundary
 
     def test_fvg_zone_validation(self):
         """Test FVG zone validation."""
-        # Valid zone
-        zone = FVGZone(
-            id="test-zone-1",
-            direction=SignalDirection.LONG,
-            high=Decimal("50500"),
-            low=Decimal("50300"),
+        # Valid zone - just creating it validates it via __post_init__
+        FVGZone(
             timestamp=datetime(2025, 1, 1, 9, 30),
+            symbol="BTCUSD",
+            timeframe=TimeFrame.MINUTE_1,
+            direction=SignalDirection.LONG,
+            zone_high=Decimal("50500"),
+            zone_low=Decimal("50300"),
+            strength=0.8,
+            confidence=0.9,
             status="active",
         )
 
-        assert zone.is_valid() is True
+        # The FVGZone class validates in __post_init__, so just creating it validates it
 
         # Invalid zone (high <= low)
         with pytest.raises(ValueError):
             FVGZone(
-                id="test-zone-2",
-                direction=SignalDirection.LONG,
-                high=Decimal("50300"),
-                low=Decimal("50500"),  # Invalid: low > high
                 timestamp=datetime(2025, 1, 1, 9, 30),
+                symbol="BTCUSD",
+                timeframe=TimeFrame.MINUTE_1,
+                direction=SignalDirection.LONG,
+                zone_high=Decimal("50300"),
+                zone_low=Decimal("50500"),  # Invalid: low > high
+                strength=0.8,
+                confidence=0.9,
                 status="active",
             )
 

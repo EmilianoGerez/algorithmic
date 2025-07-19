@@ -46,6 +46,8 @@ class TestFVGSystemIntegration:
                     low=base_price + price_drift - Decimal("50"),
                     close=base_price + price_drift + Decimal("25"),
                     volume=Decimal(str(1000 + i * 100)),
+                    symbol="BTCUSD",
+                    timeframe=TimeFrame.MINUTE_15,
                 )
             )
 
@@ -61,6 +63,8 @@ class TestFVGSystemIntegration:
                 low=gap_price - Decimal("50"),
                 close=gap_price + Decimal("150"),
                 volume=Decimal("3000"),  # High volume
+                symbol="BTCUSD",
+                timeframe=TimeFrame.MINUTE_15,
             )
         )
 
@@ -77,6 +81,8 @@ class TestFVGSystemIntegration:
                     low=current_price - Decimal("40"),
                     close=current_price + Decimal("30"),
                     volume=Decimal(str(1200 + (i - 6) * 50)),
+                    symbol="BTCUSD",
+                    timeframe=TimeFrame.MINUTE_15,
                 )
             )
 
@@ -92,6 +98,8 @@ class TestFVGSystemIntegration:
                 low=gap_down_price - Decimal("200"),
                 close=gap_down_price - Decimal("100"),
                 volume=Decimal("2500"),  # High volume
+                symbol="BTCUSD",
+                timeframe=TimeFrame.MINUTE_15,
             )
         )
 
@@ -255,6 +263,8 @@ class TestFVGSystemIntegration:
                         low=base_price + price_variance - Decimal("100"),
                         close=base_price + price_variance + Decimal("50"),
                         volume=Decimal(str(1000 + i * 100)),
+                        symbol="BTCUSD",
+                        timeframe=timeframe,
                     )
                 )
 
@@ -304,6 +314,8 @@ class TestFVGSystemIntegration:
                     low=base_price + price_noise - Decimal("30"),
                     close=base_price + price_noise + Decimal("10"),
                     volume=Decimal(str(800 + (i % 500))),
+                    symbol="BTCUSD",
+                    timeframe=TimeFrame.MINUTE_1,
                 )
             )
 
@@ -318,6 +330,8 @@ class TestFVGSystemIntegration:
                     low=candle.low + Decimal("250"),
                     close=candle.close + Decimal("320"),
                     volume=candle.volume * 3,
+                    symbol="BTCUSD",
+                    timeframe=TimeFrame.MINUTE_1,
                 )
 
         # Time the detection

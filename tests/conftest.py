@@ -182,6 +182,8 @@ def create_test_candles(
                 low=low_price,
                 close=close_price,
                 volume=volume,
+                symbol="BTCUSD",
+                timeframe=TimeFrame.MINUTE_1,
             )
         )
 

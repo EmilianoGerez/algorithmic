@@ -43,7 +43,7 @@ def main():
         "quality": lambda: _run_quality_commands(),
         "ci": lambda: _run_ci_commands(),
     }
-    
+
     if len(sys.argv) < 2:
         print("Usage: python test_runner.py <command>")
         print("\nAvailable commands:")
@@ -73,7 +73,7 @@ def main():
     if command not in commands:
         print(f"❌ Unknown command: {command}")
         return 1
-    
+
     success = commands[command]()
     return 0 if success else 1
 

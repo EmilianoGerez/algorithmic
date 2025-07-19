@@ -7,6 +7,7 @@ and quality checks during development.
 """
 
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +20,13 @@ def run_command(cmd, description=""):
     print(f"{'=' * 50}")
 
     try:
-        subprocess.run(cmd, shell=True, check=True, capture_output=False)
+        # Use shlex.split for secure command parsing
+        if isinstance(cmd, str):
+            cmd_list = shlex.split(cmd)
+        else:
+            cmd_list = cmd
+        
+        subprocess.run(cmd_list, shell=False, check=True, capture_output=False)
         print(f"✅ {description or cmd} completed successfully")
         return True
     except subprocess.CalledProcessError as e:

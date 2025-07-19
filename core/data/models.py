@@ -67,7 +67,7 @@ class Candle:
     symbol: str
     timeframe: TimeFrame
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate candle data"""
         if self.high < max(self.open, self.close):
             raise ValueError("High must be >= max(open, close)")
@@ -128,7 +128,7 @@ class Signal:
     risk_reward_ratio: float = 2.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate signal data"""
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
@@ -231,7 +231,7 @@ class FVGZone:
     created_candle_index: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate FVG zone data"""
         if self.zone_high <= self.zone_low:
             raise ValueError("Zone high must be greater than zone low")

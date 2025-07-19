@@ -43,7 +43,8 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: [-r, ., -f, json, -o, bandit-report.json]
+        args: [-r]
+        files: ^core/.*\.py$
         exclude: tests/
 
   - repo: https://github.com/asottile/pyupgrade

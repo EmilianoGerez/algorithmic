@@ -11,12 +11,13 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from fastapi import (
     BackgroundTasks,
     FastAPI,
     HTTPException,
+    Request,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -144,7 +145,7 @@ class StrategyConfigRequest(BaseModel):
 
     name: str
     symbol: str
-    timeframes: List[str]
+    timeframes: list[str]
     risk_per_trade: float = 0.02
     confidence_threshold: float = 0.85
     parameters: Dict[str, Any] = Field(default_factory=dict)
@@ -180,7 +181,7 @@ class SystemState:
         self.live_engine: Optional[LiveTradingEngine] = None
         self.risk_manager: Optional[RiskManager] = None
         self.active_strategies: Dict[str, BaseStrategy] = {}
-        self.websocket_connections: List[WebSocket] = []
+        self.websocket_connections: list[WebSocket] = []
         self.is_live_trading = False
         self.system_start_time = datetime.now()
 
@@ -194,7 +195,7 @@ class ConnectionManager:
     """WebSocket connection manager"""
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -276,7 +277,7 @@ async def health_check():
 
 
 # Strategy management endpoints
-@app.get("/strategies", response_model=List[str])
+@app.get("/strategies", response_model=list[str])
 async def get_available_strategies():
     """Get list of available strategies"""
     return list(StrategyRegistry.get_registered_strategies().keys())
@@ -332,7 +333,7 @@ async def deactivate_strategy(strategy_id: str):
     return {"message": f"Strategy {strategy_id} deactivated successfully"}
 
 
-@app.get("/strategies/active", response_model=List[str])
+@app.get("/strategies/active", response_model=list[str])
 async def get_active_strategies():
     """Get list of active strategies"""
     return list(system_state.active_strategies.keys())
@@ -471,7 +472,7 @@ async def send_manual_signal(signal_data: Dict[str, Any]):
 
 
 # Position endpoints
-@app.get("/positions", response_model=List[PositionResponse])
+@app.get("/positions", response_model=list[PositionResponse])
 async def get_positions():
     """Get current positions"""
     try:
@@ -486,7 +487,7 @@ async def get_positions():
 
 
 # Order endpoints
-@app.get("/orders", response_model=List[OrderResponse])
+@app.get("/orders", response_model=list[OrderResponse])
 async def get_orders():
     """Get recent orders"""
     try:
@@ -637,7 +638,7 @@ async def _broadcast_event(event_type: str, data: Dict[str, Any]):
 
 # Error handlers
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handle HTTP exceptions"""
     return JSONResponse(
         status_code=exc.status_code,
@@ -646,7 +647,7 @@ async def http_exception_handler(request, exc):
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle general exceptions"""
     return JSONResponse(
         status_code=500,

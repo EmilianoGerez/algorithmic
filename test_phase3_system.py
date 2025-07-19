@@ -74,7 +74,7 @@ def test_imports():
 
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ Import error: {e}")
         return False
 
@@ -139,7 +139,7 @@ async def test_live_trading_engine():
         print("  ✅ Live trading engine: PASSED")
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ Live trading engine: FAILED - {e}")
         return False
 
@@ -178,7 +178,7 @@ async def test_streaming_system():
         print("  ✅ Streaming system: PASSED")
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ Streaming system: FAILED - {e}")
         return False
 
@@ -226,7 +226,7 @@ async def test_signal_processing():
         print("  ✅ Signal processing: PASSED")
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ Signal processing: FAILED - {e}")
         return False
 
@@ -268,7 +268,7 @@ async def test_strategy_system():
         print("  ✅ Strategy system: PASSED")
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ Strategy system: FAILED - {e}")
         import traceback
 
@@ -301,7 +301,7 @@ def test_api_components():
 
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ API components: FAILED - {e}")
         return False
 
@@ -402,7 +402,7 @@ async def test_integration():
         print("  ✅ System integration: PASSED")
         return True
 
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"  ❌ System integration: FAILED - {e}")
         import traceback
 

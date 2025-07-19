@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 import websockets
 
@@ -37,8 +37,8 @@ class StreamingConfig:
     api_key: Optional[str] = None
     secret_key: Optional[str] = None
     base_url: Optional[str] = None
-    symbols: List[str] = field(default_factory=list)
-    timeframes: List[TimeFrame] = field(default_factory=lambda: [TimeFrame.MINUTE_1])
+    symbols: list[str] = field(default_factory=list)
+    timeframes: list[TimeFrame] = field(default_factory=lambda: [TimeFrame.MINUTE_1])
     auto_reconnect: bool = True
     max_reconnect_attempts: int = 10
     reconnect_delay: float = 5.0
@@ -52,7 +52,7 @@ class StreamingDataProvider(ABC):
     def __init__(self, config: StreamingConfig):
         self.config = config
         self.is_connected = False
-        self.subscribers: List[Callable[[Candle], None]] = []
+        self.subscribers: list[Callable[[Candle], None]] = []
         self.reconnect_attempts = 0
         self.last_heartbeat = datetime.now()
 
@@ -65,11 +65,11 @@ class StreamingDataProvider(ABC):
         """Disconnect from streaming provider"""
 
     @abstractmethod
-    async def subscribe_symbols(self, symbols: List[str]) -> None:
+    async def subscribe_symbols(self, symbols: list[str]) -> None:
         """Subscribe to symbols"""
 
     @abstractmethod
-    async def unsubscribe_symbols(self, symbols: List[str]) -> None:
+    async def unsubscribe_symbols(self, symbols: list[str]) -> None:
         """Unsubscribe from symbols"""
 
     def add_subscriber(self, callback: Callable[[Candle], None]) -> None:
@@ -153,7 +153,7 @@ class MockStreamingProvider(StreamingDataProvider):
 
         print("✅ Disconnected from Mock streaming provider")
 
-    async def subscribe_symbols(self, symbols: List[str]) -> None:
+    async def subscribe_symbols(self, symbols: list[str]) -> None:
         """Subscribe to symbols"""
         print(f"➕ Subscribing to symbols: {symbols}")
 
@@ -165,7 +165,7 @@ class MockStreamingProvider(StreamingDataProvider):
         if symbols not in self.config.symbols:
             self.config.symbols.extend(symbols)
 
-    async def unsubscribe_symbols(self, symbols: List[str]) -> None:
+    async def unsubscribe_symbols(self, symbols: list[str]) -> None:
         """Unsubscribe from symbols"""
         print(f"➖ Unsubscribing from symbols: {symbols}")
 
@@ -267,7 +267,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
 
         print("✅ Disconnected from Alpaca streaming")
 
-    async def subscribe_symbols(self, symbols: List[str]) -> None:
+    async def subscribe_symbols(self, symbols: list[str]) -> None:
         """Subscribe to Alpaca symbols"""
         if not self.is_connected:
             raise RuntimeError("Not connected to Alpaca")
@@ -283,7 +283,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
 
         print(f"➕ Subscribed to Alpaca symbols: {symbols}")
 
-    async def unsubscribe_symbols(self, symbols: List[str]) -> None:
+    async def unsubscribe_symbols(self, symbols: list[str]) -> None:
         """Unsubscribe from Alpaca symbols"""
         if not self.is_connected:
             return
@@ -342,8 +342,8 @@ class StreamingManager:
 
     def __init__(self):
         self.providers: Dict[StreamingProvider, StreamingDataProvider] = {}
-        self.subscribers: List[Callable[[Candle], None]] = []
-        self.symbol_subscriptions: Dict[str, List[StreamingProvider]] = {}
+        self.subscribers: list[Callable[[Candle], None]] = []
+        self.symbol_subscriptions: Dict[str, list[StreamingProvider]] = {}
         self.is_running = False
 
     def add_provider(self, provider: StreamingDataProvider) -> None:
@@ -402,7 +402,7 @@ class StreamingManager:
         self.is_running = False
 
     async def subscribe_symbol(
-        self, symbol: str, providers: Optional[List[StreamingProvider]] = None
+        self, symbol: str, providers: Optional[list[StreamingProvider]] = None
     ) -> None:
         """Subscribe to a symbol on specified providers"""
         if providers is None:
@@ -420,7 +420,7 @@ class StreamingManager:
                     self.symbol_subscriptions[symbol].append(provider_type)
 
     async def unsubscribe_symbol(
-        self, symbol: str, providers: Optional[List[StreamingProvider]] = None
+        self, symbol: str, providers: Optional[list[StreamingProvider]] = None
     ) -> None:
         """Unsubscribe from a symbol on specified providers"""
         if providers is None:
@@ -474,7 +474,7 @@ class StreamingFactory:
 
     @staticmethod
     def create_manager_with_providers(
-        configs: List[StreamingConfig],
+        configs: list[StreamingConfig],
     ) -> StreamingManager:
         """Create a streaming manager with multiple providers"""
         manager = StreamingManager()

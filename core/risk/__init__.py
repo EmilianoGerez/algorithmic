@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from ..data.models import Position, Signal, SignalDirection
 
@@ -70,7 +70,7 @@ class PositionSizer(ABC):
         signal: Signal,
         account_balance: Decimal,
         risk_limits: RiskLimits,
-        current_positions: List[Position],
+        current_positions: list[Position],
     ) -> Decimal:
         """Calculate position size for a signal"""
 
@@ -86,7 +86,7 @@ class FixedRiskPositionSizer(PositionSizer):
         signal: Signal,
         account_balance: Decimal,
         risk_limits: RiskLimits,
-        current_positions: List[Position],
+        current_positions: list[Position],
     ) -> Decimal:
         """Calculate position size based on fixed risk percentage"""
         if signal.stop_loss is None:
@@ -122,7 +122,7 @@ class VolatilityPositionSizer(PositionSizer):
         signal: Signal,
         account_balance: Decimal,
         risk_limits: RiskLimits,
-        current_positions: List[Position],
+        current_positions: list[Position],
     ) -> Decimal:
         """Calculate position size based on volatility"""
         # Get ATR from signal metadata if available
@@ -173,7 +173,7 @@ class KellyPositionSizer(PositionSizer):
         signal: Signal,
         account_balance: Decimal,
         risk_limits: RiskLimits,
-        current_positions: List[Position],
+        current_positions: list[Position],
     ) -> Decimal:
         """Calculate position size using Kelly Criterion"""
         # Get historical performance from signal metadata
@@ -222,7 +222,7 @@ class RiskManager:
         self.initial_capital = initial_capital
 
         # Portfolio state
-        self.positions: List[Position] = []
+        self.positions: list[Position] = []
         self.metrics = PortfolioMetrics()
         self.metrics.total_value = initial_capital
         self.metrics.available_cash = initial_capital
@@ -230,7 +230,7 @@ class RiskManager:
         # Risk tracking
         self.daily_start_balance = initial_capital
         self.peak_balance = initial_capital
-        self.trade_history: List[Dict] = []
+        self.trade_history: list[Dict] = []
 
     def evaluate_signal(self, signal: Signal) -> Dict[str, any]:
         """Evaluate a signal and return risk assessment"""

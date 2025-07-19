@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..data.adapters import DataAdapter
 from ..data.feeds import BacktestDataFeed
@@ -66,9 +66,9 @@ class CoreBacktestEngine(BacktestEngine):
 
     def reset(self):
         """Reset engine state"""
-        self.signals: List[Signal] = []
-        self.positions: List[Position] = []
-        self.trades: List[Dict] = []
+        self.signals: list[Signal] = []
+        self.positions: list[Position] = []
+        self.trades: list[Dict] = []
         self.current_time: Optional[datetime] = None
         self.current_prices: Dict[str, Decimal] = {}
         self.performance_metrics = {
@@ -327,7 +327,7 @@ class OptimizationEngine:
         strategy_class: type,
         market_data: MarketData,
         config: BacktestConfig,
-        parameter_ranges: Dict[str, List[Any]],
+        parameter_ranges: Dict[str, list[Any]],
         objective_function: str = "total_return",
     ) -> Dict[str, Any]:
         """Optimize strategy parameters"""
@@ -372,8 +372,8 @@ class OptimizationEngine:
         }
 
     def _generate_parameter_combinations(
-        self, parameter_ranges: Dict[str, List[Any]]
-    ) -> List[Dict]:
+        self, parameter_ranges: Dict[str, list[Any]]
+    ) -> list[Dict]:
         """Generate all combinations of parameters"""
         keys = list(parameter_ranges.keys())
         values = list(parameter_ranges.values())
@@ -443,12 +443,12 @@ class BacktestRunner:
     def run_multi_symbol_backtest(
         self,
         strategy: BaseStrategy,
-        symbols: List[str],
+        symbols: list[str],
         timeframe: TimeFrame,
         start_date: datetime,
         end_date: datetime,
         initial_capital: Decimal = Decimal("100000"),
-    ) -> List[BacktestResult]:
+    ) -> list[BacktestResult]:
         """Run backtest across multiple symbols"""
         results = []
 

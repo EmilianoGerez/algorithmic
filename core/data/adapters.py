@@ -8,7 +8,7 @@ These adapters handle the integration with different data sources and platforms.
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 import logging
 
 from .models import Candle, MarketData, TimeFrame
@@ -399,6 +399,6 @@ class DataAdapterFactory:
         cls._adapters[name] = adapter_class
 
     @classmethod
-    def get_available_adapters(cls) -> List[str]:
+    def get_available_adapters(cls) -> list[str]:
         """Get list of available adapter types"""
         return list(cls._adapters.keys())

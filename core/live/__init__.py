@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from ..data.models import (
     Order,
@@ -63,8 +63,8 @@ class TradingState:
     orders_sent_today: int = 0
     orders_sent_this_minute: int = 0
     last_minute_reset: datetime = field(default_factory=datetime.now)
-    active_orders: List[Order] = field(default_factory=list)
-    filled_orders: List[Order] = field(default_factory=list)
+    active_orders: list[Order] = field(default_factory=list)
+    filled_orders: list[Order] = field(default_factory=list)
     error_count: int = 0
     last_error: Optional[str] = None
 
@@ -115,7 +115,7 @@ class BrokerAdapter(ABC):
         """Get order status"""
 
     @abstractmethod
-    async def get_positions(self) -> List[Position]:
+    async def get_positions(self) -> list[Position]:
         """Get current positions"""
 
     @abstractmethod
@@ -199,7 +199,7 @@ class PaperBrokerAdapter(BrokerAdapter):
             return self.orders[order_id].status
         return OrderStatus.REJECTED
 
-    async def get_positions(self) -> List[Position]:
+    async def get_positions(self) -> list[Position]:
         """Get paper trading positions"""
         return list(self.positions.values())
 
@@ -309,13 +309,13 @@ class LiveTradingEngine:
         self.state = TradingState()
 
         # Event handlers
-        self.signal_handlers: List[Callable[[Signal], None]] = []
-        self.order_handlers: List[Callable[[Order], None]] = []
-        self.position_handlers: List[Callable[[Position], None]] = []
-        self.error_handlers: List[Callable[[str], None]] = []
+        self.signal_handlers: list[Callable[[Signal], None]] = []
+        self.order_handlers: list[Callable[[Order], None]] = []
+        self.position_handlers: list[Callable[[Position], None]] = []
+        self.error_handlers: list[Callable[[str], None]] = []
 
         # Background tasks
-        self._background_tasks: List[asyncio.Task] = []
+        self._background_tasks: list[asyncio.Task] = []
         self._shutdown_event = asyncio.Event()
 
         # Order management

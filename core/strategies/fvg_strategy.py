@@ -7,7 +7,7 @@ Extracts the successful logic from the legacy system with clean architecture.
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..data.models import (
     Candle,
@@ -70,7 +70,7 @@ class FVGStrategy(BaseStrategy):
         self.multi_tf_engine = MultiTimeframeEngine(config)
 
         # State tracking
-        self.active_fvgs: List[FVGZone] = []
+        self.active_fvgs: list[FVGZone] = []
         self.last_signal_time: Optional[datetime] = None
         self.consecutive_close_count = 0
         self.last_close_direction: Optional[str] = None
@@ -100,7 +100,7 @@ class FVGStrategy(BaseStrategy):
 
     def generate_signals(
         self, market_data: Dict[TimeFrame, MarketData]
-    ) -> List[Signal]:
+    ) -> list[Signal]:
         """
         Generate trading signals based on FVG strategy logic.
 
@@ -185,7 +185,7 @@ class FVGStrategy(BaseStrategy):
 
         return True
 
-    def get_required_timeframes(self) -> List[TimeFrame]:
+    def get_required_timeframes(self) -> list[TimeFrame]:
         """Get required timeframes for the strategy"""
         return self.htf_timeframes + [self.ltf_timeframe]
 
@@ -261,8 +261,8 @@ class FVGStrategy(BaseStrategy):
                 self.fvg_detector.update_fvg_status(fvg, current_price)
 
     def _filter_fvgs_by_age_and_quality(
-        self, fvg_zones: List[FVGZone]
-    ) -> List[FVGZone]:
+        self, fvg_zones: list[FVGZone]
+    ) -> list[FVGZone]:
         """Filter FVGs by age and quality"""
         filtered = []
         current_time = datetime.utcnow()
@@ -286,7 +286,7 @@ class FVGStrategy(BaseStrategy):
         return filtered
 
     def _check_entry_signal(
-        self, fvg_zone: FVGZone, ltf_data: MarketData, emas: Dict[str, List]
+        self, fvg_zone: FVGZone, ltf_data: MarketData, emas: Dict[str, list]
     ) -> Optional[Signal]:
         """Check if FVG zone generates an entry signal"""
         current_candle = ltf_data.candles[-1]
@@ -355,7 +355,7 @@ class FVGStrategy(BaseStrategy):
         return signal
 
     def _calculate_stop_and_target(
-        self, fvg_zone: FVGZone, current_candle: Candle, candles: List[Candle]
+        self, fvg_zone: FVGZone, current_candle: Candle, candles: list[Candle]
     ) -> tuple:
         """Calculate stop loss and take profit levels"""
         entry_price = current_candle.close
@@ -384,7 +384,7 @@ class FVGStrategy(BaseStrategy):
         return stop_loss, take_profit
 
     def _find_swing_levels(
-        self, candles: List[Candle], lookback: int
+        self, candles: list[Candle], lookback: int
     ) -> Dict[str, Decimal]:
         """Find swing high and low levels"""
         if len(candles) < lookback:
@@ -398,7 +398,7 @@ class FVGStrategy(BaseStrategy):
         return {"high": swing_high, "low": swing_low}
 
     def _calculate_signal_confidence(
-        self, fvg_zone: FVGZone, emas: Dict[str, List], ltf_data: MarketData
+        self, fvg_zone: FVGZone, emas: Dict[str, list], ltf_data: MarketData
     ) -> float:
         """Calculate signal confidence score"""
         confidence = fvg_zone.confidence * 0.6  # Base from FVG quality
@@ -435,7 +435,7 @@ class FVGStrategy(BaseStrategy):
 
         return False
 
-    def _is_market_trending(self, candles: List[Candle], period: int = 20) -> bool:
+    def _is_market_trending(self, candles: list[Candle], period: int = 20) -> bool:
         """Check if market is trending"""
         if len(candles) < period:
             return False
@@ -453,8 +453,8 @@ class FVGStrategy(BaseStrategy):
         return (price_range / avg_price) > 0.03
 
     def _filter_signals(
-        self, signals: List[Signal], ltf_data: MarketData
-    ) -> List[Signal]:
+        self, signals: list[Signal], ltf_data: MarketData
+    ) -> list[Signal]:
         """Filter signals by quality and timing"""
         filtered = []
 

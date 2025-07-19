@@ -6,7 +6,7 @@ Clean, efficient implementations with standardized interfaces.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..data.models import Candle
 
@@ -29,14 +29,14 @@ class TechnicalIndicators:
     Collection of technical indicators with clean, standardized interfaces.
 
     All indicators follow the same pattern:
-    - Accept List[Candle] as input
-    - Return List[IndicatorResult] or single values
+    - Accept list[Candle] as input
+    - Return list[IndicatorResult] or single values
     - Handle edge cases gracefully
     - Provide configurable parameters
     """
 
     @staticmethod
-    def ema(candles: List[Candle], period: int) -> List[IndicatorResult]:
+    def ema(candles: list[Candle], period: int) -> list[IndicatorResult]:
         """
         Exponential Moving Average
 
@@ -73,7 +73,7 @@ class TechnicalIndicators:
         return results
 
     @staticmethod
-    def sma(candles: List[Candle], period: int) -> List[IndicatorResult]:
+    def sma(candles: list[Candle], period: int) -> list[IndicatorResult]:
         """
         Simple Moving Average
 
@@ -103,7 +103,7 @@ class TechnicalIndicators:
         return results
 
     @staticmethod
-    def rsi(candles: List[Candle], period: int = 14) -> List[IndicatorResult]:
+    def rsi(candles: list[Candle], period: int = 14) -> list[IndicatorResult]:
         """
         Relative Strength Index
 
@@ -156,7 +156,7 @@ class TechnicalIndicators:
         return results
 
     @staticmethod
-    def atr(candles: List[Candle], period: int = 14) -> List[IndicatorResult]:
+    def atr(candles: list[Candle], period: int = 14) -> list[IndicatorResult]:
         """
         Average True Range
 
@@ -204,11 +204,11 @@ class TechnicalIndicators:
 
     @staticmethod
     def macd(
-        candles: List[Candle],
+        candles: list[Candle],
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> Dict[str, List[IndicatorResult]]:
+    ) -> Dict[str, list[IndicatorResult]]:
         """
         Moving Average Convergence Divergence
 
@@ -288,8 +288,8 @@ class TechnicalIndicators:
 
     @staticmethod
     def bollinger_bands(
-        candles: List[Candle], period: int = 20, std_dev: float = 2.0
-    ) -> Dict[str, List[IndicatorResult]]:
+        candles: list[Candle], period: int = 20, std_dev: float = 2.0
+    ) -> Dict[str, list[IndicatorResult]]:
         """
         Bollinger Bands
 
@@ -346,8 +346,8 @@ class TechnicalIndicators:
 
     @staticmethod
     def stochastic(
-        candles: List[Candle], k_period: int = 14, d_period: int = 3
-    ) -> Dict[str, List[IndicatorResult]]:
+        candles: list[Candle], k_period: int = 14, d_period: int = 3
+    ) -> Dict[str, list[IndicatorResult]]:
         """
         Stochastic Oscillator
 
@@ -434,7 +434,7 @@ class EMASystem:
         self.medium_period = medium_period
         self.slow_period = slow_period
 
-    def calculate_emas(self, candles: List[Candle]) -> Dict[str, List[IndicatorResult]]:
+    def calculate_emas(self, candles: list[Candle]) -> Dict[str, list[IndicatorResult]]:
         """
         Calculate all EMAs for the system.
 
@@ -452,7 +452,7 @@ class EMASystem:
 
     def check_ema_alignment(
         self,
-        emas: Dict[str, List[IndicatorResult]],
+        emas: Dict[str, list[IndicatorResult]],
         direction: str,
         index: int = -1,
     ) -> bool:
@@ -487,7 +487,7 @@ class EMASystem:
         return False
 
     def get_trend_strength(
-        self, emas: Dict[str, List[IndicatorResult]], index: int = -1
+        self, emas: Dict[str, list[IndicatorResult]], index: int = -1
     ) -> float:
         """
         Calculate trend strength based on EMA separation.
@@ -521,8 +521,8 @@ class EMASystem:
 
     def check_consecutive_closes(
         self,
-        candles: List[Candle],
-        emas: Dict[str, List[IndicatorResult]],
+        candles: list[Candle],
+        emas: Dict[str, list[IndicatorResult]],
         direction: str,
         consecutive_count: int = 2,
     ) -> bool:

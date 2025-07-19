@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 class TimeFrame(Enum):
@@ -83,7 +83,7 @@ class MarketData:
 
     symbol: str
     timeframe: TimeFrame
-    candles: List[Candle] = field(default_factory=list)
+    candles: list[Candle] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def add_candle(self, candle: Candle) -> None:
@@ -105,7 +105,7 @@ class MarketData:
         """Get the most recent candle"""
         return self.candles[-1] if self.candles else None
 
-    def get_candles_range(self, start: datetime, end: datetime) -> List[Candle]:
+    def get_candles_range(self, start: datetime, end: datetime) -> list[Candle]:
         """Get candles within a time range"""
         return [candle for candle in self.candles if start <= candle.timestamp <= end]
 
@@ -259,7 +259,7 @@ class StrategyConfig:
 
     name: str
     symbol: str
-    timeframes: List[TimeFrame]
+    timeframes: list[TimeFrame]
     risk_per_trade: float = 0.02  # 2% risk per trade
     risk_reward_ratio: float = 2.0
     max_positions: int = 1
@@ -295,8 +295,8 @@ class BacktestResult:
     sharpe_ratio: Optional[float] = None
     sortino_ratio: Optional[float] = None
     profit_factor: Optional[float] = None
-    signals: List[Signal] = field(default_factory=list)
-    trades: List[Position] = field(default_factory=list)
+    signals: list[Signal] = field(default_factory=list)
+    trades: list[Position] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def calculate_return_percentage(self) -> float:

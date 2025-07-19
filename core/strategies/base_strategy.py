@@ -6,7 +6,7 @@ Defines the contract that all strategies must implement.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..data.models import (
     MarketData,
@@ -36,7 +36,7 @@ class BaseStrategy(ABC):
         self.name = config.name
         self.symbol = config.symbol
         self.timeframes = config.timeframes
-        self.active_positions: List[Position] = []
+        self.active_positions: list[Position] = []
         self.signal_callback = None  # For backtesting
         self.is_initialized = False
 
@@ -58,7 +58,7 @@ class BaseStrategy(ABC):
     @abstractmethod
     def generate_signals(
         self, market_data: Dict[TimeFrame, MarketData]
-    ) -> List[Signal]:
+    ) -> list[Signal]:
         """
         Generate trading signals based on market data.
 
@@ -82,7 +82,7 @@ class BaseStrategy(ABC):
         """
 
     @abstractmethod
-    def get_required_timeframes(self) -> List[TimeFrame]:
+    def get_required_timeframes(self) -> list[TimeFrame]:
         """
         Get the timeframes required by this strategy.
 
@@ -268,7 +268,7 @@ class StrategyRegistry:
         """
         return self._instances.get(instance_key)
 
-    def list_strategies(self) -> List[str]:
+    def list_strategies(self) -> list[str]:
         """
         List all registered strategy names.
 
@@ -277,7 +277,7 @@ class StrategyRegistry:
         """
         return list(self._strategies.keys())
 
-    def list_instances(self) -> List[str]:
+    def list_instances(self) -> list[str]:
         """
         List all strategy instance keys.
 

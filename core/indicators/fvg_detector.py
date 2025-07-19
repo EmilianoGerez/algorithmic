@@ -8,7 +8,7 @@ Clean implementation with enhanced filtering and quality scoring.
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from ..data.models import Candle, FVGZone, SignalDirection
 
@@ -68,9 +68,9 @@ class FVGDetector:
             config: FVG filter configuration
         """
         self.config = config or FVGFilterConfig()
-        self.detected_fvgs: List[FVGZone] = []
+        self.detected_fvgs: list[FVGZone] = []
 
-    def detect_fvgs(self, candles: List[Candle]) -> List[FVGZone]:
+    def detect_fvgs(self, candles: list[Candle]) -> list[FVGZone]:
         """
         Detect Fair Value Gaps in price data.
 
@@ -122,7 +122,7 @@ class FVGDetector:
 
     def _create_fvg_zone(
         self,
-        candles: List[Candle],
+        candles: list[Candle],
         index: int,
         zone_low: Decimal,
         zone_high: Decimal,
@@ -196,7 +196,7 @@ class FVGDetector:
         return True
 
     def _calculate_fvg_strength(
-        self, candles: List[Candle], index: int, zone_size: float, atr: float
+        self, candles: list[Candle], index: int, zone_size: float, atr: float
     ) -> float:
         """
         Calculate FVG strength score (0.0 to 1.0).
@@ -229,7 +229,7 @@ class FVGDetector:
         return min(strength, 1.0)
 
     def _calculate_fvg_confidence(
-        self, candles: List[Candle], index: int, strength: float
+        self, candles: list[Candle], index: int, strength: float
     ) -> float:
         """
         Calculate FVG confidence score (0.0 to 1.0).
@@ -251,7 +251,7 @@ class FVGDetector:
 
         return min(confidence, 1.0)
 
-    def _calculate_volume_factor(self, candles: List[Candle], index: int) -> float:
+    def _calculate_volume_factor(self, candles: list[Candle], index: int) -> float:
         """Calculate volume factor for strength calculation"""
         if index < self.config.volume_context_periods:
             return 0.0
@@ -277,7 +277,7 @@ class FVGDetector:
         volume_ratio = current_volume / avg_volume
         return min(volume_ratio / 2.0, 1.0)  # Normalize to 0-1
 
-    def _calculate_momentum_factor(self, candles: List[Candle], index: int) -> float:
+    def _calculate_momentum_factor(self, candles: list[Candle], index: int) -> float:
         """Calculate momentum factor for strength calculation"""
         if index < 10:
             return 0.0
@@ -292,7 +292,7 @@ class FVGDetector:
         return min(momentum, 1.0)
 
     def _is_in_consolidation(
-        self, candles: List[Candle], index: int, period: int = 20
+        self, candles: list[Candle], index: int, period: int = 20
     ) -> bool:
         """Check if price is in consolidation phase"""
         if index < period:
@@ -309,7 +309,7 @@ class FVGDetector:
 
         return (price_range / avg_price) < 0.02  # 2% range threshold
 
-    def _has_sufficient_volume(self, candles: List[Candle], index: int) -> bool:
+    def _has_sufficient_volume(self, candles: list[Candle], index: int) -> bool:
         """Check if candle has sufficient volume"""
         if index < self.config.volume_context_periods:
             return True
@@ -334,7 +334,7 @@ class FVGDetector:
 
         return current_volume >= (avg_volume * self.config.min_volume_multiplier)
 
-    def _passes_context_filters(self, candles: List[Candle], index: int) -> bool:
+    def _passes_context_filters(self, candles: list[Candle], index: int) -> bool:
         """Check if FVG passes context filters"""
         # Weekend filter
         if self.config.exclude_weekend_fvgs:
@@ -353,7 +353,7 @@ class FVGDetector:
 
         return True
 
-    def _calculate_atr(self, candles: List[Candle], period: int = 14) -> float:
+    def _calculate_atr(self, candles: list[Candle], period: int = 14) -> float:
         """Calculate Average True Range"""
         if len(candles) < period:
             return 0.0
@@ -387,7 +387,7 @@ class FVGDetector:
         else:
             return FVGQuality.LOW
 
-    def get_active_fvgs(self) -> List[FVGZone]:
+    def get_active_fvgs(self) -> list[FVGZone]:
         """Get currently active FVG zones"""
         return [fvg for fvg in self.detected_fvgs if fvg.status == "active"]
 

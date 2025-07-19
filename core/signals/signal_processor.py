@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from ..data.models import (
     Candle,
@@ -40,7 +40,7 @@ class SignalContext:
 
     htf_data: Dict[TimeFrame, MarketData]
     ltf_data: MarketData
-    fvg_zones: List[FVGZone]
+    fvg_zones: list[FVGZone]
     current_time: datetime
     strategy_config: StrategyConfig
 
@@ -63,10 +63,10 @@ class SignalProcessor:
         self.config = strategy_config
         self.fvg_detector = FVGDetector()
         self.ema_system = EMASystem()
-        self.generated_signals: List[Signal] = []
-        self.active_fvgs: List[FVGZone] = []
+        self.generated_signals: list[Signal] = []
+        self.active_fvgs: list[FVGZone] = []
 
-    def process_market_data(self, context: SignalContext) -> List[Signal]:
+    def process_market_data(self, context: SignalContext) -> list[Signal]:
         """
         Process market data and generate signals.
 
@@ -122,7 +122,7 @@ class SignalProcessor:
             for fvg in self.active_fvgs:
                 self.fvg_detector.update_fvg_status(fvg, current_price)
 
-    def _generate_entry_signals(self, context: SignalContext) -> List[Signal]:
+    def _generate_entry_signals(self, context: SignalContext) -> list[Signal]:
         """Generate entry signals based on strategy logic"""
         signals = []
 
@@ -159,14 +159,14 @@ class SignalProcessor:
 
         return signals
 
-    def _generate_exit_signals(self, context: SignalContext) -> List[Signal]:
+    def _generate_exit_signals(self, context: SignalContext) -> list[Signal]:
         """Generate exit signals for active positions"""
         # This can be implemented based on specific exit rules
         # For now, return empty list as exits are handled by stop/target orders
         return []
 
     def _create_entry_signal(
-        self, fvg_zone: FVGZone, context: SignalContext, emas: Dict[str, List]
+        self, fvg_zone: FVGZone, context: SignalContext, emas: Dict[str, list]
     ) -> Optional[Signal]:
         """Create an entry signal based on FVG zone and market conditions"""
         current_candle = context.ltf_data.candles[-1]
@@ -218,7 +218,7 @@ class SignalProcessor:
         return signal
 
     def _calculate_stop_and_target(
-        self, fvg_zone: FVGZone, entry_price: Decimal, candles: List[Candle]
+        self, fvg_zone: FVGZone, entry_price: Decimal, candles: list[Candle]
     ) -> Tuple[Optional[Decimal], Optional[Decimal]]:
         """Calculate stop loss and take profit levels"""
         # Find swing levels for stop loss
@@ -245,7 +245,7 @@ class SignalProcessor:
         return stop_loss, take_profit
 
     def _find_swing_levels(
-        self, candles: List[Candle], lookback: int = 20
+        self, candles: list[Candle], lookback: int = 20
     ) -> Dict[str, Decimal]:
         """Find swing high and low levels"""
         if len(candles) < lookback:
@@ -259,7 +259,7 @@ class SignalProcessor:
         return {"high": swing_high, "low": swing_low}
 
     def _calculate_signal_confidence(
-        self, fvg_zone: FVGZone, emas: Dict[str, List], context: SignalContext
+        self, fvg_zone: FVGZone, emas: Dict[str, list], context: SignalContext
     ) -> float:
         """Calculate signal confidence score"""
         confidence = fvg_zone.confidence * 0.6  # Base confidence from FVG
@@ -297,7 +297,7 @@ class SignalProcessor:
 
         return False
 
-    def _is_trending_market(self, candles: List[Candle], period: int = 20) -> bool:
+    def _is_trending_market(self, candles: list[Candle], period: int = 20) -> bool:
         """Check if market is trending (not consolidating)"""
         if len(candles) < period:
             return False
@@ -315,8 +315,8 @@ class SignalProcessor:
         return (price_range / avg_price) > 0.03
 
     def _filter_fvgs_by_quality(
-        self, fvg_zones: List[FVGZone], context: SignalContext
-    ) -> List[FVGZone]:
+        self, fvg_zones: list[FVGZone], context: SignalContext
+    ) -> list[FVGZone]:
         """Filter FVGs based on quality criteria"""
         filtered_fvgs = []
 
@@ -339,8 +339,8 @@ class SignalProcessor:
         return filtered_fvgs
 
     def _validate_signals(
-        self, signals: List[Signal], context: SignalContext
-    ) -> List[Signal]:
+        self, signals: list[Signal], context: SignalContext
+    ) -> list[Signal]:
         """Validate and filter signals"""
         validated_signals = []
 
@@ -501,7 +501,7 @@ class MultiTimeframeEngine:
         """
         self.timeframe_data[timeframe] = market_data
 
-    def generate_signals(self) -> List[Signal]:
+    def generate_signals(self) -> list[Signal]:
         """
         Generate signals using multi-timeframe analysis.
 

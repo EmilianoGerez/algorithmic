@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import Event, Thread
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 
 from .adapters import DataAdapter
 from .models import Candle, MarketData, TimeFrame
@@ -55,8 +55,8 @@ class LiveDataFeed(DataFeed):
     def __init__(
         self,
         adapter: DataAdapter,
-        symbols: List[str],
-        timeframes: List[TimeFrame],
+        symbols: list[str],
+        timeframes: list[TimeFrame],
     ):
         super().__init__(adapter)
         self.symbols = symbols
@@ -225,7 +225,7 @@ class MultiSymbolDataFeed(DataFeed):
         self.feeds = {}
         self.is_live = False
 
-    def add_symbol(self, symbol: str, timeframes: List[TimeFrame]) -> None:
+    def add_symbol(self, symbol: str, timeframes: list[TimeFrame]) -> None:
         """Add a symbol with its timeframes"""
         if symbol not in self.feeds:
             self.feeds[symbol] = {"timeframes": timeframes, "last_candles": {}}

@@ -402,7 +402,7 @@ async def stop_live_trading():
 
 
 @app.get("/live-trading/status")
-async def get_live_trading_status():
+async def get_live_trading_status() -> Dict[str, Any]:
     """Get live trading status"""
     if not system_state.live_engine:
         return {"running": False}
@@ -411,7 +411,7 @@ async def get_live_trading_status():
 
 
 @app.post("/live-trading/emergency-stop")
-async def emergency_stop(reason: str = "Manual emergency stop"):
+async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any]:
     """Emergency stop live trading"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
@@ -428,7 +428,7 @@ async def emergency_stop(reason: str = "Manual emergency stop"):
 
 # Signal endpoints
 @app.post("/signals/manual")
-async def send_manual_signal(signal_data: Dict[str, Any]):
+async def send_manual_signal(signal_data: Dict[str, Any]) -> Dict[str, Any]:
     """Send a manual trading signal"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
@@ -473,7 +473,7 @@ async def send_manual_signal(signal_data: Dict[str, Any]):
 
 # Position endpoints
 @app.get("/positions", response_model=list[PositionResponse])
-async def get_positions():
+async def get_positions() -> list[PositionResponse]:
     """Get current positions"""
     try:
         if not system_state.live_engine:
@@ -488,7 +488,7 @@ async def get_positions():
 
 # Order endpoints
 @app.get("/orders", response_model=list[OrderResponse])
-async def get_orders():
+async def get_orders() -> list[OrderResponse]:
     """Get recent orders"""
     try:
         if not system_state.live_engine:
@@ -508,7 +508,7 @@ async def get_orders():
 
 # Backtesting endpoints
 @app.post("/backtest/run")
-async def run_backtest(request: BacktestRequest):
+async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
     """Run a backtest"""
     try:
         # Create data adapter
@@ -560,7 +560,7 @@ async def run_backtest(request: BacktestRequest):
 
 # Portfolio endpoints
 @app.get("/portfolio/summary")
-async def get_portfolio_summary():
+async def get_portfolio_summary() -> Dict[str, Any]:
     """Get portfolio summary"""
     try:
         if not system_state.risk_manager:
@@ -574,7 +574,7 @@ async def get_portfolio_summary():
 
 # WebSocket endpoint for real-time updates
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time updates"""
     await connection_manager.connect(websocket)
     try:
@@ -587,7 +587,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 # Event handlers
-def _on_order_event(order: Order):
+def _on_order_event(order: Order) -> None:
     """Handle order events"""
     asyncio.create_task(
         _broadcast_event(
@@ -604,7 +604,7 @@ def _on_order_event(order: Order):
     )
 
 
-def _on_position_event(position: Position):
+def _on_position_event(position: Position) -> None:
     """Handle position events"""
     asyncio.create_task(
         _broadcast_event(
@@ -619,12 +619,12 @@ def _on_position_event(position: Position):
     )
 
 
-def _on_error_event(error: str):
+def _on_error_event(error: str) -> None:
     """Handle error events"""
     asyncio.create_task(_broadcast_event("error", {"message": error}))
 
 
-async def _broadcast_event(event_type: str, data: Dict[str, Any]):
+async def _broadcast_event(event_type: str, data: Dict[str, Any]) -> None:
     """Broadcast event to all WebSocket connections"""
     message = json.dumps(
         {

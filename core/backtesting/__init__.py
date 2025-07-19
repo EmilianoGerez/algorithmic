@@ -160,8 +160,12 @@ class CoreBacktestEngine(BacktestEngine):
         try:
             if hasattr(self, "current_strategy"):
                 self.current_strategy.generate_signals(market_data)
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass  # Ignore errors for demo
+        except (AttributeError, ValueError, KeyError) as exc:
+            import logging
+            logging.warning(f"Error generating signals: {exc}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            import logging
+            logging.error(f"Unexpected error generating signals: {exc}")
 
     def _on_signal(self, signal: Signal) -> None:
         """Handle signals from strategy"""

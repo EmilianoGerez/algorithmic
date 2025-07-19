@@ -246,9 +246,7 @@ class TestFVGSystemIntegration:
                 minutes=(
                     5
                     if timeframe == TimeFrame.MINUTE_5
-                    else 15
-                    if timeframe == TimeFrame.MINUTE_15
-                    else 60
+                    else 15 if timeframe == TimeFrame.MINUTE_15 else 60
                 )
             )
 

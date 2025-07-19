@@ -31,9 +31,9 @@ class BaseStrategy(ABC):
         self.symbol = config.symbol
         self.timeframes = config.timeframes
         self.active_positions: list[Position] = []
-        self.signal_callback: Optional[
-            Callable[[Signal], None]
-        ] = None  # For backtesting
+        self.signal_callback: Optional[Callable[[Signal], None]] = (
+            None  # For backtesting
+        )
         self.is_initialized = False
 
         # Performance tracking

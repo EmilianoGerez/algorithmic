@@ -25,7 +25,7 @@ def run_command(cmd, description=""):
             cmd_list = shlex.split(cmd)
         else:
             cmd_list = cmd
-        
+
         subprocess.run(cmd_list, shell=False, check=True, capture_output=False)
         print(f"✅ {description or cmd} completed successfully")
         return True

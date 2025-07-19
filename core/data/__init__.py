@@ -11,12 +11,7 @@ from .adapters import (
     DataAdapterFactory,
     YahooFinanceAdapter,
 )
-from .feeds import (
-    BacktestDataFeed,
-    DataFeed,
-    LiveDataFeed,
-    MultiSymbolDataFeed,
-)
+from .feeds import BacktestDataFeed, DataFeed, LiveDataFeed, MultiSymbolDataFeed
 from .models import (
     BacktestResult,
     Candle,

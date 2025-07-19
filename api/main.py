@@ -10,15 +10,20 @@ import json
 from contextlib import asynccontextmanager
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from core import (
     BacktestRunner,
     BaseStrategy,
     DataAdapterFactory,
     ExecutionMode,
-    FVGStrategy,
     FixedRiskPositionSizer,
+    FVGStrategy,
     LiveTradingConfig,
     LiveTradingEngine,
     Order,
@@ -33,18 +38,6 @@ from core import (
     create_fvg_strategy_config,
     strategy_registry,
 )
-
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    Request,
-    WebSocket,
-    WebSocketDisconnect,
-)
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from pydantic import BaseModel, Field
 
 
 # Pydantic models for API requests/responses
@@ -149,7 +142,7 @@ class StrategyConfigRequest(BaseModel):
     timeframes: list[str]
     risk_per_trade: float = 0.02
     confidence_threshold: float = 0.85
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class BacktestRequest(BaseModel):
@@ -182,7 +175,7 @@ class SystemState:
         """Initialize system state."""
         self.live_engine: Optional[LiveTradingEngine] = None
         self.risk_manager: Optional[RiskManager] = None
-        self.active_strategies: Dict[str, BaseStrategy] = {}
+        self.active_strategies: dict[str, BaseStrategy] = {}
         self.websocket_connections: list[WebSocket] = []
         self.is_live_trading = False
         self.system_start_time = datetime.now()
@@ -209,9 +202,7 @@ class ConnectionManager:
         """Disconnect a WebSocket."""
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(
-        self, message: str, websocket: WebSocket
-    ) -> None:
+    async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
         """Send a personal message to a WebSocket."""
         await websocket.send_text(message)
 
@@ -277,7 +268,7 @@ app.add_middleware(
 
 # Health check endpoint
 @app.get("/health")
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {
         "status": "healthy",
@@ -297,7 +288,7 @@ async def get_available_strategies() -> list[str]:
 @app.post("/strategies/{strategy_name}/activate")
 async def activate_strategy(
     strategy_name: str, config: StrategyConfigRequest
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Activate a strategy."""
     try:
         # Get strategy class
@@ -335,7 +326,7 @@ async def activate_strategy(
 
 
 @app.delete("/strategies/{strategy_id}")
-async def deactivate_strategy(strategy_id: str) -> Dict[str, str]:
+async def deactivate_strategy(strategy_id: str) -> dict[str, str]:
     """Deactivate a strategy."""
     if strategy_id not in system_state.active_strategies:
         raise HTTPException(status_code=404, detail="Strategy not found")
@@ -352,7 +343,7 @@ async def get_active_strategies() -> list[str]:
 
 # Live trading endpoints
 @app.post("/live-trading/start")
-async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
+async def start_live_trading(config: LiveTradingRequest) -> dict[str, str]:
     """Start live trading."""
     try:
         if system_state.is_live_trading:
@@ -400,7 +391,7 @@ async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
 
 
 @app.post("/live-trading/stop")
-async def stop_live_trading() -> Dict[str, str]:
+async def stop_live_trading() -> dict[str, str]:
     """Stop live trading."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
@@ -417,7 +408,7 @@ async def stop_live_trading() -> Dict[str, str]:
 
 
 @app.get("/live-trading/status")
-async def get_live_trading_status() -> Dict[str, Any]:
+async def get_live_trading_status() -> dict[str, Any]:
     """Get live trading status."""
     if not system_state.live_engine:
         return {"running": False}
@@ -426,7 +417,7 @@ async def get_live_trading_status() -> Dict[str, Any]:
 
 
 @app.post("/live-trading/emergency-stop")
-async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any]:
+async def emergency_stop(reason: str = "Manual emergency stop") -> dict[str, Any]:
     """Emergency stop live trading."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
@@ -443,7 +434,7 @@ async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any
 
 # Signal endpoints
 @app.post("/signals/manual")
-async def send_manual_signal(signal_data: Dict[str, Any]) -> Dict[str, Any]:
+async def send_manual_signal(signal_data: dict[str, Any]) -> dict[str, Any]:
     """Send a manual trading signal."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
@@ -510,8 +501,8 @@ async def get_orders() -> list[OrderResponse]:
             return []
 
         orders = (
-            list(system_state.live_engine.pending_orders.values()) +
-            system_state.live_engine.state.filled_orders[
+            list(system_state.live_engine.pending_orders.values())
+            + system_state.live_engine.state.filled_orders[
                 -50:
             ]  # Last 50 filled orders
         )
@@ -523,7 +514,7 @@ async def get_orders() -> list[OrderResponse]:
 
 # Backtesting endpoints
 @app.post("/backtest/run")
-async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
+async def run_backtest(request: BacktestRequest) -> dict[str, Any]:
     """Run a backtest."""
     try:
         # Create data adapter
@@ -575,7 +566,7 @@ async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
 
 # Portfolio endpoints
 @app.get("/portfolio/summary")
-async def get_portfolio_summary() -> Dict[str, Any]:
+async def get_portfolio_summary() -> dict[str, Any]:
     """Get portfolio summary."""
     try:
         if not system_state.risk_manager:
@@ -639,7 +630,7 @@ def _on_error_event(error: str) -> None:
     asyncio.create_task(_broadcast_event("error", {"message": error}))
 
 
-async def _broadcast_event(event_type: str, data: Dict[str, Any]) -> None:
+async def _broadcast_event(event_type: str, data: dict[str, Any]) -> None:
     """Broadcast event to all WebSocket connections."""
     message = json.dumps(
         {

@@ -8,10 +8,10 @@ Period: May 18, 2025 to July 18, 2025
 
 import os
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 # BTC/USD Backtest Configuration
-BACKTEST_CONFIG: Dict[str, Any] = {
+BACKTEST_CONFIG: dict[str, Any] = {
     "symbol": "BTCUSD",
     "start_date": "2025-05-18",
     "end_date": "2025-07-18",
@@ -31,7 +31,7 @@ BACKTEST_CONFIG: Dict[str, Any] = {
 }
 
 # Alpaca API Settings
-ALPACA_CONFIG: Dict[str, Any] = {
+ALPACA_CONFIG: dict[str, Any] = {
     "base_url": "https://paper-api.alpaca.markets",
     "data_source": "crypto",  # Alpaca crypto data
     "rate_limit": 200,  # requests per minute
@@ -39,7 +39,7 @@ ALPACA_CONFIG: Dict[str, Any] = {
 }
 
 # Expected Performance Metrics (for validation)
-EXPECTED_METRICS: Dict[str, Any] = {
+EXPECTED_METRICS: dict[str, Any] = {
     "min_total_return": 0.05,  # 5% minimum return
     "max_drawdown_limit": 0.25,  # 25% max acceptable drawdown
     "min_win_rate": 0.45,  # 45% minimum win rate
@@ -48,7 +48,7 @@ EXPECTED_METRICS: Dict[str, Any] = {
 }
 
 # Risk Management Rules
-RISK_RULES: Dict[str, Any] = {
+RISK_RULES: dict[str, Any] = {
     "max_position_size": 0.05,  # 5% max position size
     "max_portfolio_risk": 0.015,  # 1.5% max portfolio risk
     "max_correlation": 0.8,  # 80% max correlation
@@ -59,9 +59,10 @@ RISK_RULES: Dict[str, Any] = {
 
 def get_btc_backtest_summary():
     """Get formatted summary of BTC backtest configuration."""
+    separator = "=" * 50
     return f"""
 🚀 BTC/USD Alpaca Backtest Configuration
-{'=' * 50}
+{separator}
 
 📊 Market Data:
    Symbol: {BACKTEST_CONFIG['symbol']}
@@ -93,7 +94,7 @@ def get_btc_backtest_summary():
    Data Source: Alpaca Markets
    Rate Limit: {ALPACA_CONFIG['rate_limit']} req/min
    Max Bars/Request: {ALPACA_CONFIG['max_bars_per_request']:,}
-   {'=' * 50}
+   {separator}
 ."""
 
 

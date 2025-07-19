@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from ..data.models import (
     Candle,
@@ -38,7 +38,7 @@ class SignalQuality(Enum):
 class SignalContext:
     """Context information for signal generation."""
 
-    htf_data: Dict[TimeFrame, MarketData]
+    htf_data: dict[TimeFrame, MarketData]
     ltf_data: MarketData
     fvg_zones: list[FVGZone]
     current_time: datetime
@@ -124,7 +124,7 @@ class SignalProcessor:
 
     def _generate_entry_signals(self, context: SignalContext) -> list[Signal]:
         """Generate entry signals based on strategy logic."""
-        signals: List[Signal] = []
+        signals: list[Signal] = []
 
         if not context.ltf_data.candles or len(context.ltf_data.candles) < 50:
             return signals
@@ -166,7 +166,7 @@ class SignalProcessor:
         return []
 
     def _create_entry_signal(
-        self, fvg_zone: FVGZone, context: SignalContext, emas: Dict[str, list]
+        self, fvg_zone: FVGZone, context: SignalContext, emas: dict[str, list]
     ) -> Optional[Signal]:
         """Create an entry signal based on FVG zone and market conditions."""
         current_candle = context.ltf_data.candles[-1]
@@ -219,7 +219,7 @@ class SignalProcessor:
 
     def _calculate_stop_and_target(
         self, fvg_zone: FVGZone, entry_price: Decimal, candles: list[Candle]
-    ) -> Tuple[Optional[Decimal], Optional[Decimal]]:
+    ) -> tuple[Optional[Decimal], Optional[Decimal]]:
         """Calculate stop loss and take profit levels."""
         # Find swing levels for stop loss
         swing_levels = self._find_swing_levels(candles, lookback=20)
@@ -246,7 +246,7 @@ class SignalProcessor:
 
     def _find_swing_levels(
         self, candles: list[Candle], lookback: int = 20
-    ) -> Dict[str, Decimal]:
+    ) -> dict[str, Decimal]:
         """Find swing high and low levels."""
         if len(candles) < lookback:
             lookback = len(candles)
@@ -259,7 +259,7 @@ class SignalProcessor:
         return {"high": swing_high, "low": swing_low}
 
     def _calculate_signal_confidence(
-        self, fvg_zone: FVGZone, emas: Dict[str, list], context: SignalContext
+        self, fvg_zone: FVGZone, emas: dict[str, list], context: SignalContext
     ) -> float:
         """Calculate signal confidence score."""
         confidence = fvg_zone.confidence * 0.6  # Base confidence from FVG
@@ -435,7 +435,7 @@ class SignalProcessor:
         else:
             return SignalQuality.LOW
 
-    def get_signal_statistics(self) -> Dict[str, Any]:
+    def get_signal_statistics(self) -> dict[str, Any]:
         """Get signal generation statistics."""
         if not self.generated_signals:
             return {}
@@ -451,7 +451,7 @@ class SignalProcessor:
         )
         avg_strength = sum(s.strength for s in self.generated_signals) / total_signals
 
-        quality_counts: Dict[str, int] = {}
+        quality_counts: dict[str, int] = {}
         for signal in self.generated_signals:
             quality = signal.metadata.get("quality", SignalQuality.LOW)
             quality_counts[quality.value] = quality_counts.get(quality.value, 0) + 1
@@ -489,7 +489,7 @@ class MultiTimeframeEngine:
         ."""
         self.config = strategy_config
         self.signal_processor = SignalProcessor(strategy_config)
-        self.timeframe_data: Dict[TimeFrame, MarketData] = {}
+        self.timeframe_data: dict[TimeFrame, MarketData] = {}
 
     def add_market_data(self, timeframe: TimeFrame, market_data: MarketData) -> None:
         """
@@ -554,7 +554,7 @@ class MultiTimeframeEngine:
         }
         return timeframe_minutes.get(timeframe, 1440)
 
-    def get_engine_status(self) -> Dict[str, Any]:
+    def get_engine_status(self) -> dict[str, Any]:
         """Get engine status and statistics."""
         return {
             "timeframes": [tf.value for tf in self.timeframe_data.keys()],

@@ -17,9 +17,7 @@ class TestFVGDetector:
     def test_fvg_detector_creation(self):
         """Test FVG detector instantiation."""
         config = FVGFilterConfig(
-            min_zone_size_pips=10.0,
-            min_zone_size_percentage=0.001,
-            max_age_hours=24
+            min_zone_size_pips=10.0, min_zone_size_percentage=0.001, max_age_hours=24
         )
         detector = FVGDetector(config=config)
         assert detector is not None
@@ -28,9 +26,7 @@ class TestFVGDetector:
     def test_bullish_fvg_detection(self):
         """Test detection of bullish FVG patterns."""
         config = FVGFilterConfig(
-            min_zone_size_pips=10.0,
-            min_zone_size_percentage=0.001,
-            max_age_hours=24
+            min_zone_size_pips=10.0, min_zone_size_percentage=0.001, max_age_hours=24
         )
         detector = FVGDetector(config=config)
 
@@ -79,9 +75,7 @@ class TestFVGDetector:
     def test_bearish_fvg_detection(self):
         """Test detection of bearish FVG patterns."""
         config = FVGFilterConfig(
-            min_zone_size_pips=10.0,
-            min_zone_size_percentage=0.001,
-            max_age_hours=24
+            min_zone_size_pips=10.0, min_zone_size_percentage=0.001, max_age_hours=24
         )
         detector = FVGDetector(config=config)
 
@@ -130,9 +124,7 @@ class TestFVGDetector:
     def test_no_fvg_detection(self):
         """Test scenario where no FVG is detected."""
         config = FVGFilterConfig(
-            min_zone_size_pips=10.0,
-            min_zone_size_percentage=0.001,
-            max_age_hours=24
+            min_zone_size_pips=10.0, min_zone_size_percentage=0.001, max_age_hours=24
         )
         detector = FVGDetector(config=config)
 
@@ -180,7 +172,7 @@ class TestFVGDetector:
         config = FVGFilterConfig(
             min_zone_size_pips=100.0,  # Large minimum gap
             min_zone_size_percentage=0.05,  # 5% minimum gap
-            max_age_hours=24
+            max_age_hours=24,
         )
         detector = FVGDetector(config=config)
 

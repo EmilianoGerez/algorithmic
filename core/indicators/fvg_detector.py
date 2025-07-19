@@ -8,7 +8,7 @@ Clean implementation with enhanced filtering and quality scoring.
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, Optional
+from typing import Optional
 
 from ..data.models import Candle, FVGZone, SignalDirection
 
@@ -299,7 +299,7 @@ class FVGDetector:
             return False
 
         context_start = max(0, index - period)
-        context_candles = candles[context_start:index + 1]
+        context_candles = candles[context_start : index + 1]
 
         high_prices = [float(c.high) for c in context_candles]
         low_prices = [float(c.low) for c in context_candles]
@@ -400,7 +400,7 @@ class FVGDetector:
         # Invalidation logic can be added here
         # e.g., if price moves significantly beyond the zone
 
-    def get_quality_metrics(self) -> Dict[str, float]:
+    def get_quality_metrics(self) -> dict[str, float]:
         """Get quality metrics for detected FVGs."""
         if not self.detected_fvgs:
             return {}

@@ -61,7 +61,7 @@ def main():
                 "ci": "Run full CI pipeline locally",
                 "install": "Install development dependencies",
             }
-            print(f"  {cmd:<12} - {descriptions.get(cmd, '')}")
+            print(f"  {cmd: <12} - {descriptions.get(cmd, '')}")
         return 1
 
     command = sys.argv[1].lower()
@@ -112,9 +112,7 @@ def _run_lint_commands():
 
 def _run_type_commands():
     """Run type checking commands."""
-    return run_command(
-        "mypy core/ --ignore-missing-imports", "Type checking with Mypy"
-    )
+    return run_command("mypy core/ --ignore-missing-imports", "Type checking with Mypy")
 
 
 def _run_security_commands():
@@ -137,9 +135,7 @@ def _run_unit_commands():
 
 def _run_integration_commands():
     """Run integration test commands."""
-    return run_command(
-        "pytest tests/integration/ -v", "Running integration tests"
-    )
+    return run_command("pytest tests/integration/ -v", "Running integration tests")
 
 
 def _run_coverage_commands():

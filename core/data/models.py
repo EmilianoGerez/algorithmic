@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class TimeFrame(Enum):
@@ -84,7 +84,7 @@ class MarketData:
     symbol: str
     timeframe: TimeFrame
     candles: list[Candle] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_candle(self, candle: Candle) -> None:
         """Add a new candle to the data."""
@@ -126,7 +126,7 @@ class Signal:
     strategy_name: str = ""
     timeframe: TimeFrame = TimeFrame.MINUTE_15
     risk_reward_ratio: float = 2.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate signal data."""
@@ -178,7 +178,7 @@ class Position:
     realized_pnl: Decimal = Decimal("0")
     status: str = "open"
     strategy_name: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def update_current_price(self, price: Decimal) -> None:
         """Update current price and unrealized PnL."""
@@ -211,7 +211,7 @@ class Order:
     filled_price: Optional[Decimal] = None
     filled_quantity: Decimal = Decimal("0")
     strategy_name: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -229,7 +229,7 @@ class FVGZone:
     status: str = "active"  # active, touched, invalidated
     touch_count: int = 0
     created_candle_index: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate FVG zone data."""
@@ -264,7 +264,7 @@ class StrategyConfig:
     risk_reward_ratio: float = 2.0
     max_positions: int = 1
     confidence_threshold: float = 0.85
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -297,7 +297,7 @@ class BacktestResult:
     profit_factor: Optional[float] = None
     signals: list[Signal] = field(default_factory=list)
     trades: list[Position] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def calculate_return_percentage(self) -> float:
         """Calculate total return percentage."""

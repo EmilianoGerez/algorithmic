@@ -6,7 +6,7 @@ Clean, efficient implementations with standardized interfaces.
 ."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..data.models import Candle
 
@@ -17,7 +17,7 @@ class IndicatorResult:
 
     value: float
     timestamp: Optional[object] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
 
     def __post_init__(self) -> None:
         if self.metadata is None:
@@ -91,7 +91,7 @@ class TechnicalIndicators:
         results = []
 
         for i in range(period - 1, len(candles)):
-            sma_value = sum(closes[i - period + 1:i + 1]) / period
+            sma_value = sum(closes[i - period + 1 : i + 1]) / period
             results.append(
                 IndicatorResult(
                     value=sma_value,
@@ -208,7 +208,7 @@ class TechnicalIndicators:
         fast_period: int = 12,
         slow_period: int = 26,
         signal_period: int = 9,
-    ) -> Dict[str, list[IndicatorResult]]:
+    ) -> dict[str, list[IndicatorResult]]:
         """
         Moving Average Convergence Divergence
 
@@ -289,7 +289,7 @@ class TechnicalIndicators:
     @staticmethod
     def bollinger_bands(
         candles: list[Candle], period: int = 20, std_dev: float = 2.0
-    ) -> Dict[str, list[IndicatorResult]]:
+    ) -> dict[str, list[IndicatorResult]]:
         """
         Bollinger Bands
 
@@ -312,12 +312,12 @@ class TechnicalIndicators:
 
         for i in range(period - 1, len(candles)):
             # Calculate SMA
-            sma = sum(closes[i - period + 1:i + 1]) / period
+            sma = sum(closes[i - period + 1 : i + 1]) / period
 
             # Calculate standard deviation
             variance = (
-                sum((closes[j] - sma) ** 2 for j in range(i - period + 1, i + 1)) /
-                period
+                sum((closes[j] - sma) ** 2 for j in range(i - period + 1, i + 1))
+                / period
             )
             std = variance**0.5
 
@@ -347,7 +347,7 @@ class TechnicalIndicators:
     @staticmethod
     def stochastic(
         candles: list[Candle], k_period: int = 14, d_period: int = 3
-    ) -> Dict[str, list[IndicatorResult]]:
+    ) -> dict[str, list[IndicatorResult]]:
         """
         Stochastic Oscillator
 
@@ -394,8 +394,8 @@ class TechnicalIndicators:
         if len(k_values) >= d_period:
             for i in range(d_period - 1, len(k_values)):
                 d_value = (
-                    sum(k_values[j].value for j in range(i - d_period + 1, i + 1)) /
-                    d_period
+                    sum(k_values[j].value for j in range(i - d_period + 1, i + 1))
+                    / d_period
                 )
                 d_values.append(
                     IndicatorResult(
@@ -434,7 +434,7 @@ class EMASystem:
         self.medium_period = medium_period
         self.slow_period = slow_period
 
-    def calculate_emas(self, candles: list[Candle]) -> Dict[str, list[IndicatorResult]]:
+    def calculate_emas(self, candles: list[Candle]) -> dict[str, list[IndicatorResult]]:
         """
         Calculate all EMAs for the system.
 
@@ -452,7 +452,7 @@ class EMASystem:
 
     def check_ema_alignment(
         self,
-        emas: Dict[str, list[IndicatorResult]],
+        emas: dict[str, list[IndicatorResult]],
         direction: str,
         index: int = -1,
     ) -> bool:
@@ -487,7 +487,7 @@ class EMASystem:
         return False
 
     def get_trend_strength(
-        self, emas: Dict[str, list[IndicatorResult]], index: int = -1
+        self, emas: dict[str, list[IndicatorResult]], index: int = -1
     ) -> float:
         """
         Calculate trend strength based on EMA separation.
@@ -522,7 +522,7 @@ class EMASystem:
     def check_consecutive_closes(
         self,
         candles: list[Candle],
-        emas: Dict[str, list[IndicatorResult]],
+        emas: dict[str, list[IndicatorResult]],
         direction: str,
         consecutive_count: int = 2,
     ) -> bool:

@@ -1,7 +1,7 @@
 # CHANGE LOG & VERSION HISTORY
 
-**Project**: Algorithmic Trading System  
-**Repository**: algorithmic  
+**Project**: Algorithmic Trading System
+**Repository**: algorithmic
 **Maintainer**: Development Team
 
 ---

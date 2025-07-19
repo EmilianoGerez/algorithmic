@@ -5,21 +5,12 @@ import os
 import sys
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List
 from unittest.mock import AsyncMock, Mock
 
-from core.data.models import (
-    Candle,
-    FVGZone,
-    SignalDirection,
-    TimeFrame,
-)
-from core.indicators.fvg_detector import (
-    FVGDetector,
-    FVGFilterConfig,
-)
-
 import pytest
+
+from core.data.models import Candle, FVGZone, SignalDirection, TimeFrame
+from core.indicators.fvg_detector import FVGDetector, FVGFilterConfig
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -138,7 +129,7 @@ def create_test_candles(
     pattern: str = "normal",
     volume_profile: str = "medium",
     count: int = 10,
-) -> List[Candle]:
+) -> list[Candle]:
     """Create test candles with specific patterns."""
     candles = []
     base_time = datetime(2025, 1, 1, 9, 0)

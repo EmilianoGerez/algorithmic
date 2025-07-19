@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from threading import Event, Thread
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from .adapters import DataAdapter
 from .models import Candle, MarketData, TimeFrame
@@ -20,7 +20,7 @@ class DataFeed(ABC):
 
     def __init__(self, adapter: DataAdapter):
         self.adapter = adapter
-        self.subscribers: List[Callable[[Candle], None]] = []
+        self.subscribers: list[Callable[[Candle], None]] = []
         self.is_running = False
 
     def subscribe(self, callback: Callable[[Candle], None]) -> None:
@@ -64,7 +64,7 @@ class LiveDataFeed(DataFeed):
         self.update_interval = 1.0  # seconds
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
-        self.last_candles: Dict[str, Candle] = {}
+        self.last_candles: dict[str, Candle] = {}
 
     def start(self) -> None:
         """Start live data feed."""
@@ -105,8 +105,8 @@ class LiveDataFeed(DataFeed):
                             last_timestamp = self.last_candles.get(key)
 
                             if (
-                                not last_timestamp or
-                                latest_candle.timestamp > last_timestamp.timestamp
+                                not last_timestamp
+                                or latest_candle.timestamp > last_timestamp.timestamp
                             ):
                                 self.last_candles[key] = latest_candle
                                 self._notify_subscribers(latest_candle)
@@ -222,7 +222,7 @@ class MultiSymbolDataFeed(DataFeed):
 
     def __init__(self, adapter: DataAdapter):
         super().__init__(adapter)
-        self.feeds: Dict[str, Dict[str, Any]] = {}
+        self.feeds: dict[str, dict[str, Any]] = {}
         self.is_live = False
 
     def add_symbol(self, symbol: str, timeframes: list[TimeFrame]) -> None:
@@ -251,7 +251,7 @@ class MultiSymbolDataFeed(DataFeed):
         self.live_feed.subscribe(self._on_candle_received)
         self.live_feed.start()
 
-    def start_backtest(self, market_data_collection: Dict[str, MarketData]) -> None:
+    def start_backtest(self, market_data_collection: dict[str, MarketData]) -> None:
         """Start as backtest feed with multiple symbols."""
         self.is_live = False
 

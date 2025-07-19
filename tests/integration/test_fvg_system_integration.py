@@ -3,7 +3,6 @@
 
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import List
 
 import pytest
 
@@ -27,7 +26,7 @@ class TestFVGSystemIntegration:
         )
 
     @pytest.fixture
-    def sample_market_data(self) -> List[Candle]:
+    def sample_market_data(self) -> list[Candle]:
         """Create realistic market data with multiple FVG patterns."""
         candles = []
         base_time = datetime(2025, 1, 1, 9, 0)
@@ -247,7 +246,9 @@ class TestFVGSystemIntegration:
                 minutes=(
                     5
                     if timeframe == TimeFrame.MINUTE_5
-                    else 15 if timeframe == TimeFrame.MINUTE_15 else 60
+                    else 15
+                    if timeframe == TimeFrame.MINUTE_15
+                    else 60
                 )
             )
 
@@ -342,7 +343,7 @@ class TestFVGSystemIntegration:
         # Performance assertions
         assert (
             detection_time < 5.0
-        ), f"Detection took {detection_time:.2f}s, should be under 5s"
+        ), f"Detection took {detection_time: .2f}s, should be under 5s"
         assert len(fvgs) >= 0, "Should handle large datasets"
 
         # Memory usage should be reasonable

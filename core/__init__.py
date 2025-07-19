@@ -20,12 +20,7 @@ from .backtesting import (
     CoreBacktestEngine,
 )
 from .data.adapters import DataAdapter, DataAdapterFactory
-from .data.feeds import (
-    BacktestDataFeed,
-    DataFeed,
-    LiveDataFeed,
-    MultiSymbolDataFeed,
-)
+from .data.feeds import BacktestDataFeed, DataFeed, LiveDataFeed, MultiSymbolDataFeed
 from .data.models import (
     BacktestResult,
     Candle,
@@ -56,11 +51,7 @@ from .risk import (
     RiskManager,
 )
 from .signals.signal_processor import MultiTimeframeEngine, SignalProcessor
-from .strategies.base_strategy import (
-    BaseStrategy,
-    StrategyRegistry,
-    strategy_registry,
-)
+from .strategies.base_strategy import BaseStrategy, StrategyRegistry, strategy_registry
 from .strategies.fvg_strategy import FVGStrategy, create_fvg_strategy_config
 from .streaming import (
     StreamingConfig,

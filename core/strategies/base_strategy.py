@@ -6,15 +6,9 @@ Defines the contract that all strategies must implement.
 ."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
-from ..data.models import (
-    MarketData,
-    Position,
-    Signal,
-    StrategyConfig,
-    TimeFrame,
-)
+from ..data.models import MarketData, Position, Signal, StrategyConfig, TimeFrame
 
 
 class BaseStrategy(ABC):
@@ -37,7 +31,9 @@ class BaseStrategy(ABC):
         self.symbol = config.symbol
         self.timeframes = config.timeframes
         self.active_positions: list[Position] = []
-        self.signal_callback: Optional[Callable[[Signal], None]] = None  # For backtesting
+        self.signal_callback: Optional[
+            Callable[[Signal], None]
+        ] = None  # For backtesting
         self.is_initialized = False
 
         # Performance tracking
@@ -46,8 +42,8 @@ class BaseStrategy(ABC):
         self.total_pnl = 0.0
 
         # Strategy-specific data
-        self.strategy_data: Dict[str, Any] = {}
-        self.metadata: Dict[str, Any] = {}
+        self.strategy_data: dict[str, Any] = {}
+        self.metadata: dict[str, Any] = {}
 
     @abstractmethod
     def initialize(self) -> None:
@@ -58,7 +54,7 @@ class BaseStrategy(ABC):
 
     @abstractmethod
     def generate_signals(
-        self, market_data: Dict[TimeFrame, MarketData]
+        self, market_data: dict[TimeFrame, MarketData]
     ) -> list[Signal]:
         """
         Generate trading signals based on market data.
@@ -127,7 +123,7 @@ class BaseStrategy(ABC):
             position: Closed position
         ."""
 
-    def update_parameters(self, parameters: Dict[str, Any]) -> None:
+    def update_parameters(self, parameters: dict[str, Any]) -> None:
         """
         Update strategy parameters.
 
@@ -149,7 +145,7 @@ class BaseStrategy(ABC):
         ."""
         return self.config.parameters.get(key, default)
 
-    def get_strategy_info(self) -> Dict[str, Any]:
+    def get_strategy_info(self) -> dict[str, Any]:
         """
         Get strategy information.
 
@@ -213,8 +209,8 @@ class StrategyRegistry:
     ."""
 
     def __init__(self) -> None:
-        self._strategies: Dict[str, type] = {}
-        self._instances: Dict[str, BaseStrategy] = {}
+        self._strategies: dict[str, type] = {}
+        self._instances: dict[str, BaseStrategy] = {}
 
     def register(self, strategy_class: type) -> None:
         """

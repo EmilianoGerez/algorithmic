@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 import websockets
 import websockets.legacy.protocol
@@ -126,7 +126,7 @@ class MockStreamingProvider(StreamingDataProvider):
         super().__init__(config)
         self._streaming_task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
-        self._current_prices: Dict[str, Decimal] = {}
+        self._current_prices: dict[str, Decimal] = {}
 
     async def connect(self) -> bool:
         """Connect to mock provider."""
@@ -188,7 +188,9 @@ class MockStreamingProvider(StreamingDataProvider):
                         # Random price change (-0.5% to +0.5%)
                         import random
 
-                        change_pct = Decimal(str(random.uniform(-0.005, 0.005)))
+                        change_pct = Decimal(
+                            str(random.uniform(-0.005, 0.005))  # nosec
+                        )
                         price_change = current_price * change_pct
                         new_price = current_price + price_change
 
@@ -205,7 +207,7 @@ class MockStreamingProvider(StreamingDataProvider):
                             high=max(current_price, new_price),
                             low=min(current_price, new_price),
                             close=new_price,
-                            volume=Decimal(str(random.randint(1000, 10000))),
+                            volume=Decimal(str(random.randint(1000, 10000))),  # nosec
                             symbol=symbol,
                             timeframe=TimeFrame.MINUTE_1,
                         )
@@ -226,7 +228,9 @@ class AlpacaStreamingProvider(StreamingDataProvider):
 
     def __init__(self, config: StreamingConfig):
         super().__init__(config)
-        self._websocket: Optional[websockets.legacy.protocol.WebSocketCommonProtocol] = None
+        self._websocket: Optional[
+            websockets.legacy.protocol.WebSocketCommonProtocol
+        ] = None
         self._streaming_task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
 
@@ -324,7 +328,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         except Exception as exc:  # pylint: disable=broad-exception-caught
             print(f"Error handling Alpaca message: {exc}")
 
-    def _convert_alpaca_bar(self, bar_data: Dict) -> Candle:
+    def _convert_alpaca_bar(self, bar_data: dict) -> Candle:
         """Convert Alpaca bar data to Candle."""
         return Candle(
             timestamp=datetime.fromisoformat(bar_data["t"]),
@@ -342,9 +346,9 @@ class StreamingManager:
     """Manages multiple streaming providers and data distribution."""
 
     def __init__(self):
-        self.providers: Dict[StreamingProvider, StreamingDataProvider] = {}
+        self.providers: dict[StreamingProvider, StreamingDataProvider] = {}
         self.subscribers: list[Callable[[Candle], None]] = []
-        self.symbol_subscriptions: Dict[str, list[StreamingProvider]] = {}
+        self.symbol_subscriptions: dict[str, list[StreamingProvider]] = {}
         self.is_running = False
 
     def add_provider(self, provider: StreamingDataProvider) -> None:
@@ -447,7 +451,7 @@ class StreamingManager:
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 print(f"Error in streaming subscriber: {exc}")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get streaming status."""
         return {
             "is_running": self.is_running,

@@ -267,10 +267,10 @@ def analyze_results(results: Any) -> None:
     max_drawdown = results.max_drawdown
     sharpe_ratio = results.sharpe_ratio
 
-    print(f"💰 Total Return: {total_return:.2f}%")
-    print(f"📉 Max Drawdown: ${max_drawdown:.2f}")
+    print(f"💰 Total Return: {total_return: .2f}%")
+    print(f"📉 Max Drawdown: ${max_drawdown: .2f}")
     if sharpe_ratio:
-        print(f"📈 Sharpe Ratio: {sharpe_ratio:.2f}")
+        print(f"📈 Sharpe Ratio: {sharpe_ratio: .2f}")
     else:
         print("📈 Sharpe Ratio: Not calculated")
 
@@ -282,7 +282,7 @@ def analyze_results(results: Any) -> None:
     print("\\n🎯 TRADE STATISTICS")
     print(f"Total Trades: {total_trades}")
     print(f"Winning Trades: {winning_trades}")
-    print(f"Win Rate: {win_rate:.1f}%")
+    print(f"Win Rate: {win_rate: .1f}%")
 
     # Crypto-specific analysis
     print("\\n⚡ CRYPTO MARKET ANALYSIS")

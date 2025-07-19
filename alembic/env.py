@@ -4,11 +4,10 @@ import os
 import sys
 from logging.config import fileConfig
 
-from alembic import context
-
 from dotenv import load_dotenv
-
 from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Cargar variables desde .env
 load_dotenv()

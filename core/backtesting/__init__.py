@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..data.adapters import DataAdapter
 from ..data.feeds import BacktestDataFeed
@@ -68,9 +68,9 @@ class CoreBacktestEngine(BacktestEngine):
         """Reset engine state."""
         self.signals: list[Signal] = []
         self.positions: list[Position] = []
-        self.trades: list[Dict] = []
+        self.trades: list[dict] = []
         self.current_time: Optional[datetime] = None
-        self.current_prices: Dict[str, Decimal] = {}
+        self.current_prices: dict[str, Decimal] = {}
         self.performance_metrics = {
             "total_return": 0.0,
             "max_drawdown": 0.0,
@@ -91,8 +91,8 @@ class CoreBacktestEngine(BacktestEngine):
         # Initialize risk manager
         risk_limits = config.risk_limits or RiskLimits()
         position_sizer = FixedRiskPositionSizer(
-            risk_per_trade=float(risk_limits.max_position_size) /
-            5  # Conservative sizing
+            risk_per_trade=float(risk_limits.max_position_size)
+            / 5  # Conservative sizing
         )
         risk_manager = RiskManager(
             risk_limits=risk_limits,
@@ -163,9 +163,11 @@ class CoreBacktestEngine(BacktestEngine):
                 self.current_strategy.generate_signals(market_data)
         except (AttributeError, ValueError, KeyError) as exc:
             import logging
+
             logging.warning(f"Error generating signals: {exc}")
         except Exception as exc:  # pylint: disable=broad-exception-caught
             import logging
+
             logging.error(f"Unexpected error generating signals: {exc}")
 
     def _on_signal(self, signal: Signal) -> None:
@@ -243,8 +245,8 @@ class CoreBacktestEngine(BacktestEngine):
             final_capital=risk_manager.metrics.total_value,
             total_trades=risk_manager.metrics.total_trades,
             winning_trades=risk_manager.metrics.winning_trades,
-            losing_trades=risk_manager.metrics.total_trades -
-            risk_manager.metrics.winning_trades,
+            losing_trades=risk_manager.metrics.total_trades
+            - risk_manager.metrics.winning_trades,
             win_rate=risk_manager.metrics.win_rate,
             total_pnl=risk_manager.metrics.realized_pnl,
             max_drawdown=risk_manager.metrics.max_drawdown,
@@ -332,9 +334,9 @@ class OptimizationEngine:
         strategy_class: type,
         market_data: MarketData,
         config: BacktestConfig,
-        parameter_ranges: Dict[str, list[Any]],
+        parameter_ranges: dict[str, list[Any]],
         objective_function: str = "total_return",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Optimize strategy parameters."""
         best_params = {}
         best_score = float("-inf")
@@ -377,8 +379,8 @@ class OptimizationEngine:
         }
 
     def _generate_parameter_combinations(
-        self, parameter_ranges: Dict[str, list[Any]]
-    ) -> list[Dict]:
+        self, parameter_ranges: dict[str, list[Any]]
+    ) -> list[dict]:
         """Generate all combinations of parameters."""
         keys = list(parameter_ranges.keys())
         values = list(parameter_ranges.values())
@@ -484,7 +486,7 @@ class BacktestRunner:
         train_periods: int = 252,  # 1 year of daily data
         test_periods: int = 63,  # 3 months of daily data
         step_size: int = 21,  # 1 month step
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run walk-forward analysis."""
         # TODO: Implement walk-forward analysis
         # This would involve:

@@ -1,7 +1,7 @@
 # QUICK REFERENCE GUIDE
 
-**For Future LLMs and Developers**  
-**Last Updated**: July 18, 2025  
+**For Future LLMs and Developers**
+**Last Updated**: July 18, 2025
 **Version**: 3.0.0
 
 ---

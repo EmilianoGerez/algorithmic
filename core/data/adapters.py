@@ -9,7 +9,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .models import Candle, MarketData, TimeFrame
 
@@ -42,7 +42,7 @@ class BacktraderAdapter(DataAdapter):
 
     def __init__(self, cerebro_instance=None) -> None:
         self.cerebro = cerebro_instance
-        self._data_cache: Dict[str, Any] = {}
+        self._data_cache: dict[str, Any] = {}
 
     def get_historical_data(
         self,
@@ -112,7 +112,7 @@ class AlpacaAdapter(DataAdapter):
         self.secret_key = secret_key
         self.base_url = base_url
         self._client = None
-        self._data_cache: Dict[str, Any] = {}
+        self._data_cache: dict[str, Any] = {}
 
     def _get_client(self) -> Any:
         """Get or create Alpaca client."""
@@ -120,6 +120,7 @@ class AlpacaAdapter(DataAdapter):
             try:
                 # pylint: disable=import-outside-toplevel
                 from alpaca_trade_api import REST
+
                 # pylint: disable=import-outside-toplevel
                 from alpaca_trade_api.common import URL
 

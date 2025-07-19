@@ -177,8 +177,10 @@ class TestSignal:
         # Basic validation
         assert long_signal.direction == SignalDirection.LONG
         assert long_signal.entry_price > 0
-        assert (long_signal.stop_loss is not None and
-                long_signal.stop_loss < long_signal.entry_price)
+        assert (
+            long_signal.stop_loss is not None
+            and long_signal.stop_loss < long_signal.entry_price
+        )
 
         # Valid short signal
         short_signal = Signal(
@@ -193,8 +195,10 @@ class TestSignal:
         # Basic validation
         assert short_signal.direction == SignalDirection.SHORT
         assert short_signal.entry_price > 0
-        assert (short_signal.stop_loss is not None and
-                short_signal.stop_loss > short_signal.entry_price)
+        assert (
+            short_signal.stop_loss is not None
+            and short_signal.stop_loss > short_signal.entry_price
+        )
 
 
 class TestMarketData:

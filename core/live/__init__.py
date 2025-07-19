@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from ..data.models import (
     Order,
@@ -133,11 +133,11 @@ class PaperBrokerAdapter(BrokerAdapter):
     def __init__(self, initial_balance: Decimal = Decimal("100000")):
         self.balance = initial_balance
         self.initial_balance = initial_balance
-        self.positions: Dict[str, Position] = {}
-        self.orders: Dict[str, Order] = {}
+        self.positions: dict[str, Position] = {}
+        self.orders: dict[str, Order] = {}
         self.order_counter = 0
         self.is_connected_flag = False
-        self.current_prices: Dict[str, Decimal] = {}
+        self.current_prices: dict[str, Decimal] = {}
 
     async def connect(self) -> bool:
         """Connect to paper trading system."""
@@ -161,7 +161,7 @@ class PaperBrokerAdapter(BrokerAdapter):
 
         # Generate order ID
         self.order_counter += 1
-        order_id = f"PAPER_{self.order_counter:06d}"
+        order_id = f"PAPER_{self.order_counter: 06d}"
 
         # Create order copy with ID
         order_copy = Order(
@@ -244,8 +244,8 @@ class PaperBrokerAdapter(BrokerAdapter):
                 # Add to position
                 total_quantity = position.quantity + order.quantity
                 weighted_price = (
-                    (position.entry_price * position.quantity) +
-                    (fill_price * order.quantity)
+                    (position.entry_price * position.quantity)
+                    + (fill_price * order.quantity)
                 ) / total_quantity
                 position.quantity = total_quantity
                 position.entry_price = weighted_price
@@ -319,8 +319,8 @@ class LiveTradingEngine:
         self._shutdown_event = asyncio.Event()
 
         # Order management
-        self.pending_orders: Dict[str, Order] = {}
-        self.order_timeouts: Dict[str, datetime] = {}
+        self.pending_orders: dict[str, Order] = {}
+        self.order_timeouts: dict[str, datetime] = {}
 
         # Performance tracking
         self.daily_pnl = Decimal("0")
@@ -498,8 +498,8 @@ class LiveTradingEngine:
                         self._notify_order_filled(order)
 
                     elif (
-                        status == OrderStatus.CANCELLED or
-                        status == OrderStatus.REJECTED
+                        status == OrderStatus.CANCELLED
+                        or status == OrderStatus.REJECTED
                     ):
                         # Order cancelled or rejected
                         order.status = status
@@ -537,7 +537,7 @@ class LiveTradingEngine:
                 # Check emergency stop conditions
                 if daily_loss_pct <= -self.config.emergency_stop_loss:
                     await self.emergency_stop(
-                        f"Daily loss limit exceeded: {daily_loss_pct:.2%}"
+                        f"Daily loss limit exceeded: {daily_loss_pct: .2%}"
                     )
                     break
 
@@ -689,7 +689,7 @@ class LiveTradingEngine:
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 print(f"Error in error handler: {exc}")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current trading status."""
         return {
             "is_running": self.state.is_running,

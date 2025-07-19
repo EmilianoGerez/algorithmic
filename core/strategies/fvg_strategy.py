@@ -7,7 +7,7 @@ Extracts the successful logic from the legacy system with clean architecture.
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..data.models import (
     Candle,
@@ -99,7 +99,7 @@ class FVGStrategy(BaseStrategy):
         self.is_initialized = True
 
     def generate_signals(
-        self, market_data: Dict[TimeFrame, MarketData]
+        self, market_data: dict[TimeFrame, MarketData]
     ) -> list[Signal]:
         """
         Generate trading signals based on FVG strategy logic.
@@ -207,7 +207,7 @@ class FVGStrategy(BaseStrategy):
         if not isinstance(self.ltf_timeframe, TimeFrame):
             raise ValueError("LTF timeframe must be TimeFrame enum value")
 
-    def _validate_market_data(self, market_data: Dict[TimeFrame, MarketData]) -> bool:
+    def _validate_market_data(self, market_data: dict[TimeFrame, MarketData]) -> bool:
         """Validate market data availability."""
         required_timeframes = self.get_required_timeframes()
 
@@ -232,7 +232,7 @@ class FVGStrategy(BaseStrategy):
         preset_func = preset_map.get(self.fvg_filter_preset, FVGFilterPresets.balanced)
         return preset_func()
 
-    def _update_fvg_zones(self, market_data: Dict[TimeFrame, MarketData]) -> None:
+    def _update_fvg_zones(self, market_data: dict[TimeFrame, MarketData]) -> None:
         """Update FVG zones from higher timeframe data."""
         new_fvgs = []
 
@@ -286,7 +286,7 @@ class FVGStrategy(BaseStrategy):
         return filtered
 
     def _check_entry_signal(
-        self, fvg_zone: FVGZone, ltf_data: MarketData, emas: Dict[str, list]
+        self, fvg_zone: FVGZone, ltf_data: MarketData, emas: dict[str, list]
     ) -> Optional[Signal]:
         """Check if FVG zone generates an entry signal."""
         current_candle = ltf_data.candles[-1]
@@ -385,7 +385,7 @@ class FVGStrategy(BaseStrategy):
 
     def _find_swing_levels(
         self, candles: list[Candle], lookback: int
-    ) -> Dict[str, Decimal]:
+    ) -> dict[str, Decimal]:
         """Find swing high and low levels."""
         if len(candles) < lookback:
             lookback = len(candles)
@@ -398,7 +398,7 @@ class FVGStrategy(BaseStrategy):
         return {"high": swing_high, "low": swing_low}
 
     def _calculate_signal_confidence(
-        self, fvg_zone: FVGZone, emas: Dict[str, list], ltf_data: MarketData
+        self, fvg_zone: FVGZone, emas: dict[str, list], ltf_data: MarketData
     ) -> float:
         """Calculate signal confidence score."""
         confidence = fvg_zone.confidence * 0.6  # Base from FVG quality
@@ -499,7 +499,7 @@ class FVGStrategy(BaseStrategy):
             "fvg_timeframe": signal.metadata.get("fvg_timeframe"),
         }
 
-    def get_strategy_status(self) -> Dict[str, Any]:
+    def get_strategy_status(self) -> dict[str, Any]:
         """Get current strategy status."""
         return {
             "name": self.name,

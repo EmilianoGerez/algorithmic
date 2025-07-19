@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ..data.models import Position, Signal, SignalDirection
 
@@ -230,11 +230,11 @@ class RiskManager:
         # Risk tracking
         self.daily_start_balance = initial_capital
         self.peak_balance = initial_capital
-        self.trade_history: list[Dict] = []
+        self.trade_history: list[dict] = []
 
-    def evaluate_signal(self, signal: Signal) -> Dict[str, Any]:
+    def evaluate_signal(self, signal: Signal) -> dict[str, Any]:
         """Evaluate a signal and return risk assessment."""
-        reasons: List[str] = []
+        reasons: list[str] = []
         assessment = {
             "signal": signal,
             "approved": False,
@@ -250,8 +250,8 @@ class RiskManager:
 
         # Check daily loss limit
         if (
-            self.metrics.daily_pnl <=
-            -self.risk_limits.max_daily_loss * self.daily_start_balance
+            self.metrics.daily_pnl
+            <= -self.risk_limits.max_daily_loss * self.daily_start_balance
         ):
             reasons.append("Daily loss limit exceeded")
             return assessment
@@ -359,7 +359,7 @@ class RiskManager:
         # Remove from active positions
         self.positions.remove(position)
 
-    def update_positions(self, current_prices: Dict[str, Decimal]) -> None:
+    def update_positions(self, current_prices: dict[str, Decimal]) -> None:
         """Update all positions with current prices."""
         total_unrealized_pnl = Decimal("0")
 
@@ -370,9 +370,9 @@ class RiskManager:
 
         self.metrics.unrealized_pnl = total_unrealized_pnl
         self.metrics.total_value = (
-            self.metrics.available_cash +
-            self.metrics.invested_capital +
-            self.metrics.unrealized_pnl
+            self.metrics.available_cash
+            + self.metrics.invested_capital
+            + self.metrics.unrealized_pnl
         )
 
         # Update drawdown
@@ -392,7 +392,7 @@ class RiskManager:
                 return position
         return None
 
-    def get_portfolio_summary(self) -> Dict:
+    def get_portfolio_summary(self) -> dict:
         """Get portfolio summary."""
         return {
             "total_value": self.metrics.total_value,
@@ -408,9 +408,9 @@ class RiskManager:
             "win_rate": self.metrics.win_rate,
             "active_positions": len(self.positions),
             "return_pct": float(
-                (self.metrics.total_value - self.initial_capital) /
-                self.initial_capital *
-                100
+                (self.metrics.total_value - self.initial_capital)
+                / self.initial_capital
+                * 100
             ),
         }
 
@@ -422,7 +422,7 @@ class RiskManager:
     def should_stop_trading(self) -> bool:
         """Check if trading should be stopped due to risk limits."""
         return (
-            self.metrics.daily_pnl <=
-            -self.risk_limits.max_daily_loss * self.daily_start_balance or
-            self.metrics.drawdown >= self.risk_limits.max_drawdown
+            self.metrics.daily_pnl
+            <= -self.risk_limits.max_daily_loss * self.daily_start_balance
+            or self.metrics.drawdown >= self.risk_limits.max_drawdown
         )

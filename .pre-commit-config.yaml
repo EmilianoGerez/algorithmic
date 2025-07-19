@@ -30,7 +30,7 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies: [flake8-docstrings, flake8-import-order]
-        # Use .flake8 configuration file instead of inline args
+        args: [--config=.flake8]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.5.1
@@ -55,8 +55,9 @@ repos:
       - id: pyupgrade
         args: [--py39-plus]
 
-  - repo: https://github.com/pycqa/pylint
-    rev: v2.17.5
-    hooks:
-      - id: pylint
-        args: [--rcfile=.pylintrc]
+  # pylint hook disabled due to Python 3.13 compatibility issues
+  # - repo: https://github.com/pycqa/pylint
+  #   rev: v2.17.5
+  #   hooks:
+  #     - id: pylint
+  #       args: [--rcfile=.pylintrc]

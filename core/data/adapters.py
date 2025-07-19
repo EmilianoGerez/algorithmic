@@ -172,9 +172,9 @@ class AlpacaAdapter(DataAdapter):
 
             market_data.metadata["bars_fetched"] = len(bars)
 
-        except Exception as e:
-            market_data.metadata["error"] = str(e)
-            print(f"Error fetching Alpaca data: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            market_data.metadata["error"] = str(exc)
+            print(f"Error fetching Alpaca data: {exc}")
 
         return market_data
 
@@ -197,8 +197,8 @@ class AlpacaAdapter(DataAdapter):
 
             return market_data.get_latest_candle() if market_data.candles else None
 
-        except Exception as e:
-            print(f"Error getting latest candle: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"Error getting latest candle: {exc}")
             return None
 
     def validate_symbol(self, symbol: str) -> bool:
@@ -214,8 +214,8 @@ class AlpacaAdapter(DataAdapter):
 
             return False
 
-        except Exception as e:
-            print(f"Error validating symbol {symbol}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"Error validating symbol {symbol}: {exc}")
             return False
 
     def _convert_alpaca_bar(

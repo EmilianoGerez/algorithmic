@@ -37,8 +37,8 @@ class DataFeed(ABC):
         for callback in self.subscribers:
             try:
                 callback(candle)
-            except Exception as e:
-                print(f"Error in data feed subscriber: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in data feed subscriber: {exc}")
 
     @abstractmethod
     def start(self) -> None:
@@ -115,8 +115,8 @@ class LiveDataFeed(DataFeed):
                 if not self._stop_event.wait(self.update_interval):
                     continue
 
-            except Exception as e:
-                print(f"Error in live data feed: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                print(f"Error in live data feed: {exc}")
                 time.sleep(5)  # Wait before retrying
 
 

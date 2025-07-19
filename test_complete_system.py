@@ -249,7 +249,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase1_core", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_indicators(self):
         """Test indicators"""
@@ -269,7 +269,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase1_core", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_signal_processing(self):
         """Test signal processing"""
@@ -299,7 +299,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase1_core", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_data_adapters(self):
         """Test data adapters"""
@@ -317,7 +317,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase2_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_risk_management(self):
         """Test risk management"""
@@ -351,7 +351,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase2_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_backtesting_engine(self):
         """Test backtesting engine"""
@@ -379,7 +379,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase2_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_multi_symbol_feeds(self):
         """Test multi-symbol data feeds"""
@@ -407,7 +407,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase2_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_live_trading_engine(self):
         """Test live trading engine"""
@@ -455,7 +455,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase3_live", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_streaming_system(self):
         """Test streaming system"""
@@ -483,7 +483,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase3_live", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_order_management(self):
         """Test order management"""
@@ -503,7 +503,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase3_live", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_realtime_integration(self):
         """Test real-time integration"""
@@ -530,7 +530,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("phase3_live", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_end_to_end_signal_flow(self):
         """Test end-to-end signal flow"""
@@ -567,7 +567,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("system_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_multi_component_integration(self):
         """Test multi-component integration"""
@@ -597,7 +597,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("system_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_error_handling(self):
         """Test error handling"""
@@ -633,7 +633,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("system_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_performance_integration(self):
         """Test performance integration"""
@@ -673,7 +673,7 @@ class SystemIntegrationTest:
 
         except Exception as exc:  # pylint: disable=broad-exception-caught
             self.record_test_result("system_integration", test_name, False, str(exc))
-            print(f"  ❌ {test_name}: FAILED - {e}")
+            print(f"  ❌ {test_name}: FAILED - {exc}")
 
     def record_test_result(
         self, phase: str, test_name: str, passed: bool, error: str = None

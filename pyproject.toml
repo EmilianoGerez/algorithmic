@@ -91,6 +91,12 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unreachable = true
 strict_optional = true
+exclude = [
+    "alembic/",
+    "venv/",
+    "build/",
+    "dist/",
+]
 
 [[tool.mypy.overrides]]
 module = [

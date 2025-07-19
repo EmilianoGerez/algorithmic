@@ -44,6 +44,8 @@ from core import (  # Data models; Strategy system; Risk management; Live tradin
     SignalDirection,
     SignalType,
     StrategyRegistry,
+    strategy_registry,
+    StrategyRegistry,
     TimeFrame,
     create_fvg_strategy_config,
 )
@@ -278,21 +280,19 @@ async def health_check():
 
 # Strategy management endpoints
 @app.get("/strategies", response_model=list[str])
-async def get_available_strategies():
+async def get_available_strategies() -> list[str]:
     """Get list of available strategies"""
-    return list(StrategyRegistry.get_registered_strategies().keys())
+    return strategy_registry.list_strategies()
 
 
 @app.post("/strategies/{strategy_name}/activate")
-async def activate_strategy(strategy_name: str, config: StrategyConfigRequest):
+async def activate_strategy(strategy_name: str, config: StrategyConfigRequest) -> Dict[str, Any]:
     """Activate a strategy"""
     try:
         # Get strategy class
-        strategy_classes = StrategyRegistry.get_registered_strategies()
-        if strategy_name not in strategy_classes:
+        strategy_names = strategy_registry.list_strategies()
+        if strategy_name not in strategy_names:
             raise HTTPException(status_code=404, detail="Strategy not found")
-
-        strategy_class = strategy_classes[strategy_name]
 
         # Create strategy configuration
         from core.data.models import StrategyConfig
@@ -307,8 +307,8 @@ async def activate_strategy(strategy_name: str, config: StrategyConfigRequest):
             parameters=config.parameters,
         )
 
-        # Create and initialize strategy
-        strategy = strategy_class(strategy_config)
+        # Create and initialize strategy using registry
+        strategy = strategy_registry.create_strategy(strategy_name, strategy_config)
         strategy.initialize()
 
         # Store active strategy
@@ -324,7 +324,7 @@ async def activate_strategy(strategy_name: str, config: StrategyConfigRequest):
 
 
 @app.delete("/strategies/{strategy_id}")
-async def deactivate_strategy(strategy_id: str):
+async def deactivate_strategy(strategy_id: str) -> Dict[str, str]:
     """Deactivate a strategy"""
     if strategy_id not in system_state.active_strategies:
         raise HTTPException(status_code=404, detail="Strategy not found")
@@ -334,14 +334,14 @@ async def deactivate_strategy(strategy_id: str):
 
 
 @app.get("/strategies/active", response_model=list[str])
-async def get_active_strategies():
+async def get_active_strategies() -> list[str]:
     """Get list of active strategies"""
     return list(system_state.active_strategies.keys())
 
 
 # Live trading endpoints
 @app.post("/live-trading/start")
-async def start_live_trading(config: LiveTradingRequest):
+async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
     """Start live trading"""
     try:
         if system_state.is_live_trading:
@@ -358,6 +358,10 @@ async def start_live_trading(config: LiveTradingRequest):
             max_daily_trades=config.max_daily_trades,
             emergency_stop_loss=config.emergency_stop_loss,
         )
+
+        # Ensure risk manager is initialized
+        if system_state.risk_manager is None:
+            raise HTTPException(status_code=500, detail="Risk manager not initialized")
 
         # Create live trading engine
         system_state.live_engine = LiveTradingEngine(
@@ -385,7 +389,7 @@ async def start_live_trading(config: LiveTradingRequest):
 
 
 @app.post("/live-trading/stop")
-async def stop_live_trading():
+async def stop_live_trading() -> Dict[str, str]:
     """Stop live trading"""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:

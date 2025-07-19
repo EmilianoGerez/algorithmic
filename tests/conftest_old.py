@@ -22,9 +22,6 @@ from core.data.models import (
     SignalDirection,
     TimeFrame,
 )
-from core.indicators.fvg_detector import (
-    FVGDetector,
-)
 from core.strategies.fvg_strategy import FVGStrategy
 from core.risk import FixedRiskPositionSizer, RiskLimits
 

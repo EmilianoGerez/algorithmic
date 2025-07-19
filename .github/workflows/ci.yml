@@ -43,13 +43,13 @@ jobs:
         run: isort --check-only --diff .
 
       - name: Lint with flake8
-        run: flake8 . --count --show-source --statistics
+        run: flake8 . --config=.flake8 --count --show-source --statistics
 
       - name: Lint with pylint
         run: pylint core/ tests/ --fail-under=8.0
 
       - name: Type checking with mypy
-        run: mypy core/ --ignore-missing-imports
+        run: mypy core/ --ignore-missing-imports --config-file pyproject.toml
 
       - name: Security check with bandit
         run: bandit -r core/ -f json -o bandit-report.json || true

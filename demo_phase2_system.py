@@ -85,19 +85,19 @@ def demo_data_adapters() -> None:
 
     # Create different adapters
     try:
-        __yahoo_adapter = DataAdapterFactory.create_adapter("yahoo")
+        yahoo_adapter = DataAdapterFactory.create_adapter("yahoo")  # noqa: F841
         print("✅ Yahoo Finance adapter created")
     except Exception as e:
         print(f"❌ Yahoo Finance adapter failed: {e}")
 
     try:
-        __backtrader_adapter = DataAdapterFactory.create_adapter("backtrader")
+        backtrader_adapter = DataAdapterFactory.create_adapter("backtrader")  # noqa: F841
         print("✅ Backtrader adapter created")
     except Exception as e:
         print(f"❌ Backtrader adapter failed: {e}")
 
     try:
-        __alpaca_adapter = DataAdapterFactory.create_adapter(
+        alpaca_adapter = DataAdapterFactory.create_adapter(  # noqa: F841
             "alpaca", api_key="demo_key", secret_key="demo_secret"
         )
         print("✅ Alpaca adapter created")
@@ -254,7 +254,7 @@ def demo_multi_symbol_feed() -> None:
             print(f"  📊 Received candle: {candle}")
             
         # Update streaming configuration
-        __streaming_config = {
+        streaming_config = {  # noqa: F841
             "realtime_processing": True
         }
 

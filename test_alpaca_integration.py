@@ -38,7 +38,7 @@ def test_alpaca_adapter_creation():
         from core.data.adapters import DataAdapterFactory  # noqa: F401
 
         # Test with dummy credentials
-        __adapter = DataAdapterFactory.create_adapter(
+        adapter = DataAdapterFactory.create_adapter(  # noqa: F841
             "alpaca", api_key="test_key", secret_key="test_secret"
         )
 
@@ -118,7 +118,7 @@ def test_backtest_config():
         from core.backtesting import BacktestConfig  # noqa: F401
         from core.risk import RiskLimits
 
-        __config = BacktestConfig(
+        config = BacktestConfig(  # noqa: F841
             start_date=datetime.now() - timedelta(days=1),
             end_date=datetime.now(),
             initial_capital=Decimal("10000"),

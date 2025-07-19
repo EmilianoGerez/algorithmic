@@ -136,7 +136,7 @@ class Phase3Demo:
         print(f"📊 Live Trading Engine started: {success}")
 
         # Show initial status
-        __status = self.live_engine.get_status()
+        status = self.live_engine.get_status()  # noqa: F841
         print(f"💰 Initial balance: ${await broker.get_account_balance():,.2f}")
         print(f"🎯 Trading mode: {config.mode.value}")
         print(f"🔄 Auto trading: {config.enable_auto_trading}")

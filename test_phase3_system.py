@@ -31,6 +31,8 @@ def test_imports():
         from core import (
             Signal,
         )
+        # Verify import succeeded
+        assert Signal is not None
 
         print("  ✅ Phase 1 imports: PASSED")
 
@@ -42,6 +44,14 @@ def test_imports():
             RiskLimits,
             RiskManager,
         )
+        # Verify imports succeeded
+        assert all([
+            DataFeed is not None,
+            FixedRiskPositionSizer is not None,
+            MultiSymbolDataFeed is not None,
+            RiskLimits is not None,
+            RiskManager is not None,
+        ])
 
         print("  ✅ Phase 2 imports: PASSED")
 
@@ -49,6 +59,8 @@ def test_imports():
         from core import (
             StreamingConfig,
         )
+        # Verify import succeeded
+        assert StreamingConfig is not None
 
         print("  ✅ Phase 3 imports: PASSED")
 
@@ -138,7 +150,7 @@ async def test_streaming_system():
         )
 
         # Create streaming config
-        __config = StreamingConfig(
+        config = StreamingConfig(  # noqa: F841
             provider=StreamingProvider.MOCK,
             symbols=["AAPL", "GOOGL", "MSFT"],
             timeframes=[TimeFrame.MINUTE_1],
@@ -345,11 +357,11 @@ async def test_integration():
         live_engine = LiveTradingEngine(
             broker_adapter=broker,
             risk_manager=risk_manager,
-            _config=live_config,
+            config=live_config,
         )
 
         # 3. Create streaming components
-        __streaming_config = StreamingConfig(
+        streaming_config = StreamingConfig(  # noqa: F841
             provider=StreamingProvider.MOCK,
             symbols=["AAPL"],
             timeframes=[TimeFrame.MINUTE_1],

@@ -165,7 +165,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
     )
 
     # Create backtest engine
-    __engine = CoreBacktestEngine(adapter)
+    engine = CoreBacktestEngine(adapter)  # noqa: F841 - Used for demo initialization
 
     # Run backtest with simplified approach for demo
     try:
@@ -181,7 +181,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
         if backtest_config.risk_limits is None:
             raise ValueError("Risk limits not configured in backtest config")
 
-        __risk_manager = RiskManager(
+        risk_manager = RiskManager(  # noqa: F841 - Used for demo initialization
             risk_limits=backtest_config.risk_limits,
             position_sizer=position_sizer,
             initial_capital=backtest_config.initial_capital,

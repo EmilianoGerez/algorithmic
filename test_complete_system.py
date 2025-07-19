@@ -462,7 +462,7 @@ class SystemIntegrationTest:
         test_name = "Streaming System"
         try:
             # Create streaming config
-            __streaming_config = StreamingConfig(
+            streaming_config = StreamingConfig(  # noqa: F841
                 provider=StreamingProvider.MOCK,
                 symbols=["AAPL", "GOOGL", "MSFT"],
                 timeframes=[TimeFrame.MINUTE_1],

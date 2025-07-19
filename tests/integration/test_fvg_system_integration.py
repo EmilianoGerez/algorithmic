@@ -204,7 +204,7 @@ class TestFVGSystemIntegration:
         assert len(fvgs) >= 1
 
         fvg = fvgs[0]
-        __initial_status = fvg.status
+        initial_status = fvg.status  # noqa: F841
 
         # Test zone price interaction
         assert fvg.is_price_in_zone(fvg.get_zone_midpoint())

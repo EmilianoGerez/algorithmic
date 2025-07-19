@@ -4,7 +4,6 @@
 import os
 import re
 import subprocess
-from pathlib import Path
 
 def fix_whitespace_around_operators(file_path):
     """Fix E226 - missing whitespace around arithmetic operators."""

@@ -8,24 +8,22 @@ This demo showcases the complete Phase 3 implementation including:
 - FastAPI integration
 - WebSocket real-time updates
 - Complete system integration
-"""
+."""
 
 import asyncio
-import json
 import os
 import sys
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core import (  # Data models; Strategy system; Risk management; Live trading; Streaming
+# Data models; Strategy system; Risk management; Live trading; Streaming
+from core import (
     ExecutionMode,
     FixedRiskPositionSizer,
-    FVGStrategy,
     LiveTradingConfig,
     LiveTradingEngine,
     Order,
@@ -41,12 +39,11 @@ from core import (  # Data models; Strategy system; Risk management; Live tradin
     StreamingManager,
     StreamingProvider,
     TimeFrame,
-    create_fvg_strategy_config,
 )
 
 
 class Phase3Demo:
-    """Phase 3 system demonstration"""
+    """Phase 3 system demonstration."""
 
     def __init__(self) -> None:
         self.live_engine: Optional[LiveTradingEngine] = None
@@ -56,7 +53,7 @@ class Phase3Demo:
         self.demo_positions: list[Position] = []
 
     async def run_complete_demo(self) -> None:
-        """Run the complete Phase 3 demonstration"""
+        """Run the complete Phase 3 demonstration."""
         print("🚀 Phase 3 Complete System Demonstration")
         print("=" * 70)
         print("This demo showcases the complete Phase 3 implementation:")
@@ -94,7 +91,7 @@ class Phase3Demo:
             traceback.print_exc()
 
     async def demo_live_trading_engine(self) -> None:
-        """Demonstrate live trading engine"""
+        """Demonstrate live trading engine."""
         print("🔥 Live Trading Engine Demo")
         print("=" * 50)
 
@@ -139,7 +136,7 @@ class Phase3Demo:
         print(f"📊 Live Trading Engine started: {success}")
 
         # Show initial status
-        status = self.live_engine.get_status()
+        _status = self.live_engine.get_status()
         print(f"💰 Initial balance: ${await broker.get_account_balance():,.2f}")
         print(f"🎯 Trading mode: {config.mode.value}")
         print(f"🔄 Auto trading: {config.enable_auto_trading}")
@@ -148,7 +145,7 @@ class Phase3Demo:
         print()
 
     async def demo_streaming_integration(self) -> None:
-        """Demonstrate streaming integration"""
+        """Demonstrate streaming integration."""
         print("📡 Real-time Data Streaming Demo")
         print("=" * 50)
 
@@ -191,7 +188,7 @@ class Phase3Demo:
         print()
 
     async def demo_signal_processing(self) -> None:
-        """Demonstrate signal processing"""
+        """Demonstrate signal processing."""
         print("🎯 Signal Processing Demo")
         print("=" * 50)
 
@@ -247,7 +244,7 @@ class Phase3Demo:
                 print(f"  ✅ Order placed: {order.order_id}")
                 self.demo_orders.append(order)
             else:
-                print(f"  ❌ Signal rejected")
+                print("  ❌ Signal rejected")
 
             self.demo_signals.append(signal)
 
@@ -260,7 +257,7 @@ class Phase3Demo:
         print()
 
     async def demo_risk_integration(self) -> None:
-        """Demonstrate risk management integration"""
+        """Demonstrate risk management integration."""
         print("🛡️ Risk Management Integration Demo")
         print("=" * 50)
 
@@ -291,7 +288,7 @@ class Phase3Demo:
         print(f"📊 Win rate: {portfolio['win_rate']:.1%}")
 
         # Test risk limits
-        print(f"\n🚨 Risk Limits Check:")
+        print("\n🚨 Risk Limits Check:")
         print(f"  Max drawdown: {portfolio['max_drawdown']:.2%}")
         print(
             f"  Should stop trading: {self.live_engine.risk_manager.should_stop_trading()}"
@@ -300,12 +297,12 @@ class Phase3Demo:
         print()
 
     async def demo_order_management(self) -> None:
-        """Demonstrate order management"""
+        """Demonstrate order management."""
         print("📋 Order Management Demo")
         print("=" * 50)
 
         # Show order lifecycle
-        print(f"📊 Order Lifecycle Demonstration:")
+        print("📊 Order Lifecycle Demonstration:")
 
         # Wait for orders to be processed
         await asyncio.sleep(2)
@@ -325,7 +322,7 @@ class Phase3Demo:
                 f"  Order {order.order_id}: {order.symbol} {order.direction.value} - {status.value}"
             )
 
-        print(f"\n📊 Order Summary:")
+        print("\n📊 Order Summary:")
         print(f"  Total orders: {len(self.demo_orders)}")
         print(f"  Filled orders: {filled_orders}")
         print(f"  Pending orders: {pending_orders}")
@@ -342,7 +339,7 @@ class Phase3Demo:
         print()
 
     async def demo_real_time_updates(self) -> None:
-        """Demonstrate real-time updates"""
+        """Demonstrate real-time updates."""
         print("📊 Real-time Updates Demo")
         print("=" * 50)
 
@@ -365,7 +362,7 @@ class Phase3Demo:
         print()
 
     async def cleanup(self) -> None:
-        """Clean up resources"""
+        """Clean up resources."""
         print("🧹 Cleaning up resources...")
 
         if self.live_engine:
@@ -378,21 +375,21 @@ class Phase3Demo:
 
     # Event handlers
     def _on_order_event(self, order: Order) -> None:
-        """Handle order events"""
+        """Handle order events."""
         print(f"  📋 Order event: {order.order_id} - {order.status.value}")
 
     def _on_position_event(self, position: Position) -> None:
-        """Handle position events"""
+        """Handle position events."""
         print(
             f"  📊 Position update: {position.symbol} - P&L: ${position.unrealized_pnl:.2f}"
         )
 
     def _on_error_event(self, error: str) -> None:
-        """Handle error events"""
+        """Handle error events."""
         print(f"  ❌ Error: {error}")
 
     def _on_streaming_data(self, candle: Any) -> None:
-        """Handle streaming data"""
+        """Handle streaming data."""
         # Only show first few candles to avoid spam
         if len(self.demo_signals) < 3:
             print(
@@ -401,7 +398,7 @@ class Phase3Demo:
 
 
 async def demo_api_integration() -> None:
-    """Demonstrate API integration concepts"""
+    """Demonstrate API integration concepts."""
     print("🌐 API Integration Demo")
     print("=" * 50)
 
@@ -442,7 +439,7 @@ async def demo_api_integration() -> None:
 
 
 async def main() -> None:
-    """Main demonstration function"""
+    """Main demonstration function."""
     demo = Phase3Demo()
 
     try:

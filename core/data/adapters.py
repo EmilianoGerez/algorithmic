@@ -3,19 +3,19 @@ Data Adapters
 
 Platform-specific adapters to convert external data into our universal models.
 These adapters handle the integration with different data sources and platforms.
-"""
+."""
 
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional
-import logging
 
 from .models import Candle, MarketData, TimeFrame
 
 
 class DataAdapter(ABC):
-    """Abstract base class for data adapters"""
+    """Abstract base class for data adapters."""
 
     @abstractmethod
     def get_historical_data(
@@ -26,19 +26,19 @@ class DataAdapter(ABC):
         end_date: datetime,
         limit: Optional[int] = None,
     ) -> MarketData:
-        """Get historical market data"""
+        """Get historical market data."""
 
     @abstractmethod
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
-        """Get the latest candle for a symbol"""
+        """Get the latest candle for a symbol."""
 
     @abstractmethod
     def validate_symbol(self, symbol: str) -> bool:
-        """Validate if symbol is available"""
+        """Validate if symbol is available."""
 
 
 class BacktraderAdapter(DataAdapter):
-    """Adapter for Backtrader platform"""
+    """Adapter for Backtrader platform."""
 
     def __init__(self, cerebro_instance=None) -> None:
         self.cerebro = cerebro_instance
@@ -52,7 +52,7 @@ class BacktraderAdapter(DataAdapter):
         end_date: datetime,
         limit: Optional[int] = None,
     ) -> MarketData:
-        """Convert Backtrader data to our universal format"""
+        """Convert Backtrader data to our universal format."""
         # This would integrate with existing backtrader data feeds
         # For now, we'll create a structure that can be populated
         market_data = MarketData(
@@ -72,24 +72,24 @@ class BacktraderAdapter(DataAdapter):
         return market_data
 
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
-        """Get latest candle from backtrader"""
+        """Get latest candle from backtrader."""
         # TODO: Implement backtrader latest candle retrieval
         return None
 
     def validate_symbol(self, symbol: str) -> bool:
-        """Validate symbol in backtrader context"""
+        """Validate symbol in backtrader context."""
         # TODO: Implement symbol validation
         return True
 
     def convert_backtrader_candle(self, bt_data: Any, index: int) -> Candle:
-        """Convert backtrader data point to our Candle model"""
+        """Convert backtrader data point to our Candle model."""
         # TODO: Implement conversion from backtrader data format
         # This would handle bt_data.open[index], bt_data.high[index], etc.
         pass
 
 
 class AlpacaAdapter(DataAdapter):
-    """Adapter for Alpaca Markets API"""
+    """Adapter for Alpaca Markets API."""
 
     # Alpaca timeframe mapping
     TIMEFRAME_MAP = {
@@ -114,7 +114,7 @@ class AlpacaAdapter(DataAdapter):
         self._data_cache: Dict[str, Any] = {}
 
     def _get_client(self) -> Any:
-        """Get or create Alpaca client"""
+        """Get or create Alpaca client."""
         if self._client is None:
             try:
                 # pylint: disable=import-outside-toplevel
@@ -140,7 +140,7 @@ class AlpacaAdapter(DataAdapter):
         end_date: datetime,
         limit: Optional[int] = None,
     ) -> MarketData:
-        """Get historical data from Alpaca"""
+        """Get historical data from Alpaca."""
         market_data = MarketData(
             symbol=symbol,
             timeframe=timeframe,
@@ -183,7 +183,7 @@ class AlpacaAdapter(DataAdapter):
         return market_data
 
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
-        """Get latest candle from Alpaca"""
+        """Get latest candle from Alpaca."""
         try:
             # Get last trading day data
             end_date = datetime.now()
@@ -206,7 +206,7 @@ class AlpacaAdapter(DataAdapter):
             return None
 
     def validate_symbol(self, symbol: str) -> bool:
-        """Validate symbol with Alpaca"""
+        """Validate symbol with Alpaca."""
         try:
             client = self._get_client()
             assets = client.list_assets(status="active", asset_class="us_equity")
@@ -225,7 +225,7 @@ class AlpacaAdapter(DataAdapter):
     def _convert_alpaca_bar(
         self, price_bar: Any, symbol: str, timeframe: TimeFrame, timestamp: Any
     ) -> Candle:
-        """Convert Alpaca bar to our Candle model"""
+        """Convert Alpaca bar to our Candle model."""
         return Candle(
             timestamp=(
                 timestamp.to_pydatetime()
@@ -243,14 +243,14 @@ class AlpacaAdapter(DataAdapter):
 
 
 class YahooFinanceAdapter(DataAdapter):
-    """Adapter for Yahoo Finance data"""
+    """Adapter for Yahoo Finance data."""
 
     def __init__(self) -> None:
         self._yfinance = None
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def _get_yfinance(self) -> Any:
-        """Get or import yfinance"""
+        """Get or import yfinance."""
         if self._yfinance is None:
             try:
                 import yfinance as yf  # pylint: disable=import-outside-toplevel
@@ -270,7 +270,7 @@ class YahooFinanceAdapter(DataAdapter):
         end_date: datetime,
         limit: Optional[int] = None,
     ) -> MarketData:
-        """Get historical data from Yahoo Finance"""
+        """Get historical data from Yahoo Finance."""
         yahoo_finance = self._get_yfinance()
 
         # Convert our timeframe to Yahoo Finance interval
@@ -332,7 +332,7 @@ class YahooFinanceAdapter(DataAdapter):
         return market_data
 
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
-        """Get latest candle from Yahoo Finance"""
+        """Get latest candle from Yahoo Finance."""
         try:
             # Get last 2 days of data to ensure we have latest complete candle
             end_date = datetime.now()
@@ -360,7 +360,7 @@ class YahooFinanceAdapter(DataAdapter):
             return None
 
     def validate_symbol(self, symbol: str) -> bool:
-        """Validate symbol with Yahoo Finance"""
+        """Validate symbol with Yahoo Finance."""
         try:
             yahoo_finance = self._get_yfinance()
             ticker = yahoo_finance.Ticker(symbol)
@@ -375,7 +375,7 @@ class YahooFinanceAdapter(DataAdapter):
 
 
 class DataAdapterFactory:
-    """Factory for creating data adapters"""
+    """Factory for creating data adapters."""
 
     _adapters = {
         "backtrader": BacktraderAdapter,
@@ -385,7 +385,7 @@ class DataAdapterFactory:
 
     @classmethod
     def create_adapter(cls, adapter_type: str, **kwargs) -> DataAdapter:
-        """Create a data adapter instance"""
+        """Create a data adapter instance."""
         if adapter_type not in cls._adapters:
             raise ValueError(f"Unknown adapter type: {adapter_type}")
 
@@ -394,12 +394,12 @@ class DataAdapterFactory:
 
     @classmethod
     def register_adapter(cls, name: str, adapter_class: type) -> None:
-        """Register a new adapter type"""
+        """Register a new adapter type."""
         if not issubclass(adapter_class, DataAdapter):
             raise ValueError("Adapter must inherit from DataAdapter")
         cls._adapters[name] = adapter_class
 
     @classmethod
     def get_available_adapters(cls) -> list[str]:
-        """Get list of available adapter types"""
+        """Get list of available adapter types."""
         return list(cls._adapters.keys())

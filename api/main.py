@@ -1,5 +1,5 @@
 """
-FastAPI Application
+FastAPI Application.
 
 RESTful API for controlling and monitoring the algorithmic trading system.
 Provides endpoints for strategy management, live trading control, and system monitoring.
@@ -7,32 +7,18 @@ Provides endpoints for strategy management, live trading control, and system mon
 
 import asyncio
 import json
-import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
-from fastapi import (
-    BackgroundTasks,
-    FastAPI,
-    HTTPException,
-    Request,
-    WebSocket,
-    WebSocketDisconnect,
-)
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-
-from core import (  # Data models; Strategy system; Risk management; Live trading; Backtesting; Data integration
-    BacktestConfig,
+from core import (
     BacktestRunner,
     BaseStrategy,
     DataAdapterFactory,
     ExecutionMode,
-    FixedRiskPositionSizer,
     FVGStrategy,
+    FixedRiskPositionSizer,
     LiveTradingConfig,
     LiveTradingEngine,
     Order,
@@ -43,16 +29,27 @@ from core import (  # Data models; Strategy system; Risk management; Live tradin
     Signal,
     SignalDirection,
     SignalType,
-    StrategyRegistry,
-    strategy_registry,
     TimeFrame,
     create_fvg_strategy_config,
+    strategy_registry,
 )
+
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from pydantic import BaseModel, Field
 
 
 # Pydantic models for API requests/responses
 class SignalResponse(BaseModel):
-    """Signal API response model"""
+    """Signal API response model."""
 
     timestamp: datetime
     symbol: str
@@ -67,6 +64,7 @@ class SignalResponse(BaseModel):
 
     @classmethod
     def from_signal(cls, signal: Signal) -> "SignalResponse":
+        """Create SignalResponse from Signal."""
         return cls(
             timestamp=signal.timestamp,
             symbol=signal.symbol,
@@ -82,7 +80,7 @@ class SignalResponse(BaseModel):
 
 
 class PositionResponse(BaseModel):
-    """Position API response model"""
+    """Position API response model."""
 
     symbol: str
     direction: str
@@ -95,6 +93,7 @@ class PositionResponse(BaseModel):
 
     @classmethod
     def from_position(cls, position: Position) -> "PositionResponse":
+        """Create PositionResponse from Position."""
         return cls(
             symbol=position.symbol,
             direction=position.direction.value,
@@ -110,7 +109,7 @@ class PositionResponse(BaseModel):
 
 
 class OrderResponse(BaseModel):
-    """Order API response model"""
+    """Order API response model."""
 
     order_id: str
     symbol: str
@@ -126,6 +125,7 @@ class OrderResponse(BaseModel):
 
     @classmethod
     def from_order(cls, order: Order) -> "OrderResponse":
+        """Create OrderResponse from Order."""
         return cls(
             order_id=order.order_id,
             symbol=order.symbol,
@@ -142,7 +142,7 @@ class OrderResponse(BaseModel):
 
 
 class StrategyConfigRequest(BaseModel):
-    """Strategy configuration request model"""
+    """Strategy configuration request model."""
 
     name: str
     symbol: str
@@ -153,7 +153,7 @@ class StrategyConfigRequest(BaseModel):
 
 
 class BacktestRequest(BaseModel):
-    """Backtest request model"""
+    """Backtest request model."""
 
     strategy_name: str
     symbol: str
@@ -165,7 +165,7 @@ class BacktestRequest(BaseModel):
 
 
 class LiveTradingRequest(BaseModel):
-    """Live trading request model"""
+    """Live trading request model."""
 
     mode: str = "paper"  # paper, live, sandbox
     auto_trading: bool = True
@@ -176,9 +176,10 @@ class LiveTradingRequest(BaseModel):
 
 # Global system state
 class SystemState:
-    """Global system state"""
+    """Global system state."""
 
     def __init__(self) -> None:
+        """Initialize system state."""
         self.live_engine: Optional[LiveTradingEngine] = None
         self.risk_manager: Optional[RiskManager] = None
         self.active_strategies: Dict[str, BaseStrategy] = {}
@@ -193,22 +194,29 @@ system_state = SystemState()
 
 # WebSocket connection manager
 class ConnectionManager:
-    """WebSocket connection manager"""
+    """WebSocket connection manager."""
 
     def __init__(self) -> None:
+        """Initialize connection manager."""
         self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket) -> None:
+        """Connect a WebSocket."""
         await websocket.accept()
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket) -> None:
+        """Disconnect a WebSocket."""
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
+    async def send_personal_message(
+        self, message: str, websocket: WebSocket
+    ) -> None:
+        """Send a personal message to a WebSocket."""
         await websocket.send_text(message)
 
     async def broadcast(self, message: str) -> None:
+        """Broadcast a message to all WebSockets."""
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
@@ -223,7 +231,7 @@ connection_manager = ConnectionManager()
 # Lifespan manager for FastAPI
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
-    """Lifespan manager for FastAPI app"""
+    """Lifespan manager for FastAPI app."""
     # Startup
     print("🚀 Starting Algorithmic Trading API...")
 
@@ -250,7 +258,9 @@ async def lifespan(app: FastAPI) -> Any:
 # Create FastAPI app
 app = FastAPI(
     title="Algorithmic Trading System API",
-    description="RESTful API for controlling and monitoring the algorithmic trading system",
+    description=(
+        "RESTful API for controlling and monitoring the algorithmic trading system"
+    ),
     version="3.0.0",
     lifespan=lifespan,
 )
@@ -268,7 +278,7 @@ app.add_middleware(
 # Health check endpoint
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint"""
+    """Health check endpoint."""
     return {
         "status": "healthy",
         "timestamp": datetime.now(),
@@ -280,13 +290,15 @@ async def health_check() -> Dict[str, Any]:
 # Strategy management endpoints
 @app.get("/strategies", response_model=list[str])
 async def get_available_strategies() -> list[str]:
-    """Get list of available strategies"""
+    """Get list of available strategies."""
     return strategy_registry.list_strategies()
 
 
 @app.post("/strategies/{strategy_name}/activate")
-async def activate_strategy(strategy_name: str, config: StrategyConfigRequest) -> Dict[str, Any]:
-    """Activate a strategy"""
+async def activate_strategy(
+    strategy_name: str, config: StrategyConfigRequest
+) -> Dict[str, Any]:
+    """Activate a strategy."""
     try:
         # Get strategy class
         strategy_names = strategy_registry.list_strategies()
@@ -324,7 +336,7 @@ async def activate_strategy(strategy_name: str, config: StrategyConfigRequest) -
 
 @app.delete("/strategies/{strategy_id}")
 async def deactivate_strategy(strategy_id: str) -> Dict[str, str]:
-    """Deactivate a strategy"""
+    """Deactivate a strategy."""
     if strategy_id not in system_state.active_strategies:
         raise HTTPException(status_code=404, detail="Strategy not found")
 
@@ -334,14 +346,14 @@ async def deactivate_strategy(strategy_id: str) -> Dict[str, str]:
 
 @app.get("/strategies/active", response_model=list[str])
 async def get_active_strategies() -> list[str]:
-    """Get list of active strategies"""
+    """Get list of active strategies."""
     return list(system_state.active_strategies.keys())
 
 
 # Live trading endpoints
 @app.post("/live-trading/start")
 async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
-    """Start live trading"""
+    """Start live trading."""
     try:
         if system_state.is_live_trading:
             raise HTTPException(status_code=400, detail="Live trading already running")
@@ -389,7 +401,7 @@ async def start_live_trading(config: LiveTradingRequest) -> Dict[str, str]:
 
 @app.post("/live-trading/stop")
 async def stop_live_trading() -> Dict[str, str]:
-    """Stop live trading"""
+    """Stop live trading."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
             raise HTTPException(status_code=400, detail="Live trading not running")
@@ -406,7 +418,7 @@ async def stop_live_trading() -> Dict[str, str]:
 
 @app.get("/live-trading/status")
 async def get_live_trading_status() -> Dict[str, Any]:
-    """Get live trading status"""
+    """Get live trading status."""
     if not system_state.live_engine:
         return {"running": False}
 
@@ -415,7 +427,7 @@ async def get_live_trading_status() -> Dict[str, Any]:
 
 @app.post("/live-trading/emergency-stop")
 async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any]:
-    """Emergency stop live trading"""
+    """Emergency stop live trading."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
             raise HTTPException(status_code=400, detail="Live trading not running")
@@ -432,7 +444,7 @@ async def emergency_stop(reason: str = "Manual emergency stop") -> Dict[str, Any
 # Signal endpoints
 @app.post("/signals/manual")
 async def send_manual_signal(signal_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Send a manual trading signal"""
+    """Send a manual trading signal."""
     try:
         if not system_state.is_live_trading or not system_state.live_engine:
             raise HTTPException(status_code=400, detail="Live trading not running")
@@ -477,7 +489,7 @@ async def send_manual_signal(signal_data: Dict[str, Any]) -> Dict[str, Any]:
 # Position endpoints
 @app.get("/positions", response_model=list[PositionResponse])
 async def get_positions() -> list[PositionResponse]:
-    """Get current positions"""
+    """Get current positions."""
     try:
         if not system_state.live_engine:
             return []
@@ -492,7 +504,7 @@ async def get_positions() -> list[PositionResponse]:
 # Order endpoints
 @app.get("/orders", response_model=list[OrderResponse])
 async def get_orders() -> list[OrderResponse]:
-    """Get recent orders"""
+    """Get recent orders."""
     try:
         if not system_state.live_engine:
             return []
@@ -512,7 +524,7 @@ async def get_orders() -> list[OrderResponse]:
 # Backtesting endpoints
 @app.post("/backtest/run")
 async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
-    """Run a backtest"""
+    """Run a backtest."""
     try:
         # Create data adapter
         adapter = DataAdapterFactory.create_adapter("backtrader")
@@ -564,7 +576,7 @@ async def run_backtest(request: BacktestRequest) -> Dict[str, Any]:
 # Portfolio endpoints
 @app.get("/portfolio/summary")
 async def get_portfolio_summary() -> Dict[str, Any]:
-    """Get portfolio summary"""
+    """Get portfolio summary."""
     try:
         if not system_state.risk_manager:
             return {"error": "Risk manager not initialized"}
@@ -578,7 +590,7 @@ async def get_portfolio_summary() -> Dict[str, Any]:
 # WebSocket endpoint for real-time updates
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    """WebSocket endpoint for real-time updates"""
+    """Websocket endpoint for real-time updates."""
     await connection_manager.connect(websocket)
     try:
         while True:
@@ -591,7 +603,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 # Event handlers
 def _on_order_event(order: Order) -> None:
-    """Handle order events"""
+    """Handle order events."""
     asyncio.create_task(
         _broadcast_event(
             "order_update",
@@ -608,7 +620,7 @@ def _on_order_event(order: Order) -> None:
 
 
 def _on_position_event(position: Position) -> None:
-    """Handle position events"""
+    """Handle position events."""
     asyncio.create_task(
         _broadcast_event(
             "position_update",
@@ -623,12 +635,12 @@ def _on_position_event(position: Position) -> None:
 
 
 def _on_error_event(error: str) -> None:
-    """Handle error events"""
+    """Handle error events."""
     asyncio.create_task(_broadcast_event("error", {"message": error}))
 
 
 async def _broadcast_event(event_type: str, data: Dict[str, Any]) -> None:
-    """Broadcast event to all WebSocket connections"""
+    """Broadcast event to all WebSocket connections."""
     message = json.dumps(
         {
             "type": event_type,
@@ -642,7 +654,7 @@ async def _broadcast_event(event_type: str, data: Dict[str, Any]) -> None:
 # Error handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """Handle HTTP exceptions"""
+    """Handle HTTP exceptions."""
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": exc.detail, "timestamp": datetime.now().isoformat()},
@@ -651,7 +663,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle general exceptions"""
+    """Handle general exceptions."""
     return JSONResponse(
         status_code=500,
         content={"error": str(exc), "timestamp": datetime.now().isoformat()},

@@ -3,7 +3,7 @@ Technical Indicators Library
 
 Centralized collection of technical indicators for the trading system.
 Clean, efficient implementations with standardized interfaces.
-"""
+."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -13,7 +13,7 @@ from ..data.models import Candle
 
 @dataclass
 class IndicatorResult:
-    """Result of an indicator calculation"""
+    """Result of an indicator calculation."""
 
     value: float
     timestamp: Optional[object] = None
@@ -33,7 +33,7 @@ class TechnicalIndicators:
     - Return list[IndicatorResult] or single values
     - Handle edge cases gracefully
     - Provide configurable parameters
-    """
+    ."""
 
     @staticmethod
     def ema(candles: list[Candle], period: int) -> list[IndicatorResult]:
@@ -46,7 +46,7 @@ class TechnicalIndicators:
 
         Returns:
             List of EMA values
-        """
+        ."""
         if len(candles) < period:
             return []
 
@@ -83,7 +83,7 @@ class TechnicalIndicators:
 
         Returns:
             List of SMA values
-        """
+        ."""
         if len(candles) < period:
             return []
 
@@ -113,7 +113,7 @@ class TechnicalIndicators:
 
         Returns:
             List of RSI values
-        """
+        ."""
         if len(candles) < period + 1:
             return []
 
@@ -166,7 +166,7 @@ class TechnicalIndicators:
 
         Returns:
             List of ATR values
-        """
+        ."""
         if len(candles) < period + 1:
             return []
 
@@ -220,7 +220,7 @@ class TechnicalIndicators:
 
         Returns:
             Dictionary with 'macd', 'signal', and 'histogram' keys
-        """
+        ."""
         if len(candles) < slow_period:
             return {"macd": [], "signal": [], "histogram": []}
 
@@ -300,7 +300,7 @@ class TechnicalIndicators:
 
         Returns:
             Dictionary with 'upper', 'middle', and 'lower' keys
-        """
+        ."""
         if len(candles) < period:
             return {"upper": [], "middle": [], "lower": []}
 
@@ -358,7 +358,7 @@ class TechnicalIndicators:
 
         Returns:
             Dictionary with 'k' and 'd' keys
-        """
+        ."""
         if len(candles) < k_period:
             return {"k": [], "d": []}
 
@@ -414,7 +414,7 @@ class EMASystem:
 
     Handles multiple EMA calculations and provides trend analysis
     specifically for the FVG strategy requirements.
-    """
+    ."""
 
     def __init__(
         self,
@@ -429,7 +429,7 @@ class EMASystem:
             fast_period: Fast EMA period (default 9)
             medium_period: Medium EMA period (default 20)
             slow_period: Slow EMA period (default 50)
-        """
+        ."""
         self.fast_period = fast_period
         self.medium_period = medium_period
         self.slow_period = slow_period
@@ -443,7 +443,7 @@ class EMASystem:
 
         Returns:
             Dictionary with 'fast', 'medium', and 'slow' EMA values
-        """
+        ."""
         return {
             "fast": TechnicalIndicators.ema(candles, self.fast_period),
             "medium": TechnicalIndicators.ema(candles, self.medium_period),
@@ -466,7 +466,7 @@ class EMASystem:
 
         Returns:
             True if EMAs are aligned, False otherwise
-        """
+        ."""
         if not all(key in emas for key in ["fast", "medium", "slow"]):
             return False
 
@@ -498,7 +498,7 @@ class EMASystem:
 
         Returns:
             Trend strength score (0.0 to 1.0)
-        """
+        ."""
         if not all(key in emas for key in ["fast", "medium", "slow"]):
             return 0.0
 
@@ -537,7 +537,7 @@ class EMASystem:
 
         Returns:
             True if consecutive closes condition is met
-        """
+        ."""
         if "medium" not in emas or len(emas["medium"]) < consecutive_count:
             return False
 

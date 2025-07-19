@@ -1,14 +1,13 @@
 # tests/integration/test_fvg_system_integration.py
 """Integration tests for the FVG detection and management system."""
 
-import asyncio
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List
 
 import pytest
 
-from core.data.models import Candle, FVGZone, SignalDirection, TimeFrame
+from core.data.models import Candle, TimeFrame
 from core.indicators.fvg_detector import FVGDetector, FVGFilterConfig
 
 
@@ -205,7 +204,7 @@ class TestFVGSystemIntegration:
         assert len(fvgs) >= 1
 
         fvg = fvgs[0]
-        initial_status = fvg.status
+        _initial_status = fvg.status
 
         # Test zone price interaction
         assert fvg.is_price_in_zone(fvg.get_zone_midpoint())

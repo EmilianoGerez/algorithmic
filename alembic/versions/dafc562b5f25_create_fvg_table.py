@@ -1,4 +1,4 @@
-"""create fvg table
+"""Create FVG table.
 
 Revision ID: dafc562b5f25
 Revises:
@@ -8,9 +8,9 @@ Create Date: 2025-07-14 00:29:45.095283
 
 from typing import Sequence, Union
 
-import sqlalchemy as sa
-
 from alembic import op
+
+import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "dafc562b5f25"

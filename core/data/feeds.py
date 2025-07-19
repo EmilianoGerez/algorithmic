@@ -3,7 +3,7 @@ Data Feeds
 
 Unified data feed system that provides real-time and historical data
 to strategies through a consistent interface.
-"""
+."""
 
 import time
 from abc import ABC, abstractmethod
@@ -16,7 +16,7 @@ from .models import Candle, MarketData, TimeFrame
 
 
 class DataFeed(ABC):
-    """Abstract base class for data feeds"""
+    """Abstract base class for data feeds."""
 
     def __init__(self, adapter: DataAdapter):
         self.adapter = adapter
@@ -24,16 +24,16 @@ class DataFeed(ABC):
         self.is_running = False
 
     def subscribe(self, callback: Callable[[Candle], None]) -> None:
-        """Subscribe to data updates"""
+        """Subscribe to data updates."""
         self.subscribers.append(callback)
 
     def unsubscribe(self, callback: Callable[[Candle], None]) -> None:
-        """Unsubscribe from data updates"""
+        """Unsubscribe from data updates."""
         if callback in self.subscribers:
             self.subscribers.remove(callback)
 
     def _notify_subscribers(self, candle: Candle) -> None:
-        """Notify all subscribers of new candle"""
+        """Notify all subscribers of new candle."""
         for callback in self.subscribers:
             try:
                 callback(candle)
@@ -42,15 +42,15 @@ class DataFeed(ABC):
 
     @abstractmethod
     def start(self) -> None:
-        """Start the data feed"""
+        """Start the data feed."""
 
     @abstractmethod
     def stop(self) -> None:
-        """Stop the data feed"""
+        """Stop the data feed."""
 
 
 class LiveDataFeed(DataFeed):
-    """Live data feed for real-time trading"""
+    """Live data feed for real-time trading."""
 
     def __init__(
         self,
@@ -67,7 +67,7 @@ class LiveDataFeed(DataFeed):
         self.last_candles = {}
 
     def start(self) -> None:
-        """Start live data feed"""
+        """Start live data feed."""
         if self.is_running:
             return
 
@@ -78,7 +78,7 @@ class LiveDataFeed(DataFeed):
         print(f"Live data feed started for {len(self.symbols)} symbols")
 
     def stop(self) -> None:
-        """Stop live data feed"""
+        """Stop live data feed."""
         if not self.is_running:
             return
 
@@ -89,7 +89,7 @@ class LiveDataFeed(DataFeed):
         print("Live data feed stopped")
 
     def _run_feed(self) -> None:
-        """Run the live data feed loop"""
+        """Run the live data feed loop."""
         while not self._stop_event.is_set():
             try:
                 for symbol in self.symbols:
@@ -121,7 +121,7 @@ class LiveDataFeed(DataFeed):
 
 
 class BacktestDataFeed(DataFeed):
-    """Data feed for backtesting"""
+    """Data feed for backtesting."""
 
     def __init__(self, adapter: DataAdapter, market_data: MarketData):
         super().__init__(adapter)
@@ -133,7 +133,7 @@ class BacktestDataFeed(DataFeed):
         self.is_complete = False
 
     def start(self) -> None:
-        """Start backtest data feed"""
+        """Start backtest data feed."""
         if self.is_running:
             return
 
@@ -153,7 +153,7 @@ class BacktestDataFeed(DataFeed):
         )
 
     def stop(self) -> None:
-        """Stop backtest data feed"""
+        """Stop backtest data feed."""
         if not self.is_running:
             return
 
@@ -164,7 +164,7 @@ class BacktestDataFeed(DataFeed):
         print("Backtest data feed stopped")
 
     def _instant_playback(self) -> None:
-        """Send all candles instantly"""
+        """Send all candles instantly."""
         for candle in self.market_data.candles:
             if self._stop_event.is_set():
                 break
@@ -175,7 +175,7 @@ class BacktestDataFeed(DataFeed):
         self.is_running = False
 
     def _timed_playback(self) -> None:
-        """Send candles with timing simulation"""
+        """Send candles with timing simulation."""
         candles = self.market_data.candles
 
         for i in range(self.current_index, len(candles)):
@@ -200,25 +200,25 @@ class BacktestDataFeed(DataFeed):
         self.is_running = False
 
     def set_playback_speed(self, speed: float) -> None:
-        """Set playback speed (0 = instant, 1.0 = real-time, 2.0 = 2x speed)"""
+        """Set playback speed (0 = instant, 1.0 = real-time, 2.0 = 2x speed)."""
         self.playback_speed = speed
 
     def seek_to_timestamp(self, timestamp: datetime) -> None:
-        """Seek to a specific timestamp"""
+        """Seek to a specific timestamp."""
         for i, candle in enumerate(self.market_data.candles):
             if candle.timestamp >= timestamp:
                 self.current_index = i
                 break
 
     def get_progress(self) -> float:
-        """Get playback progress (0.0 to 1.0)"""
+        """Get playback progress (0.0 to 1.0)."""
         if not self.market_data.candles:
             return 1.0
         return self.current_index / len(self.market_data.candles)
 
 
 class MultiSymbolDataFeed(DataFeed):
-    """Data feed that handles multiple symbols and timeframes"""
+    """Data feed that handles multiple symbols and timeframes."""
 
     def __init__(self, adapter: DataAdapter):
         super().__init__(adapter)
@@ -226,17 +226,17 @@ class MultiSymbolDataFeed(DataFeed):
         self.is_live = False
 
     def add_symbol(self, symbol: str, timeframes: list[TimeFrame]) -> None:
-        """Add a symbol with its timeframes"""
+        """Add a symbol with its timeframes."""
         if symbol not in self.feeds:
             self.feeds[symbol] = {"timeframes": timeframes, "last_candles": {}}
 
     def remove_symbol(self, symbol: str) -> None:
-        """Remove a symbol"""
+        """Remove a symbol."""
         if symbol in self.feeds:
             del self.feeds[symbol]
 
     def start_live(self) -> None:
-        """Start as live feed"""
+        """Start as live feed."""
         self.is_live = True
         symbols = list(self.feeds.keys())
         timeframes = []
@@ -252,7 +252,7 @@ class MultiSymbolDataFeed(DataFeed):
         self.live_feed.start()
 
     def start_backtest(self, market_data_collection: Dict[str, MarketData]) -> None:
-        """Start as backtest feed with multiple symbols"""
+        """Start as backtest feed with multiple symbols."""
         self.is_live = False
 
         # Create individual backtest feeds for each symbol
@@ -268,7 +268,7 @@ class MultiSymbolDataFeed(DataFeed):
             feed.start()
 
     def _on_candle_received(self, candle: Candle) -> None:
-        """Handle incoming candle from underlying feeds"""
+        """Handle incoming candle from underlying feeds."""
         # Update last candle for this symbol/timeframe
         if candle.symbol in self.feeds:
             key = f"{candle.timeframe.value}"
@@ -278,14 +278,14 @@ class MultiSymbolDataFeed(DataFeed):
         self._notify_subscribers(candle)
 
     def start(self) -> None:
-        """Start the multi-symbol feed"""
+        """Start the multi-symbol feed."""
         if self.is_live:
             self.start_live()
         # Backtest start is handled separately
         self.is_running = True
 
     def stop(self) -> None:
-        """Stop the multi-symbol feed"""
+        """Stop the multi-symbol feed."""
         if self.is_live and hasattr(self, "live_feed"):
             self.live_feed.stop()
         elif hasattr(self, "backtest_feeds"):
@@ -295,7 +295,7 @@ class MultiSymbolDataFeed(DataFeed):
         self.is_running = False
 
     def get_latest_candle(self, symbol: str, timeframe: TimeFrame) -> Optional[Candle]:
-        """Get the latest candle for a symbol/timeframe"""
+        """Get the latest candle for a symbol/timeframe."""
         if symbol in self.feeds:
             key = f"{timeframe.value}"
             return self.feeds[symbol]["last_candles"].get(key)

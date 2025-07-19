@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-BTC/USD Alpaca Backtest Configuration
+BTC/USD Alpaca Backtest Configuration.
 
-Specific setup for Bitcoin backtesting with Alpaca data
+Specific setup for Bitcoin backtesting with Alpaca data.
 Period: May 18, 2025 to July 18, 2025
-"""
+."""
 
 import os
 from datetime import datetime
@@ -57,7 +57,7 @@ RISK_RULES = {
 
 
 def get_btc_backtest_summary():
-    """Get formatted summary of BTC backtest configuration"""
+    """Get formatted summary of BTC backtest configuration."""
     return f"""
 🚀 BTC/USD Alpaca Backtest Configuration
 {'=' * 50}
@@ -76,8 +76,10 @@ def get_btc_backtest_summary():
    Max Drawdown: {BACKTEST_CONFIG['max_drawdown']:.0%}
 
 🎯 Strategy Settings:
-   Confidence Threshold: {BACKTEST_CONFIG['strategy_params']['confidence_threshold']:.0%}
-   24/7 Trading: {BACKTEST_CONFIG['strategy_params']['nyc_hours_only'] == False}
+   Confidence Threshold: {
+       BACKTEST_CONFIG['strategy_params']['confidence_threshold']:.0%
+   }
+   24/7 Trading: {not BACKTEST_CONFIG['strategy_params']['nyc_hours_only']}
    Swing Lookback: {BACKTEST_CONFIG['strategy_params']['swing_lookback']} periods
    Filter Preset: {BACKTEST_CONFIG['strategy_params']['fvg_filter_preset']}
    Risk/Reward: 1:{BACKTEST_CONFIG['strategy_params']['risk_reward_ratio']:.0f}
@@ -93,11 +95,11 @@ def get_btc_backtest_summary():
    Rate Limit: {ALPACA_CONFIG['rate_limit']} req/min
    Max Bars/Request: {ALPACA_CONFIG['max_bars_per_request']:,}
    {'=' * 50}
-"""
+."""
 
 
 def validate_environment():
-    """Validate that environment is ready for BTC backtest"""
+    """Validate that environment is ready for BTC backtest."""
     issues = []
 
     # Check API credentials

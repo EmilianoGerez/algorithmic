@@ -8,7 +8,7 @@ This test validates the complete integration of all three phases:
 - Phase 3: Live trading, API, streaming
 
 Provides comprehensive validation of the entire system architecture.
-"""
+."""
 
 import asyncio
 import os
@@ -63,7 +63,7 @@ except Exception as exc:  # pylint: disable=broad-exception-caught
 
 
 class SystemIntegrationTest:
-    """Complete system integration test"""
+    """Complete system integration test."""
 
     def __init__(self):
         self.test_results = {
@@ -74,7 +74,7 @@ class SystemIntegrationTest:
         }
 
     async def run_complete_test(self):
-        """Run complete system integration test"""
+        """Run complete system integration test."""
         print("🧪 Complete System Integration Test")
         print("=" * 80)
         print("Testing all three phases of the system:")
@@ -104,7 +104,7 @@ class SystemIntegrationTest:
         return self.get_overall_success()
 
     async def test_phase1_core(self):
-        """Test Phase 1 - Core System"""
+        """Test Phase 1 - Core System."""
         print("🔧 Phase 1: Core System Tests")
         print("-" * 50)
 
@@ -123,7 +123,7 @@ class SystemIntegrationTest:
         print()
 
     async def test_phase2_integration(self):
-        """Test Phase 2 - Integration"""
+        """Test Phase 2 - Integration."""
         print("🔗 Phase 2: Integration Tests")
         print("-" * 50)
 
@@ -142,7 +142,7 @@ class SystemIntegrationTest:
         print()
 
     async def test_phase3_live(self):
-        """Test Phase 3 - Live Trading"""
+        """Test Phase 3 - Live Trading."""
         print("🚀 Phase 3: Live Trading Tests")
         print("-" * 50)
 
@@ -161,7 +161,7 @@ class SystemIntegrationTest:
         print()
 
     async def test_system_integration(self):
-        """Test complete system integration"""
+        """Test complete system integration."""
         print("🌐 System Integration Tests")
         print("-" * 50)
 
@@ -180,7 +180,7 @@ class SystemIntegrationTest:
         print()
 
     async def test_data_models(self):
-        """Test core data models"""
+        """Test core data models."""
         test_name = "Data Models"
         try:
             # Test Candle model
@@ -222,7 +222,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_strategy_framework(self):
-        """Test strategy framework"""
+        """Test strategy framework."""
         test_name = "Strategy Framework"
         try:
             # Test strategy configuration
@@ -252,7 +252,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_indicators(self):
-        """Test indicators"""
+        """Test indicators."""
         test_name = "Indicators"
         try:
             # Test FVG detector
@@ -272,7 +272,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_signal_processing(self):
-        """Test signal processing"""
+        """Test signal processing."""
         test_name = "Signal Processing"
         try:
             # Create test signal
@@ -302,7 +302,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_data_adapters(self):
-        """Test data adapters"""
+        """Test data adapters."""
         test_name = "Data Adapters"
         try:
             # Test Yahoo Finance adapter
@@ -320,7 +320,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_risk_management(self):
-        """Test risk management"""
+        """Test risk management."""
         test_name = "Risk Management"
         try:
             # Create risk limits
@@ -354,7 +354,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_backtesting_engine(self):
-        """Test backtesting engine"""
+        """Test backtesting engine."""
         test_name = "Backtesting Engine"
         try:
             # Create backtest config
@@ -382,7 +382,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_multi_symbol_feeds(self):
-        """Test multi-symbol data feeds"""
+        """Test multi-symbol data feeds."""
         test_name = "Multi-Symbol Feeds"
         try:
             # Create adapter first
@@ -410,7 +410,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_live_trading_engine(self):
-        """Test live trading engine"""
+        """Test live trading engine."""
         test_name = "Live Trading Engine"
         try:
             # Create paper broker
@@ -458,11 +458,11 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_streaming_system(self):
-        """Test streaming system"""
+        """Test streaming system."""
         test_name = "Streaming System"
         try:
             # Create streaming config
-            streaming_config = StreamingConfig(
+            _streaming_config = StreamingConfig(
                 provider=StreamingProvider.MOCK,
                 symbols=["AAPL", "GOOGL", "MSFT"],
                 timeframes=[TimeFrame.MINUTE_1],
@@ -486,7 +486,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_order_management(self):
-        """Test order management"""
+        """Test order management."""
         test_name = "Order Management"
         try:
             # Create paper broker
@@ -506,7 +506,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_realtime_integration(self):
-        """Test real-time integration"""
+        """Test real-time integration."""
         test_name = "Real-time Integration"
         try:
             # Test that all components can work together
@@ -533,7 +533,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_end_to_end_signal_flow(self):
-        """Test end-to-end signal flow"""
+        """Test end-to-end signal flow."""
         test_name = "End-to-End Signal Flow"
         try:
             # Test complete signal flow from strategy to execution
@@ -570,7 +570,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_multi_component_integration(self):
-        """Test multi-component integration"""
+        """Test multi-component integration."""
         test_name = "Multi-Component Integration"
         try:
             # Test that multiple components can be instantiated together
@@ -600,7 +600,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_error_handling(self):
-        """Test error handling"""
+        """Test error handling."""
         test_name = "Error Handling"
         try:
             # Test that invalid configurations are handled
@@ -636,7 +636,7 @@ class SystemIntegrationTest:
             print(f"  ❌ {test_name}: FAILED - {exc}")
 
     async def test_performance_integration(self):
-        """Test performance integration"""
+        """Test performance integration."""
         test_name = "Performance Integration"
         try:
             # Test that all components can be imported and instantiated quickly
@@ -678,7 +678,7 @@ class SystemIntegrationTest:
     def record_test_result(
         self, phase: str, test_name: str, passed: bool, error: str = None
     ):
-        """Record a test result"""
+        """Record a test result."""
         if passed:
             self.test_results[phase]["passed"] += 1
         else:
@@ -689,7 +689,7 @@ class SystemIntegrationTest:
         )
 
     def generate_test_report(self):
-        """Generate comprehensive test report"""
+        """Generate comprehensive test report."""
         print("📊 Complete System Integration Test Report")
         print("=" * 80)
 
@@ -722,7 +722,7 @@ class SystemIntegrationTest:
             (total_passed / total_tests) * 100 if total_tests > 0 else 0
         )
 
-        print(f"\n📈 Overall Test Results:")
+        print("\n📈 Overall Test Results:")
         print(f"  Total Tests: {total_tests}")
         print(f"  Passed: {total_passed}")
         print(f"  Failed: {total_failed}")
@@ -739,13 +739,13 @@ class SystemIntegrationTest:
         print("=" * 80)
 
     def get_overall_success(self):
-        """Get overall test success status"""
+        """Get overall test success status."""
         total_failed = sum(results["failed"] for results in self.test_results.values())
         return total_failed == 0
 
 
 async def main():
-    """Main test function"""
+    """Main test function."""
     test = SystemIntegrationTest()
     success = await test.run_complete_test()
 

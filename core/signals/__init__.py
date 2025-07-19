@@ -2,7 +2,7 @@
 Core Signals Package
 
 Contains signal processing and generation components.
-"""
+."""
 
 from .signal_processor import (
     MultiTimeframeEngine,

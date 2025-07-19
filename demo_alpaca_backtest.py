@@ -9,7 +9,7 @@ Demonstrates:
 - Strategy backtesting
 - Performance analysis
 - Results visualization
-"""
+."""
 
 import os
 import sys
@@ -30,14 +30,13 @@ from core import (  # Data models; Data adapters; Strategy; Backtesting; Risk ma
     MarketData,
     RiskLimits,
     RiskManager,
-    SignalDirection,
     TimeFrame,
     create_fvg_strategy_config,
 )
 
 
 def setup_alpaca_credentials() -> tuple[Optional[str], Optional[str]]:
-    """Setup Alpaca credentials from environment or prompt user"""
+    """Setup Alpaca credentials from environment or prompt user."""
     import os
 
     api_key = os.getenv("ALPACA_API_KEY")
@@ -65,7 +64,7 @@ def fetch_alpaca_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> Any:
-    """Fetch historical data from Alpaca"""
+    """Fetch historical data from Alpaca."""
 
     # Use specific date range if provided, otherwise use days parameter
     if start_date and end_date:
@@ -130,7 +129,7 @@ def fetch_alpaca_data(
 
 
 def run_fvg_backtest(market_data: MarketData) -> Any:
-    """Run FVG strategy backtest"""
+    """Run FVG strategy backtest."""
     print("\\n🧠 Running FVG Strategy Backtest on BTC/USD...")
 
     # Create strategy with BTC-optimized configuration
@@ -166,7 +165,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
     )
 
     # Create backtest engine
-    engine = CoreBacktestEngine(adapter)
+    _engine = CoreBacktestEngine(adapter)
 
     # Run backtest with simplified approach for demo
     try:
@@ -177,12 +176,12 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
         position_sizer = FixedRiskPositionSizer(
             risk_per_trade=0.02
         )  # 2% risk per trade
-        
+
         # Ensure risk_limits is not None
         if backtest_config.risk_limits is None:
             raise ValueError("Risk limits not configured in backtest config")
-            
-        risk_manager = RiskManager(
+
+        _risk_manager = RiskManager(
             risk_limits=backtest_config.risk_limits,
             position_sizer=position_sizer,
             initial_capital=backtest_config.initial_capital,
@@ -255,7 +254,7 @@ def run_fvg_backtest(market_data: MarketData) -> Any:
 
 
 def analyze_results(results: Any) -> None:
-    """Analyze and display backtest results"""
+    """Analyze and display backtest results."""
     if not results:
         print("❌ No results to analyze")
         return
@@ -273,27 +272,27 @@ def analyze_results(results: Any) -> None:
     if sharpe_ratio:
         print(f"📈 Sharpe Ratio: {sharpe_ratio:.2f}")
     else:
-        print(f"📈 Sharpe Ratio: Not calculated")
+        print("📈 Sharpe Ratio: Not calculated")
 
     # Trade statistics
     total_trades = results.total_trades
     winning_trades = results.winning_trades
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
 
-    print(f"\\n🎯 TRADE STATISTICS")
+    print("\\n🎯 TRADE STATISTICS")
     print(f"Total Trades: {total_trades}")
     print(f"Winning Trades: {winning_trades}")
     print(f"Win Rate: {win_rate:.1f}%")
 
     # Crypto-specific analysis
-    print(f"\\n⚡ CRYPTO MARKET ANALYSIS")
-    print(f"Trading Period: May 18 - July 18, 2025 (2 months)")
-    print(f"Market Type: Bitcoin/USD - High volatility asset")
-    print(f"Strategy: FVG with 24/7 trading capability")
-    print(f"Risk Management: 1:2 R:R with crypto-adjusted parameters")
+    print("\\n⚡ CRYPTO MARKET ANALYSIS")
+    print("Trading Period: May 18 - July 18, 2025 (2 months)")
+    print("Market Type: Bitcoin/USD - High volatility asset")
+    print("Strategy: FVG with 24/7 trading capability")
+    print("Risk Management: 1:2 R:R with crypto-adjusted parameters")
 
     # Performance rating for crypto
-    print(f"\\n🏆 CRYPTO PERFORMANCE RATING")
+    print("\\n🏆 CRYPTO PERFORMANCE RATING")
     if total_return > 25 and max_drawdown < 7500:  # 25% return, <$7500 drawdown
         print("🟢 EXCELLENT - Strong crypto returns with controlled risk")
     elif total_return > 15 and max_drawdown < 12500:  # 15% return, <$12500 drawdown
@@ -305,7 +304,7 @@ def analyze_results(results: Any) -> None:
 
 
 def create_sample_data_fallback() -> MarketData:
-    """Create sample data if Alpaca is not available"""
+    """Create sample data if Alpaca is not available."""
     print("📊 Creating sample BTC/USD data for demonstration...")
 
     market_data = MarketData(
@@ -352,7 +351,7 @@ def create_sample_data_fallback() -> MarketData:
 
 
 def main() -> None:
-    """Main demo function"""
+    """Main demo function."""
     print("🚀 Alpaca Backtesting Demo - BTC/USD Analysis")
     print("=" * 50)
     print("📅 Period: May 18, 2025 to July 18, 2025")

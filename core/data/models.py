@@ -3,7 +3,7 @@ Core Data Models
 
 Universal data structures for the trading system.
 These models are platform-agnostic and represent the core business entities.
-"""
+."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 
 class TimeFrame(Enum):
-    """Supported timeframes"""
+    """Supported timeframes."""
 
     TICK = "tick"
     SECOND_15 = "15s"
@@ -30,14 +30,14 @@ class TimeFrame(Enum):
 
 
 class SignalDirection(Enum):
-    """Signal direction"""
+    """Signal direction."""
 
     LONG = "long"
     SHORT = "short"
 
 
 class SignalType(Enum):
-    """Signal types"""
+    """Signal types."""
 
     ENTRY = "entry"
     EXIT = "exit"
@@ -46,7 +46,7 @@ class SignalType(Enum):
 
 
 class OrderStatus(Enum):
-    """Order status"""
+    """Order status."""
 
     PENDING = "pending"
     FILLED = "filled"
@@ -56,7 +56,7 @@ class OrderStatus(Enum):
 
 @dataclass
 class Candle:
-    """Single candlestick data"""
+    """Single candlestick data."""
 
     timestamp: datetime
     open: Decimal
@@ -68,7 +68,7 @@ class Candle:
     timeframe: TimeFrame
 
     def __post_init__(self) -> None:
-        """Validate candle data"""
+        """Validate candle data."""
         if self.high < max(self.open, self.close):
             raise ValueError("High must be >= max(open, close)")
         if self.low > min(self.open, self.close):
@@ -79,7 +79,7 @@ class Candle:
 
 @dataclass
 class MarketData:
-    """Collection of market data"""
+    """Collection of market data."""
 
     symbol: str
     timeframe: TimeFrame
@@ -87,7 +87,7 @@ class MarketData:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def add_candle(self, candle: Candle) -> None:
-        """Add a new candle to the data"""
+        """Add a new candle to the data."""
         if candle.symbol != self.symbol:
             raise ValueError(
                 f"Candle symbol {candle.symbol} doesn't match {self.symbol}"
@@ -102,17 +102,17 @@ class MarketData:
         self.candles.sort(key=lambda c: c.timestamp)
 
     def get_latest_candle(self) -> Optional[Candle]:
-        """Get the most recent candle"""
+        """Get the most recent candle."""
         return self.candles[-1] if self.candles else None
 
     def get_candles_range(self, start: datetime, end: datetime) -> list[Candle]:
-        """Get candles within a time range"""
+        """Get candles within a time range."""
         return [candle for candle in self.candles if start <= candle.timestamp <= end]
 
 
 @dataclass
 class Signal:
-    """Standardized trading signal"""
+    """Standardized trading signal."""
 
     timestamp: datetime
     symbol: str
@@ -129,7 +129,7 @@ class Signal:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Validate signal data"""
+        """Validate signal data."""
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
         if not 0.0 <= self.strength <= 1.0:
@@ -142,19 +142,19 @@ class Signal:
             raise ValueError("Take profit must be positive")
 
     def calculate_risk_amount(self) -> Optional[Decimal]:
-        """Calculate risk amount per unit"""
+        """Calculate risk amount per unit."""
         if self.stop_loss is None:
             return None
         return abs(self.entry_price - self.stop_loss)
 
     def calculate_reward_amount(self) -> Optional[Decimal]:
-        """Calculate reward amount per unit"""
+        """Calculate reward amount per unit."""
         if self.take_profit is None:
             return None
         return abs(self.take_profit - self.entry_price)
 
     def get_actual_risk_reward_ratio(self) -> Optional[float]:
-        """Get actual risk/reward ratio"""
+        """Get actual risk/reward ratio."""
         risk = self.calculate_risk_amount()
         reward = self.calculate_reward_amount()
         if risk is None or reward is None or risk == 0:
@@ -164,7 +164,7 @@ class Signal:
 
 @dataclass
 class Position:
-    """Trading position"""
+    """Trading position."""
 
     symbol: str
     direction: SignalDirection
@@ -181,7 +181,7 @@ class Position:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def update_current_price(self, price: Decimal) -> None:
-        """Update current price and unrealized PnL"""
+        """Update current price and unrealized PnL."""
         self.current_price = price
         if self.direction == SignalDirection.LONG:
             self.unrealized_pnl = (price - self.entry_price) * self.quantity
@@ -189,7 +189,7 @@ class Position:
             self.unrealized_pnl = (self.entry_price - price) * self.quantity
 
     def close_position(self, exit_price: Decimal, exit_time: datetime) -> None:
-        """Close the position"""
+        """Close the position."""
         self.realized_pnl = self.unrealized_pnl
         self.status = "closed"
         self.metadata.update({"exit_price": exit_price, "exit_time": exit_time})
@@ -197,7 +197,7 @@ class Position:
 
 @dataclass
 class Order:
-    """Trading order"""
+    """Trading order."""
 
     order_id: str
     symbol: str
@@ -216,7 +216,7 @@ class Order:
 
 @dataclass
 class FVGZone:
-    """Fair Value Gap zone"""
+    """Fair Value Gap zone."""
 
     timestamp: datetime
     symbol: str
@@ -232,7 +232,7 @@ class FVGZone:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Validate FVG zone data"""
+        """Validate FVG zone data."""
         if self.zone_high <= self.zone_low:
             raise ValueError("Zone high must be greater than zone low")
         if not 0.0 <= self.strength <= 1.0:
@@ -241,21 +241,21 @@ class FVGZone:
             raise ValueError("Confidence must be between 0.0 and 1.0")
 
     def is_price_in_zone(self, price: Decimal) -> bool:
-        """Check if price is within the FVG zone"""
+        """Check if price is within the FVG zone."""
         return self.zone_low <= price <= self.zone_high
 
     def get_zone_size(self) -> Decimal:
-        """Get the size of the FVG zone"""
+        """Get the size of the FVG zone."""
         return self.zone_high - self.zone_low
 
     def get_zone_midpoint(self) -> Decimal:
-        """Get the midpoint of the FVG zone"""
+        """Get the midpoint of the FVG zone."""
         return (self.zone_high + self.zone_low) / 2
 
 
 @dataclass
 class StrategyConfig:
-    """Base strategy configuration"""
+    """Base strategy configuration."""
 
     name: str
     symbol: str
@@ -267,7 +267,7 @@ class StrategyConfig:
     parameters: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        """Validate configuration"""
+        """Validate configuration."""
         if not 0.0 < self.risk_per_trade <= 1.0:
             raise ValueError("Risk per trade must be between 0.0 and 1.0")
         if self.risk_reward_ratio <= 0:
@@ -278,7 +278,7 @@ class StrategyConfig:
 
 @dataclass
 class BacktestResult:
-    """Backtesting result"""
+    """Backtesting result."""
 
     strategy_name: str
     symbol: str
@@ -300,7 +300,7 @@ class BacktestResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def calculate_return_percentage(self) -> float:
-        """Calculate total return percentage"""
+        """Calculate total return percentage."""
         if self.initial_capital == 0:
             return 0.0
         return float(
@@ -308,7 +308,7 @@ class BacktestResult:
         )
 
     def calculate_win_rate(self) -> float:
-        """Calculate win rate percentage"""
+        """Calculate win rate percentage."""
         if self.total_trades == 0:
             return 0.0
         return (self.winning_trades / self.total_trades) * 100

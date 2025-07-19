@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Test Alpaca Integration
+Test Alpaca Integration.
 
 Simple test to verify Alpaca integration is working correctly.
-"""
+."""
 
 import os
 import sys
@@ -14,14 +14,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def test_imports():
-    """Test that all required modules can be imported"""
+    """Test that all required modules can be imported."""
     print("🔍 Testing imports...")
 
     try:
-        from core.backtesting import BacktestConfig, CoreBacktestEngine
-        from core.data.adapters import AlpacaAdapter, DataAdapterFactory
-        from core.data.models import MarketData, TimeFrame
-        from core.strategies import FVGStrategy
+        from core.backtesting import BacktestConfig, CoreBacktestEngine  # noqa: F401
+        from core.data.adapters import AlpacaAdapter, DataAdapterFactory  # noqa: F401
+        from core.data.models import MarketData, TimeFrame  # noqa: F401
+        from core.strategies import FVGStrategy  # noqa: F401
 
         print("✅ Core modules imported successfully")
         return True
@@ -31,14 +31,14 @@ def test_imports():
 
 
 def test_alpaca_adapter_creation():
-    """Test that AlpacaAdapter can be created"""
+    """Test that AlpacaAdapter can be created."""
     print("🔧 Testing AlpacaAdapter creation...")
 
     try:
-        from core.data.adapters import DataAdapterFactory
+        from core.data.adapters import DataAdapterFactory  # noqa: F401
 
         # Test with dummy credentials
-        adapter = DataAdapterFactory.create_adapter(
+        _adapter = DataAdapterFactory.create_adapter(
             "alpaca", api_key="test_key", secret_key="test_secret"
         )
 
@@ -50,13 +50,13 @@ def test_alpaca_adapter_creation():
 
 
 def test_sample_data_generation():
-    """Test sample data generation for when Alpaca isn't available"""
+    """Test sample data generation for when Alpaca isn't available."""
     print("📊 Testing sample data generation...")
 
     try:
         from decimal import Decimal
 
-        from core.data.models import Candle, MarketData, TimeFrame
+        from core.data.models import Candle, MarketData, TimeFrame  # noqa: F401
 
         # Create sample market data
         market_data = MarketData(
@@ -89,15 +89,15 @@ def test_sample_data_generation():
 
 
 def test_strategy_initialization():
-    """Test that FVG strategy can be initialized"""
+    """Test that FVG strategy can be initialized."""
     print("🧠 Testing strategy initialization...")
 
     try:
-        from core.strategies import FVGStrategy, create_fvg_strategy_config
+        from core.strategies import FVGStrategy, create_fvg_strategy_config  # noqa: F401
 
         # Create strategy with config
-        config = create_fvg_strategy_config("TEST")
-        strategy = FVGStrategy(config)
+        strategy_config = create_fvg_strategy_config("TEST")
+        strategy = FVGStrategy(strategy_config)
         strategy.initialize()
 
         print("✅ FVG strategy initialized successfully")
@@ -109,16 +109,16 @@ def test_strategy_initialization():
 
 
 def test_backtest_config():
-    """Test backtest configuration"""
+    """Test backtest configuration."""
     print("⚙️ Testing backtest configuration...")
 
     try:
         from decimal import Decimal
 
-        from core.backtesting import BacktestConfig
+        from core.backtesting import BacktestConfig  # noqa: F401
         from core.risk import RiskLimits
 
-        config = BacktestConfig(
+        _config = BacktestConfig(
             start_date=datetime.now() - timedelta(days=1),
             end_date=datetime.now(),
             initial_capital=Decimal("10000"),
@@ -134,7 +134,7 @@ def test_backtest_config():
 
 
 def main():
-    """Run all tests"""
+    """Run all tests."""
     print("🧪 Testing Alpaca Integration")
     print("=" * 35)
 

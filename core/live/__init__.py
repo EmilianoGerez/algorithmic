@@ -3,7 +3,7 @@ Live Trading Engine
 
 Real-time trading execution system that integrates with brokers and exchanges.
 Provides order management, position tracking, and risk monitoring for live trading.
-"""
+."""
 
 import asyncio
 from abc import ABC, abstractmethod
@@ -25,7 +25,7 @@ from ..risk import RiskManager
 
 
 class ExecutionMode(Enum):
-    """Live trading execution modes"""
+    """Live trading execution modes."""
 
     PAPER = "paper"  # Paper trading (simulation)
     LIVE = "live"  # Live trading with real money
@@ -34,7 +34,7 @@ class ExecutionMode(Enum):
 
 @dataclass
 class LiveTradingConfig:
-    """Configuration for live trading"""
+    """Configuration for live trading."""
 
     mode: ExecutionMode = ExecutionMode.PAPER
     max_orders_per_minute: int = 10
@@ -55,7 +55,7 @@ class LiveTradingConfig:
 
 @dataclass
 class TradingState:
-    """Current state of the live trading system"""
+    """Current state of the live trading system."""
 
     is_running: bool = False
     is_emergency_stopped: bool = False
@@ -69,13 +69,13 @@ class TradingState:
     last_error: Optional[str] = None
 
     def reset_daily_counters(self):
-        """Reset daily counters at start of new trading day"""
+        """Reset daily counters at start of new trading day."""
         self.orders_sent_today = 0
         self.error_count = 0
         self.last_error = None
 
     def increment_order_count(self):
-        """Increment order counters with rate limiting"""
+        """Increment order counters with rate limiting."""
         now = datetime.now()
 
         # Reset minute counter if needed
@@ -88,47 +88,47 @@ class TradingState:
 
 
 class BrokerAdapter(ABC):
-    """Abstract base class for broker integrations"""
+    """Abstract base class for broker integrations."""
 
     @abstractmethod
     async def connect(self) -> bool:
-        """Connect to broker API"""
+        """Connect to broker API."""
 
     @abstractmethod
     async def disconnect(self) -> None:
-        """Disconnect from broker API"""
+        """Disconnect from broker API."""
 
     @abstractmethod
     async def is_connected(self) -> bool:
-        """Check if connected to broker"""
+        """Check if connected to broker."""
 
     @abstractmethod
     async def place_order(self, order: Order) -> str:
-        """Place an order and return order ID"""
+        """Place an order and return order ID."""
 
     @abstractmethod
     async def cancel_order(self, order_id: str) -> bool:
-        """Cancel an order"""
+        """Cancel an order."""
 
     @abstractmethod
     async def get_order_status(self, order_id: str) -> OrderStatus:
-        """Get order status"""
+        """Get order status."""
 
     @abstractmethod
     async def get_positions(self) -> list[Position]:
-        """Get current positions"""
+        """Get current positions."""
 
     @abstractmethod
     async def get_account_balance(self) -> Decimal:
-        """Get account balance"""
+        """Get account balance."""
 
     @abstractmethod
     async def get_buying_power(self) -> Decimal:
-        """Get available buying power"""
+        """Get available buying power."""
 
 
 class PaperBrokerAdapter(BrokerAdapter):
-    """Paper trading broker adapter for simulation"""
+    """Paper trading broker adapter for simulation."""
 
     def __init__(self, initial_balance: Decimal = Decimal("100000")):
         self.balance = initial_balance
@@ -140,22 +140,22 @@ class PaperBrokerAdapter(BrokerAdapter):
         self.current_prices: Dict[str, Decimal] = {}
 
     async def connect(self) -> bool:
-        """Connect to paper trading system"""
+        """Connect to paper trading system."""
         await asyncio.sleep(0.1)  # Simulate connection delay
         self.is_connected_flag = True
         return True
 
     async def disconnect(self) -> None:
-        """Disconnect from paper trading system"""
+        """Disconnect from paper trading system."""
         await asyncio.sleep(0.1)
         self.is_connected_flag = False
 
     async def is_connected(self) -> bool:
-        """Check connection status"""
+        """Check connection status."""
         return self.is_connected_flag
 
     async def place_order(self, order: Order) -> str:
-        """Place a paper order"""
+        """Place a paper order."""
         if not self.is_connected_flag:
             raise RuntimeError("Not connected to broker")
 
@@ -185,7 +185,7 @@ class PaperBrokerAdapter(BrokerAdapter):
         return order_id
 
     async def cancel_order(self, order_id: str) -> bool:
-        """Cancel a paper order"""
+        """Cancel a paper order."""
         if order_id in self.orders:
             order = self.orders[order_id]
             if order.status == OrderStatus.PENDING:
@@ -194,25 +194,25 @@ class PaperBrokerAdapter(BrokerAdapter):
         return False
 
     async def get_order_status(self, order_id: str) -> OrderStatus:
-        """Get paper order status"""
+        """Get paper order status."""
         if order_id in self.orders:
             return self.orders[order_id].status
         return OrderStatus.REJECTED
 
     async def get_positions(self) -> list[Position]:
-        """Get paper trading positions"""
+        """Get paper trading positions."""
         return list(self.positions.values())
 
     async def get_account_balance(self) -> Decimal:
-        """Get paper trading balance"""
+        """Get paper trading balance."""
         return self.balance
 
     async def get_buying_power(self) -> Decimal:
-        """Get paper trading buying power"""
+        """Get paper trading buying power."""
         return self.balance  # Simplified: assume no margin
 
     async def _simulate_fill(self, order_id: str) -> None:
-        """Simulate order fill"""
+        """Simulate order fill."""
         await asyncio.sleep(0.05)  # Simulate execution delay
 
         order = self.orders[order_id]
@@ -285,7 +285,7 @@ class PaperBrokerAdapter(BrokerAdapter):
             self.balance += trade_value
 
     def update_market_price(self, symbol: str, price: Decimal) -> None:
-        """Update market price for simulation"""
+        """Update market price for simulation."""
         self.current_prices[symbol] = price
 
         # Update position P&L
@@ -295,7 +295,7 @@ class PaperBrokerAdapter(BrokerAdapter):
 
 
 class LiveTradingEngine:
-    """Main live trading engine"""
+    """Main live trading engine."""
 
     def __init__(
         self,
@@ -327,7 +327,7 @@ class LiveTradingEngine:
         self.start_balance = Decimal("0")
 
     async def start(self) -> bool:
-        """Start the live trading engine"""
+        """Start the live trading engine."""
         try:
             # Connect to broker
             if not await self.broker.connect():
@@ -353,7 +353,7 @@ class LiveTradingEngine:
             return False
 
     async def stop(self) -> None:
-        """Stop the live trading engine"""
+        """Stop the live trading engine."""
         print("🛑 Stopping Live Trading Engine...")
 
         self.state.is_running = False
@@ -372,7 +372,7 @@ class LiveTradingEngine:
         print("✅ Live Trading Engine stopped")
 
     async def process_signal(self, signal: Signal) -> Optional[Order]:
-        """Process a trading signal"""
+        """Process a trading signal."""
         if not self.state.is_running or self.state.is_emergency_stopped:
             return None
 
@@ -420,7 +420,7 @@ class LiveTradingEngine:
             return None
 
     async def emergency_stop(self, reason: str) -> None:
-        """Emergency stop all trading"""
+        """Emergency stop all trading."""
         print(f"🚨 EMERGENCY STOP: {reason}")
 
         self.state.is_emergency_stopped = True
@@ -436,23 +436,23 @@ class LiveTradingEngine:
         self._notify_error(f"Emergency stop triggered: {reason}")
 
     def add_signal_handler(self, handler: Callable[[Signal], None]) -> None:
-        """Add signal event handler"""
+        """Add signal event handler."""
         self.signal_handlers.append(handler)
 
     def add_order_handler(self, handler: Callable[[Order], None]) -> None:
-        """Add order event handler"""
+        """Add order event handler."""
         self.order_handlers.append(handler)
 
     def add_position_handler(self, handler: Callable[[Position], None]) -> None:
-        """Add position event handler"""
+        """Add position event handler."""
         self.position_handlers.append(handler)
 
     def add_error_handler(self, handler: Callable[[str], None]) -> None:
-        """Add error event handler"""
+        """Add error event handler."""
         self.error_handlers.append(handler)
 
     def _start_background_tasks(self) -> None:
-        """Start background monitoring tasks"""
+        """Start background monitoring tasks."""
         self._background_tasks = [
             asyncio.create_task(self._heartbeat_task()),
             asyncio.create_task(self._order_monitoring_task()),
@@ -461,7 +461,7 @@ class LiveTradingEngine:
         ]
 
     async def _heartbeat_task(self) -> None:
-        """Heartbeat task to monitor system health"""
+        """Heartbeat task to monitor system health."""
         while self.state.is_running and not self._shutdown_event.is_set():
             try:
                 # Update heartbeat
@@ -479,7 +479,7 @@ class LiveTradingEngine:
                 await asyncio.sleep(5)
 
     async def _order_monitoring_task(self) -> None:
-        """Monitor pending orders"""
+        """Monitor pending orders."""
         while self.state.is_running and not self._shutdown_event.is_set():
             try:
                 current_time = datetime.now()
@@ -524,7 +524,7 @@ class LiveTradingEngine:
                 await asyncio.sleep(5)
 
     async def _risk_monitoring_task(self) -> None:
-        """Monitor risk metrics"""
+        """Monitor risk metrics."""
         while self.state.is_running and not self._shutdown_event.is_set():
             try:
                 # Update account balance
@@ -562,7 +562,7 @@ class LiveTradingEngine:
                 await asyncio.sleep(5)
 
     async def _position_monitoring_task(self) -> None:
-        """Monitor positions"""
+        """Monitor positions."""
         while self.state.is_running and not self._shutdown_event.is_set():
             try:
                 positions = await self.broker.get_positions()
@@ -577,7 +577,7 @@ class LiveTradingEngine:
                 await asyncio.sleep(5)
 
     def _check_rate_limits(self) -> bool:
-        """Check if we can place more orders"""
+        """Check if we can place more orders."""
         if self.state.orders_sent_this_minute >= self.config.max_orders_per_minute:
             return False
         if self.state.orders_sent_today >= self.config.max_daily_trades:
@@ -587,7 +587,7 @@ class LiveTradingEngine:
     def _create_order_from_signal(
         self, signal: Signal, position_size: Decimal
     ) -> Order:
-        """Create order from signal"""
+        """Create order from signal."""
         return Order(
             order_id="",  # Will be set when placed
             symbol=signal.symbol,
@@ -609,7 +609,7 @@ class LiveTradingEngine:
         )
 
     async def _cancel_all_orders(self) -> None:
-        """Cancel all pending orders"""
+        """Cancel all pending orders."""
         for order_id in list(self.pending_orders.keys()):
             try:
                 await self.broker.cancel_order(order_id)
@@ -617,7 +617,7 @@ class LiveTradingEngine:
                 self._notify_error(f"Error cancelling order {order_id}: {exc}")
 
     async def _close_all_positions(self) -> None:
-        """Close all positions"""
+        """Close all positions."""
         try:
             positions = await self.broker.get_positions()
             for position in positions:
@@ -641,7 +641,7 @@ class LiveTradingEngine:
             self._notify_error(f"Error closing positions: {exc}")
 
     def _notify_order_placed(self, order: Order) -> None:
-        """Notify order placed"""
+        """Notify order placed."""
         for handler in self.order_handlers:
             try:
                 handler(order)
@@ -649,7 +649,7 @@ class LiveTradingEngine:
                 print(f"Error in order handler: {exc}")
 
     def _notify_order_filled(self, order: Order) -> None:
-        """Notify order filled"""
+        """Notify order filled."""
         print(
             f"✅ Order filled: {order.symbol} {order.direction.value} "
             f"{order.quantity} @ {order.filled_price}"
@@ -661,7 +661,7 @@ class LiveTradingEngine:
                 print(f"Error in order handler: {exc}")
 
     def _notify_order_cancelled(self, order: Order) -> None:
-        """Notify order cancelled"""
+        """Notify order cancelled."""
         print(
             f"❌ Order cancelled: {order.symbol} {order.direction.value} "
             f"{order.quantity}"
@@ -673,7 +673,7 @@ class LiveTradingEngine:
                 print(f"Error in order handler: {exc}")
 
     def _notify_position_update(self, position: Position) -> None:
-        """Notify position update"""
+        """Notify position update."""
         for handler in self.position_handlers:
             try:
                 handler(position)
@@ -681,7 +681,7 @@ class LiveTradingEngine:
                 print(f"Error in position handler: {exc}")
 
     def _notify_error(self, error: str) -> None:
-        """Notify error"""
+        """Notify error."""
         print(f"❌ Error: {error}")
         for handler in self.error_handlers:
             try:
@@ -690,7 +690,7 @@ class LiveTradingEngine:
                 print(f"Error in error handler: {exc}")
 
     def get_status(self) -> Dict[str, Any]:
-        """Get current trading status"""
+        """Get current trading status."""
         return {
             "is_running": self.state.is_running,
             "is_emergency_stopped": self.state.is_emergency_stopped,

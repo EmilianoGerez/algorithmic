@@ -3,7 +3,7 @@ Real-time Data Streaming
 
 Integration with real-time data providers for live market data streaming.
 Supports multiple data sources and provides unified streaming interface.
-"""
+."""
 
 import asyncio
 import json
@@ -20,7 +20,7 @@ from ..data.models import Candle, TimeFrame
 
 
 class StreamingProvider(Enum):
-    """Supported streaming providers"""
+    """Supported streaming providers."""
 
     ALPACA = "alpaca"
     POLYGON = "polygon"
@@ -31,7 +31,7 @@ class StreamingProvider(Enum):
 
 @dataclass
 class StreamingConfig:
-    """Configuration for data streaming"""
+    """Configuration for data streaming."""
 
     provider: StreamingProvider
     api_key: Optional[str] = None
@@ -47,7 +47,7 @@ class StreamingConfig:
 
 
 class StreamingDataProvider(ABC):
-    """Abstract base class for streaming data providers"""
+    """Abstract base class for streaming data providers."""
 
     def __init__(self, config: StreamingConfig):
         self.config = config
@@ -58,31 +58,31 @@ class StreamingDataProvider(ABC):
 
     @abstractmethod
     async def connect(self) -> bool:
-        """Connect to streaming provider"""
+        """Connect to streaming provider."""
 
     @abstractmethod
     async def disconnect(self) -> None:
-        """Disconnect from streaming provider"""
+        """Disconnect from streaming provider."""
 
     @abstractmethod
     async def subscribe_symbols(self, symbols: list[str]) -> None:
-        """Subscribe to symbols"""
+        """Subscribe to symbols."""
 
     @abstractmethod
     async def unsubscribe_symbols(self, symbols: list[str]) -> None:
-        """Unsubscribe from symbols"""
+        """Unsubscribe from symbols."""
 
     def add_subscriber(self, callback: Callable[[Candle], None]) -> None:
-        """Add data subscriber"""
+        """Add data subscriber."""
         self.subscribers.append(callback)
 
     def remove_subscriber(self, callback: Callable[[Candle], None]) -> None:
-        """Remove data subscriber"""
+        """Remove data subscriber."""
         if callback in self.subscribers:
             self.subscribers.remove(callback)
 
     def _notify_subscribers(self, candle: Candle) -> None:
-        """Notify all subscribers of new candle"""
+        """Notify all subscribers of new candle."""
         for callback in self.subscribers:
             try:
                 callback(candle)
@@ -90,7 +90,7 @@ class StreamingDataProvider(ABC):
                 print(f"Error in streaming subscriber: {exc}")
 
     async def _handle_reconnect(self) -> None:
-        """Handle reconnection logic"""
+        """Handle reconnection logic."""
         if not self.config.auto_reconnect:
             return
 
@@ -119,7 +119,7 @@ class StreamingDataProvider(ABC):
 
 
 class MockStreamingProvider(StreamingDataProvider):
-    """Mock streaming provider for testing"""
+    """Mock streaming provider for testing."""
 
     def __init__(self, config: StreamingConfig):
         super().__init__(config)
@@ -128,7 +128,7 @@ class MockStreamingProvider(StreamingDataProvider):
         self._current_prices: Dict[str, Decimal] = {}
 
     async def connect(self) -> bool:
-        """Connect to mock provider"""
+        """Connect to mock provider."""
         print("📡 Connecting to Mock streaming provider...")
         await asyncio.sleep(0.1)  # Simulate connection delay
 
@@ -142,7 +142,7 @@ class MockStreamingProvider(StreamingDataProvider):
         return True
 
     async def disconnect(self) -> None:
-        """Disconnect from mock provider"""
+        """Disconnect from mock provider."""
         print("🔌 Disconnecting from Mock streaming provider...")
 
         self.is_connected = False
@@ -154,7 +154,7 @@ class MockStreamingProvider(StreamingDataProvider):
         print("✅ Disconnected from Mock streaming provider")
 
     async def subscribe_symbols(self, symbols: list[str]) -> None:
-        """Subscribe to symbols"""
+        """Subscribe to symbols."""
         print(f"➕ Subscribing to symbols: {symbols}")
 
         # Initialize current prices
@@ -166,7 +166,7 @@ class MockStreamingProvider(StreamingDataProvider):
             self.config.symbols.extend(symbols)
 
     async def unsubscribe_symbols(self, symbols: list[str]) -> None:
-        """Unsubscribe from symbols"""
+        """Unsubscribe from symbols."""
         print(f"➖ Unsubscribing from symbols: {symbols}")
 
         for symbol in symbols:
@@ -176,7 +176,7 @@ class MockStreamingProvider(StreamingDataProvider):
                 del self._current_prices[symbol]
 
     async def _simulate_streaming(self) -> None:
-        """Simulate real-time data streaming"""
+        """Simulate real-time data streaming."""
         while not self._stop_event.is_set():
             try:
                 for symbol in self.config.symbols:
@@ -221,7 +221,7 @@ class MockStreamingProvider(StreamingDataProvider):
 
 
 class AlpacaStreamingProvider(StreamingDataProvider):
-    """Alpaca streaming provider"""
+    """Alpaca streaming provider."""
 
     def __init__(self, config: StreamingConfig):
         super().__init__(config)
@@ -230,7 +230,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         self._stop_event = asyncio.Event()
 
     async def connect(self) -> bool:
-        """Connect to Alpaca streaming"""
+        """Connect to Alpaca streaming."""
         try:
             # This would connect to Alpaca's WebSocket API
             # For now, we'll simulate the connection
@@ -253,7 +253,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
             return False
 
     async def disconnect(self) -> None:
-        """Disconnect from Alpaca streaming"""
+        """Disconnect from Alpaca streaming."""
         print("🔌 Disconnecting from Alpaca streaming...")
 
         self.is_connected = False
@@ -268,7 +268,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         print("✅ Disconnected from Alpaca streaming")
 
     async def subscribe_symbols(self, symbols: list[str]) -> None:
-        """Subscribe to Alpaca symbols"""
+        """Subscribe to Alpaca symbols."""
         if not self.is_connected:
             raise RuntimeError("Not connected to Alpaca")
 
@@ -284,7 +284,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         print(f"➕ Subscribed to Alpaca symbols: {symbols}")
 
     async def unsubscribe_symbols(self, symbols: list[str]) -> None:
-        """Unsubscribe from Alpaca symbols"""
+        """Unsubscribe from Alpaca symbols."""
         if not self.is_connected:
             return
 
@@ -300,7 +300,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         print(f"➖ Unsubscribed from Alpaca symbols: {symbols}")
 
     async def _authenticate(self) -> None:
-        """Authenticate with Alpaca"""
+        """Authenticate with Alpaca."""
         # In a real implementation:
         # auth_message = {
         #     "action": "auth",
@@ -310,7 +310,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
         # await self._websocket.send(json.dumps(auth_message))
 
     async def _handle_message(self, message: str) -> None:
-        """Handle incoming Alpaca message"""
+        """Handle incoming Alpaca message."""
         try:
             data = json.loads(message)
 
@@ -324,7 +324,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
             print(f"Error handling Alpaca message: {exc}")
 
     def _convert_alpaca_bar(self, bar_data: Dict) -> Candle:
-        """Convert Alpaca bar data to Candle"""
+        """Convert Alpaca bar data to Candle."""
         return Candle(
             timestamp=datetime.fromisoformat(bar_data["t"]),
             open=Decimal(str(bar_data["o"])),
@@ -338,7 +338,7 @@ class AlpacaStreamingProvider(StreamingDataProvider):
 
 
 class StreamingManager:
-    """Manages multiple streaming providers and data distribution"""
+    """Manages multiple streaming providers and data distribution."""
 
     def __init__(self):
         self.providers: Dict[StreamingProvider, StreamingDataProvider] = {}
@@ -347,28 +347,28 @@ class StreamingManager:
         self.is_running = False
 
     def add_provider(self, provider: StreamingDataProvider) -> None:
-        """Add a streaming provider"""
+        """Add a streaming provider."""
         self.providers[provider.config.provider] = provider
         provider.add_subscriber(self._on_candle_received)
 
     def remove_provider(self, provider_type: StreamingProvider) -> None:
-        """Remove a streaming provider"""
+        """Remove a streaming provider."""
         if provider_type in self.providers:
             provider = self.providers[provider_type]
             provider.remove_subscriber(self._on_candle_received)
             del self.providers[provider_type]
 
     def add_subscriber(self, callback: Callable[[Candle], None]) -> None:
-        """Add data subscriber"""
+        """Add data subscriber."""
         self.subscribers.append(callback)
 
     def remove_subscriber(self, callback: Callable[[Candle], None]) -> None:
-        """Remove data subscriber"""
+        """Remove data subscriber."""
         if callback in self.subscribers:
             self.subscribers.remove(callback)
 
     async def start(self) -> bool:
-        """Start all streaming providers"""
+        """Start all streaming providers."""
         if self.is_running:
             return True
 
@@ -387,7 +387,7 @@ class StreamingManager:
         return self.is_running
 
     async def stop(self) -> None:
-        """Stop all streaming providers"""
+        """Stop all streaming providers."""
         if not self.is_running:
             return
 
@@ -404,7 +404,7 @@ class StreamingManager:
     async def subscribe_symbol(
         self, symbol: str, providers: Optional[list[StreamingProvider]] = None
     ) -> None:
-        """Subscribe to a symbol on specified providers"""
+        """Subscribe to a symbol on specified providers."""
         if providers is None:
             providers = list(self.providers.keys())
 
@@ -422,7 +422,7 @@ class StreamingManager:
     async def unsubscribe_symbol(
         self, symbol: str, providers: Optional[list[StreamingProvider]] = None
     ) -> None:
-        """Unsubscribe from a symbol on specified providers"""
+        """Unsubscribe from a symbol on specified providers."""
         if providers is None:
             providers = self.symbol_subscriptions.get(symbol, [])
 
@@ -439,7 +439,7 @@ class StreamingManager:
                         del self.symbol_subscriptions[symbol]
 
     def _on_candle_received(self, candle: Candle) -> None:
-        """Handle candle from any provider"""
+        """Handle candle from any provider."""
         for callback in self.subscribers:
             try:
                 callback(candle)
@@ -447,7 +447,7 @@ class StreamingManager:
                 print(f"Error in streaming subscriber: {exc}")
 
     def get_status(self) -> Dict[str, Any]:
-        """Get streaming status"""
+        """Get streaming status."""
         return {
             "is_running": self.is_running,
             "providers": {
@@ -460,11 +460,11 @@ class StreamingManager:
 
 
 class StreamingFactory:
-    """Factory for creating streaming providers"""
+    """Factory for creating streaming providers."""
 
     @staticmethod
     def create_provider(config: StreamingConfig) -> StreamingDataProvider:
-        """Create a streaming provider"""
+        """Create a streaming provider."""
         if config.provider == StreamingProvider.MOCK:
             return MockStreamingProvider(config)
         elif config.provider == StreamingProvider.ALPACA:
@@ -476,7 +476,7 @@ class StreamingFactory:
     def create_manager_with_providers(
         configs: list[StreamingConfig],
     ) -> StreamingManager:
-        """Create a streaming manager with multiple providers"""
+        """Create a streaming manager with multiple providers."""
         manager = StreamingManager()
 
         for config in configs:

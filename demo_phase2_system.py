@@ -8,7 +8,7 @@ This demo showcases the complete Phase 2 implementation including:
 - Backtesting engine
 - Multi-symbol data feeds
 - Portfolio management
-"""
+."""
 
 import os
 import sys
@@ -19,17 +19,15 @@ from typing import Any
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core import (  # Data models; Data integration; Strategy system; Risk management; Backtesting
+# Data models; Data integration; Strategy system; Risk management; Backtesting
+from core import (
     BacktestConfig,
-    BacktestDataFeed,
     BacktestRunner,
     Candle,
-    CoreBacktestEngine,
     DataAdapterFactory,
     FVGStrategy,
     MarketData,
     MultiSymbolDataFeed,
-    PositionSizer,
     RiskLimits,
     RiskManager,
     Signal,
@@ -41,7 +39,7 @@ from core import (  # Data models; Data integration; Strategy system; Risk manag
 
 
 def create_sample_market_data(symbol: str, days: int = 30) -> MarketData:
-    """Create sample market data for demonstration"""
+    """Create sample market data for demonstration."""
     market_data = MarketData(
         symbol=symbol,
         timeframe=TimeFrame.MINUTE_15,
@@ -81,25 +79,25 @@ def create_sample_market_data(symbol: str, days: int = 30) -> MarketData:
 
 
 def demo_data_adapters() -> None:
-    """Demonstrate data adapter system"""
+    """Demonstrate data adapter system."""
     print("🔌 Data Adapters Demo")
     print("=" * 50)
 
     # Create different adapters
     try:
-        yahoo_adapter = DataAdapterFactory.create_adapter("yahoo")
+        _yahoo_adapter = DataAdapterFactory.create_adapter("yahoo")
         print("✅ Yahoo Finance adapter created")
     except Exception as e:
         print(f"❌ Yahoo Finance adapter failed: {e}")
 
     try:
-        backtrader_adapter = DataAdapterFactory.create_adapter("backtrader")
+        _backtrader_adapter = DataAdapterFactory.create_adapter("backtrader")
         print("✅ Backtrader adapter created")
     except Exception as e:
         print(f"❌ Backtrader adapter failed: {e}")
 
     try:
-        alpaca_adapter = DataAdapterFactory.create_adapter(
+        _alpaca_adapter = DataAdapterFactory.create_adapter(
             "alpaca", api_key="demo_key", secret_key="demo_secret"
         )
         print("✅ Alpaca adapter created")
@@ -113,7 +111,7 @@ def demo_data_adapters() -> None:
 
 
 def demo_risk_management() -> None:
-    """Demonstrate risk management system"""
+    """Demonstrate risk management system."""
     print("🛡️ Risk Management Demo")
     print("=" * 50)
 
@@ -157,7 +155,7 @@ def demo_risk_management() -> None:
 
     # Evaluate signal
     assessment = risk_manager.evaluate_signal(test_signal)
-    print(f"\n🎯 Signal Assessment:")
+    print("\n🎯 Signal Assessment:")
     print(f"   Approved: {assessment['approved']}")
     print(f"   Position size: {assessment['position_size']:.2f} shares")
     print(f"   Risk amount: ${assessment.get('risk_amount', 0):.2f}")
@@ -169,7 +167,7 @@ def demo_risk_management() -> None:
 
         # Show portfolio summary
         summary = risk_manager.get_portfolio_summary()
-        print(f"\n📊 Portfolio Summary:")
+        print("\n📊 Portfolio Summary:")
         print(f"   Total value: ${summary['total_value']:,.2f}")
         print(f"   Available cash: ${summary['available_cash']:,.2f}")
         print(f"   Active positions: {summary['active_positions']}")
@@ -178,7 +176,7 @@ def demo_risk_management() -> None:
 
 
 def demo_backtesting_engine() -> None:
-    """Demonstrate backtesting engine"""
+    """Demonstrate backtesting engine."""
     print("🔄 Backtesting Engine Demo")
     print("=" * 50)
 
@@ -209,7 +207,7 @@ def demo_backtesting_engine() -> None:
         ),
     )
 
-    print(f"\n📈 Backtest Results:")
+    print("\n📈 Backtest Results:")
     print(f"   Strategy: {result.strategy_name}")
     print(f"   Symbol: {result.symbol}")
     print(f"   Initial capital: ${result.initial_capital:,.2f}")
@@ -224,7 +222,7 @@ def demo_backtesting_engine() -> None:
 
 
 def demo_multi_symbol_feed() -> None:
-    """Demonstrate multi-symbol data feed"""
+    """Demonstrate multi-symbol data feed."""
     print("📡 Multi-Symbol Data Feed Demo")
     print("=" * 50)
 
@@ -272,7 +270,7 @@ def demo_multi_symbol_feed() -> None:
 
 
 def demo_portfolio_management() -> None:
-    """Demonstrate portfolio management features"""
+    """Demonstrate portfolio management features."""
     print("💼 Portfolio Management Demo")
     print("=" * 50)
 
@@ -322,15 +320,17 @@ def demo_portfolio_management() -> None:
 
         for signal in test_signals:
             assessment = risk_manager.evaluate_signal(signal)
+            risk_amount = assessment.get('risk_amount', 0)
             print(
-                f"   {signal.symbol}: {assessment['position_size']:.2f} shares (${assessment.get('risk_amount', 0):.2f} risk)"
+                f"   {signal.symbol}: {assessment['position_size']:.2f} shares "
+                f"(${risk_amount:.2f} risk)"
             )
 
     print()
 
 
 def main() -> None:
-    """Main demonstration function"""
+    """Main demonstration function."""
     print("🚀 Phase 2 Core System Demonstration")
     print("=" * 60)
     print("This demo showcases the complete Phase 2 implementation:")

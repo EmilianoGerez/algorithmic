@@ -3,7 +3,7 @@ Backtesting Platform Integration
 
 Integrates the core system with different backtesting platforms
 and provides unified backtesting capabilities.
-"""
+."""
 
 import itertools
 from abc import ABC, abstractmethod
@@ -29,7 +29,7 @@ from ..strategies.base_strategy import BaseStrategy
 
 @dataclass
 class BacktestConfig:
-    """Backtesting configuration"""
+    """Backtesting configuration."""
 
     start_date: datetime
     end_date: datetime
@@ -45,7 +45,7 @@ class BacktestConfig:
 
 
 class BacktestEngine(ABC):
-    """Abstract base class for backtesting engines"""
+    """Abstract base class for backtesting engines."""
 
     @abstractmethod
     def run_backtest(
@@ -54,18 +54,18 @@ class BacktestEngine(ABC):
         market_data: MarketData,
         config: BacktestConfig,
     ) -> BacktestResult:
-        """Run a backtest"""
+        """Run a backtest."""
 
 
 class CoreBacktestEngine(BacktestEngine):
-    """Core backtesting engine using our unified system"""
+    """Core backtesting engine using our unified system."""
 
     def __init__(self, data_adapter: DataAdapter):
         self.data_adapter = data_adapter
         self.reset()
 
     def reset(self):
-        """Reset engine state"""
+        """Reset engine state."""
         self.signals: list[Signal] = []
         self.positions: list[Position] = []
         self.trades: list[Dict] = []
@@ -85,7 +85,7 @@ class CoreBacktestEngine(BacktestEngine):
         market_data: MarketData,
         config: BacktestConfig,
     ) -> BacktestResult:
-        """Run a comprehensive backtest"""
+        """Run a comprehensive backtest."""
         self.reset()
 
         # Initialize risk manager
@@ -137,7 +137,7 @@ class CoreBacktestEngine(BacktestEngine):
         )
 
     def _on_candle(self, candle: Candle) -> None:
-        """Handle incoming candle data"""
+        """Handle incoming candle data."""
         self.current_time = candle.timestamp
         self.current_prices[candle.symbol] = candle.close
 
@@ -168,13 +168,13 @@ class CoreBacktestEngine(BacktestEngine):
             logging.error(f"Unexpected error generating signals: {exc}")
 
     def _on_signal(self, signal: Signal) -> None:
-        """Handle signals from strategy"""
+        """Handle signals from strategy."""
         self.signals.append(signal)
 
     def _process_signals(
         self, risk_manager: RiskManager, config: BacktestConfig
     ) -> None:
-        """Process accumulated signals"""
+        """Process accumulated signals."""
         for signal in self.signals:
             if signal.signal_type.value == "entry":
                 # Evaluate signal with risk management
@@ -199,7 +199,7 @@ class CoreBacktestEngine(BacktestEngine):
     def _apply_costs(
         self, price: Decimal, config: BacktestConfig, action: str
     ) -> Decimal:
-        """Apply commission and slippage to price"""
+        """Apply commission and slippage to price."""
         # Simple slippage model
         slippage_amount = price * config.slippage
 
@@ -213,7 +213,7 @@ class CoreBacktestEngine(BacktestEngine):
     def _close_all_positions(
         self, risk_manager: RiskManager, config: BacktestConfig
     ) -> None:
-        """Close all remaining positions at market close"""
+        """Close all remaining positions at market close."""
         for position in self.positions[
             :
         ]:  # Copy list to avoid modification during iteration
@@ -230,7 +230,7 @@ class CoreBacktestEngine(BacktestEngine):
         config: BacktestConfig,
         risk_manager: RiskManager,
     ) -> BacktestResult:
-        """Generate backtest results"""
+        """Generate backtest results."""
         portfolio_summary = risk_manager.get_portfolio_summary()
 
         return BacktestResult(
@@ -259,7 +259,7 @@ class CoreBacktestEngine(BacktestEngine):
 
 
 class BacktraderIntegration(BacktestEngine):
-    """Integration with Backtrader platform"""
+    """Integration with Backtrader platform."""
 
     def __init__(self, cerebro_class=None):
         self.cerebro_class = cerebro_class
@@ -271,7 +271,7 @@ class BacktraderIntegration(BacktestEngine):
         market_data: MarketData,
         config: BacktestConfig,
     ) -> BacktestResult:
-        """Run backtest using Backtrader"""
+        """Run backtest using Backtrader."""
         if self.cerebro_class is None:
             raise ImportError("Backtrader not available")
 
@@ -321,7 +321,7 @@ class BacktraderIntegration(BacktestEngine):
 
 
 class OptimizationEngine:
-    """Parameter optimization engine"""
+    """Parameter optimization engine."""
 
     def __init__(self, backtest_engine: BacktestEngine):
         self.backtest_engine = backtest_engine
@@ -334,7 +334,7 @@ class OptimizationEngine:
         parameter_ranges: Dict[str, list[Any]],
         objective_function: str = "total_return",
     ) -> Dict[str, Any]:
-        """Optimize strategy parameters"""
+        """Optimize strategy parameters."""
         best_params = {}
         best_score = float("-inf")
         best_result = None
@@ -378,7 +378,7 @@ class OptimizationEngine:
     def _generate_parameter_combinations(
         self, parameter_ranges: Dict[str, list[Any]]
     ) -> list[Dict]:
-        """Generate all combinations of parameters"""
+        """Generate all combinations of parameters."""
         keys = list(parameter_ranges.keys())
         values = list(parameter_ranges.values())
 
@@ -391,7 +391,7 @@ class OptimizationEngine:
     def _calculate_objective_score(
         self, result: BacktestResult, objective: str
     ) -> float:
-        """Calculate objective score for optimization"""
+        """Calculate objective score for optimization."""
         if objective == "total_return":
             return result.calculate_return_percentage()
         elif objective == "sharpe_ratio":
@@ -409,7 +409,7 @@ class OptimizationEngine:
 
 
 class BacktestRunner:
-    """High-level backtesting runner"""
+    """High-level backtesting runner."""
 
     def __init__(self, data_adapter: DataAdapter):
         self.data_adapter = data_adapter
@@ -425,7 +425,7 @@ class BacktestRunner:
         end_date: datetime,
         initial_capital: Decimal = Decimal("100000"),
     ) -> BacktestResult:
-        """Run a single backtest"""
+        """Run a single backtest."""
         # Get market data
         market_data = self.data_adapter.get_historical_data(
             symbol=symbol,
@@ -453,7 +453,7 @@ class BacktestRunner:
         end_date: datetime,
         initial_capital: Decimal = Decimal("100000"),
     ) -> list[BacktestResult]:
-        """Run backtest across multiple symbols"""
+        """Run backtest across multiple symbols."""
         results = []
 
         for symbol in symbols:
@@ -484,7 +484,7 @@ class BacktestRunner:
         test_periods: int = 63,  # 3 months of daily data
         step_size: int = 21,  # 1 month step
     ) -> Dict[str, Any]:
-        """Run walk-forward analysis"""
+        """Run walk-forward analysis."""
         # TODO: Implement walk-forward analysis
         # This would involve:
         # 1. Splitting data into train/test periods

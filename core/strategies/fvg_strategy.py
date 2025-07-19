@@ -3,7 +3,7 @@ FVG Strategy Implementation
 
 Implementation of the proven FVG (Fair Value Gap) strategy using the new core system.
 Extracts the successful logic from the legacy system with clean architecture.
-"""
+."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -36,7 +36,7 @@ class FVGStrategy(BaseStrategy):
     - Swing-based risk management with 1:2 R:R
     - NYC session time filtering
     - Enhanced quality filtering
-    """
+    ."""
 
     def __init__(self, config: StrategyConfig):
         """
@@ -44,7 +44,7 @@ class FVGStrategy(BaseStrategy):
 
         Args:
             config: Strategy configuration
-        """
+        ."""
         super().__init__(config)
 
         # Strategy parameters with defaults
@@ -76,7 +76,7 @@ class FVGStrategy(BaseStrategy):
         self.last_close_direction: Optional[str] = None
 
     def initialize(self) -> None:
-        """Initialize the strategy"""
+        """Initialize the strategy."""
         if self.is_initialized:
             return
 
@@ -109,7 +109,7 @@ class FVGStrategy(BaseStrategy):
 
         Returns:
             List of generated signals
-        """
+        ."""
         if not self.is_initialized:
             self.initialize()
 
@@ -162,7 +162,7 @@ class FVGStrategy(BaseStrategy):
 
         Returns:
             True if signal is valid
-        """
+        ."""
         # Basic validation
         if signal.entry_price <= 0:
             return False
@@ -186,15 +186,15 @@ class FVGStrategy(BaseStrategy):
         return True
 
     def get_required_timeframes(self) -> list[TimeFrame]:
-        """Get required timeframes for the strategy"""
+        """Get required timeframes for the strategy."""
         return self.htf_timeframes + [self.ltf_timeframe]
 
     def get_required_history_length(self) -> int:
-        """Get minimum number of candles required"""
+        """Get minimum number of candles required."""
         return max(100, self.ema_periods["slow"] * 2)
 
     def _validate_configuration(self) -> None:
-        """Validate strategy configuration"""
+        """Validate strategy configuration."""
         if not self.htf_timeframes:
             raise ValueError("HTF timeframes cannot be empty")
 
@@ -208,7 +208,7 @@ class FVGStrategy(BaseStrategy):
             raise ValueError("LTF timeframe must be TimeFrame enum value")
 
     def _validate_market_data(self, market_data: Dict[TimeFrame, MarketData]) -> bool:
-        """Validate market data availability"""
+        """Validate market data availability."""
         required_timeframes = self.get_required_timeframes()
 
         for tf in required_timeframes:
@@ -221,7 +221,7 @@ class FVGStrategy(BaseStrategy):
         return True
 
     def _get_fvg_filter_config(self):
-        """Get FVG filter configuration based on preset"""
+        """Get FVG filter configuration based on preset."""
         preset_map = {
             "conservative": FVGFilterPresets.conservative,
             "balanced": FVGFilterPresets.balanced,
@@ -233,7 +233,7 @@ class FVGStrategy(BaseStrategy):
         return preset_func()
 
     def _update_fvg_zones(self, market_data: Dict[TimeFrame, MarketData]) -> None:
-        """Update FVG zones from higher timeframe data"""
+        """Update FVG zones from higher timeframe data."""
         new_fvgs = []
 
         for htf_timeframe in self.htf_timeframes:
@@ -263,7 +263,7 @@ class FVGStrategy(BaseStrategy):
     def _filter_fvgs_by_age_and_quality(
         self, fvg_zones: list[FVGZone]
     ) -> list[FVGZone]:
-        """Filter FVGs by age and quality"""
+        """Filter FVGs by age and quality."""
         filtered = []
         current_time = datetime.utcnow()
 
@@ -288,7 +288,7 @@ class FVGStrategy(BaseStrategy):
     def _check_entry_signal(
         self, fvg_zone: FVGZone, ltf_data: MarketData, emas: Dict[str, list]
     ) -> Optional[Signal]:
-        """Check if FVG zone generates an entry signal"""
+        """Check if FVG zone generates an entry signal."""
         current_candle = ltf_data.candles[-1]
 
         # Check if price is interacting with FVG zone
@@ -357,7 +357,7 @@ class FVGStrategy(BaseStrategy):
     def _calculate_stop_and_target(
         self, fvg_zone: FVGZone, current_candle: Candle, candles: list[Candle]
     ) -> tuple:
-        """Calculate stop loss and take profit levels"""
+        """Calculate stop loss and take profit levels."""
         entry_price = current_candle.close
 
         # Find swing levels
@@ -386,7 +386,7 @@ class FVGStrategy(BaseStrategy):
     def _find_swing_levels(
         self, candles: list[Candle], lookback: int
     ) -> Dict[str, Decimal]:
-        """Find swing high and low levels"""
+        """Find swing high and low levels."""
         if len(candles) < lookback:
             lookback = len(candles)
 
@@ -400,7 +400,7 @@ class FVGStrategy(BaseStrategy):
     def _calculate_signal_confidence(
         self, fvg_zone: FVGZone, emas: Dict[str, list], ltf_data: MarketData
     ) -> float:
-        """Calculate signal confidence score"""
+        """Calculate signal confidence score."""
         confidence = fvg_zone.confidence * 0.6  # Base from FVG quality
 
         # EMA trend strength bonus
@@ -418,7 +418,7 @@ class FVGStrategy(BaseStrategy):
         return min(confidence, 1.0)
 
     def _is_nyc_trading_hours(self, timestamp: datetime) -> bool:
-        """Check if timestamp is within NYC trading hours"""
+        """Check if timestamp is within NYC trading hours."""
         hour = timestamp.hour
 
         # Evening session: 20:00-00:00 (8 PM - 12 AM)
@@ -436,7 +436,7 @@ class FVGStrategy(BaseStrategy):
         return False
 
     def _is_market_trending(self, candles: list[Candle], period: int = 20) -> bool:
-        """Check if market is trending"""
+        """Check if market is trending."""
         if len(candles) < period:
             return False
 
@@ -455,7 +455,7 @@ class FVGStrategy(BaseStrategy):
     def _filter_signals(
         self, signals: list[Signal], ltf_data: MarketData
     ) -> list[Signal]:
-        """Filter signals by quality and timing"""
+        """Filter signals by quality and timing."""
         filtered = []
 
         for signal in signals:
@@ -479,7 +479,7 @@ class FVGStrategy(BaseStrategy):
     def _is_too_close_to_last_signal(
         self, signal: Signal, min_gap_minutes: int = 30
     ) -> bool:
-        """Check if signal is too close to last signal"""
+        """Check if signal is too close to last signal."""
         if self.last_signal_time is None:
             return False
 
@@ -487,7 +487,7 @@ class FVGStrategy(BaseStrategy):
         return time_gap < min_gap_minutes
 
     def on_signal_generated(self, signal: Signal) -> None:
-        """Called when a signal is generated"""
+        """Called when a signal is generated."""
         self.last_signal_time = signal.timestamp
 
         # Log signal generation
@@ -500,7 +500,7 @@ class FVGStrategy(BaseStrategy):
         }
 
     def get_strategy_status(self) -> Dict[str, Any]:
-        """Get current strategy status"""
+        """Get current strategy status."""
         return {
             "name": self.name,
             "is_initialized": self.is_initialized,
@@ -530,7 +530,7 @@ def create_fvg_strategy_config(symbol: str, **kwargs) -> StrategyConfig:
 
     Returns:
         StrategyConfig for FVG strategy
-    """
+    ."""
     default_params = {
         "htf_timeframes": [TimeFrame.HOUR_4, TimeFrame.DAY_1],
         "ltf_timeframe": TimeFrame.MINUTE_5,
@@ -557,7 +557,7 @@ def create_fvg_strategy_config(symbol: str, **kwargs) -> StrategyConfig:
 
 
 def create_fvg_swing_config(symbol: str) -> StrategyConfig:
-    """Create FVG strategy config optimized for swing trading"""
+    """Create FVG strategy config optimized for swing trading."""
     return create_fvg_strategy_config(
         symbol=symbol,
         fvg_filter_preset="conservative",
@@ -568,7 +568,7 @@ def create_fvg_swing_config(symbol: str) -> StrategyConfig:
 
 
 def create_fvg_scalp_config(symbol: str) -> StrategyConfig:
-    """Create FVG strategy config optimized for scalping"""
+    """Create FVG strategy config optimized for scalping."""
     return create_fvg_strategy_config(
         symbol=symbol,
         htf_timeframes=[TimeFrame.MINUTE_15, TimeFrame.HOUR_1],

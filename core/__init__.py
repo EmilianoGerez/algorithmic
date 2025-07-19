@@ -1,5 +1,5 @@
 """
-Core Package Initialization
+Core Package Initialization.
 
 The core package contains the fundamental components of the trading system:
 - Data models and structures
@@ -11,7 +11,7 @@ The core package contains the fundamental components of the trading system:
 - Backtesting engine
 - Live trading system
 - Real-time data streaming
-"""
+."""
 
 from .backtesting import (
     BacktestConfig,
@@ -26,7 +26,20 @@ from .data.feeds import (
     LiveDataFeed,
     MultiSymbolDataFeed,
 )
-from .data.models import *
+from .data.models import (
+    BacktestResult,
+    Candle,
+    FVGZone,
+    MarketData,
+    Order,
+    OrderStatus,
+    Position,
+    Signal,
+    SignalDirection,
+    SignalType,
+    StrategyConfig,
+    TimeFrame,
+)
 from .indicators.fvg_detector import FVGDetector, FVGFilterPresets
 from .indicators.technical import EMASystem, TechnicalIndicators
 from .live import (

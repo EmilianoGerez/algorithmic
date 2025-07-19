@@ -3,7 +3,7 @@ Risk Management System
 
 Comprehensive risk management including position sizing, portfolio management,
 and risk controls for the trading system.
-"""
+."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ from ..data.models import Position, Signal, SignalDirection
 
 @dataclass
 class RiskLimits:
-    """Risk limits configuration"""
+    """Risk limits configuration."""
 
     max_position_size: Decimal = Decimal("0.1")  # 10% of portfolio
     max_daily_loss: Decimal = Decimal("0.05")  # 5% daily loss limit
@@ -26,7 +26,7 @@ class RiskLimits:
     leverage_limit: Decimal = Decimal("1.0")  # No leverage by default
 
     def __post_init__(self):
-        """Validate risk limits"""
+        """Validate risk limits."""
         if self.max_position_size <= 0 or self.max_position_size > 1:
             raise ValueError("Max position size must be between 0 and 1")
         if self.max_daily_loss <= 0 or self.max_daily_loss > 1:
@@ -37,7 +37,7 @@ class RiskLimits:
 
 @dataclass
 class PortfolioMetrics:
-    """Portfolio performance metrics"""
+    """Portfolio performance metrics."""
 
     total_value: Decimal = Decimal("0")
     available_cash: Decimal = Decimal("0")
@@ -54,7 +54,7 @@ class PortfolioMetrics:
     winning_trades: int = 0
 
     def update_win_rate(self):
-        """Update win rate calculation"""
+        """Update win rate calculation."""
         if self.total_trades > 0:
             self.win_rate = self.winning_trades / self.total_trades
         else:
@@ -62,7 +62,7 @@ class PortfolioMetrics:
 
 
 class PositionSizer(ABC):
-    """Abstract base class for position sizing algorithms"""
+    """Abstract base class for position sizing algorithms."""
 
     @abstractmethod
     def calculate_position_size(
@@ -72,11 +72,11 @@ class PositionSizer(ABC):
         risk_limits: RiskLimits,
         current_positions: list[Position],
     ) -> Decimal:
-        """Calculate position size for a signal"""
+        """Calculate position size for a signal."""
 
 
 class FixedRiskPositionSizer(PositionSizer):
-    """Fixed risk position sizing - risk a fixed percentage per trade"""
+    """Fixed risk position sizing - risk a fixed percentage per trade."""
 
     def __init__(self, risk_per_trade: float = 0.02):
         self.risk_per_trade = risk_per_trade
@@ -88,7 +88,7 @@ class FixedRiskPositionSizer(PositionSizer):
         risk_limits: RiskLimits,
         current_positions: list[Position],
     ) -> Decimal:
-        """Calculate position size based on fixed risk percentage"""
+        """Calculate position size based on fixed risk percentage."""
         if signal.stop_loss is None:
             # No stop loss = no position
             return Decimal("0")
@@ -111,7 +111,7 @@ class FixedRiskPositionSizer(PositionSizer):
 
 
 class VolatilityPositionSizer(PositionSizer):
-    """Volatility-based position sizing using ATR"""
+    """Volatility-based position sizing using ATR."""
 
     def __init__(self, base_risk: float = 0.02, volatility_multiplier: float = 2.0):
         self.base_risk = base_risk
@@ -124,7 +124,7 @@ class VolatilityPositionSizer(PositionSizer):
         risk_limits: RiskLimits,
         current_positions: list[Position],
     ) -> Decimal:
-        """Calculate position size based on volatility"""
+        """Calculate position size based on volatility."""
         # Get ATR from signal metadata if available
         atr = signal.metadata.get("atr", None)
         if atr is None:
@@ -162,7 +162,7 @@ class VolatilityPositionSizer(PositionSizer):
 
 
 class KellyPositionSizer(PositionSizer):
-    """Kelly Criterion position sizing"""
+    """Kelly Criterion position sizing."""
 
     def __init__(self, lookback_trades: int = 50, max_kelly: float = 0.25):
         self.lookback_trades = lookback_trades
@@ -175,7 +175,7 @@ class KellyPositionSizer(PositionSizer):
         risk_limits: RiskLimits,
         current_positions: list[Position],
     ) -> Decimal:
-        """Calculate position size using Kelly Criterion"""
+        """Calculate position size using Kelly Criterion."""
         # Get historical performance from signal metadata
         win_rate = signal.metadata.get("win_rate", 0.5)
         avg_win = signal.metadata.get("avg_win", 1.0)
@@ -209,7 +209,7 @@ class KellyPositionSizer(PositionSizer):
 
 
 class RiskManager:
-    """Main risk management system"""
+    """Main risk management system."""
 
     def __init__(
         self,
@@ -233,7 +233,7 @@ class RiskManager:
         self.trade_history: list[Dict] = []
 
     def evaluate_signal(self, signal: Signal) -> Dict[str, any]:
-        """Evaluate a signal and return risk assessment"""
+        """Evaluate a signal and return risk assessment."""
         assessment = {
             "signal": signal,
             "approved": False,
@@ -301,7 +301,7 @@ class RiskManager:
         return assessment
 
     def add_position(self, signal: Signal, position_size: Decimal) -> Position:
-        """Add a new position to the portfolio"""
+        """Add a new position to the portfolio."""
         position = Position(
             symbol=signal.symbol,
             direction=signal.direction,
@@ -325,7 +325,7 @@ class RiskManager:
     def close_position(
         self, position: Position, exit_price: Decimal, exit_time: datetime
     ) -> None:
-        """Close a position and update metrics"""
+        """Close a position and update metrics."""
         position.close_position(exit_price, exit_time)
 
         # Update portfolio metrics
@@ -359,7 +359,7 @@ class RiskManager:
         self.positions.remove(position)
 
     def update_positions(self, current_prices: Dict[str, Decimal]) -> None:
-        """Update all positions with current prices"""
+        """Update all positions with current prices."""
         total_unrealized_pnl = Decimal("0")
 
         for position in self.positions:
@@ -385,14 +385,14 @@ class RiskManager:
             self.metrics.max_drawdown = self.metrics.drawdown
 
     def get_position_by_symbol(self, symbol: str) -> Optional[Position]:
-        """Get position by symbol"""
+        """Get position by symbol."""
         for position in self.positions:
             if position.symbol == symbol:
                 return position
         return None
 
     def get_portfolio_summary(self) -> Dict:
-        """Get portfolio summary"""
+        """Get portfolio summary."""
         return {
             "total_value": self.metrics.total_value,
             "available_cash": self.metrics.available_cash,
@@ -414,12 +414,12 @@ class RiskManager:
         }
 
     def reset_daily_metrics(self) -> None:
-        """Reset daily metrics (call at start of each trading day)"""
+        """Reset daily metrics (call at start of each trading day)."""
         self.daily_start_balance = self.metrics.total_value
         self.metrics.daily_pnl = Decimal("0")
 
     def should_stop_trading(self) -> bool:
-        """Check if trading should be stopped due to risk limits"""
+        """Check if trading should be stopped due to risk limits."""
         return (
             self.metrics.daily_pnl
             <= -self.risk_limits.max_daily_loss * self.daily_start_balance

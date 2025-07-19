@@ -8,7 +8,7 @@ This script helps set up everything needed for Alpaca backtesting:
 - Tests Alpaca connection
 - Validates data fetching
 - Runs sample backtest
-"""
+."""
 
 import os
 import subprocess
@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 
 def check_python_version():
-    """Check if Python version is compatible"""
+    """Check if Python version is compatible."""
     print("🐍 Checking Python version...")
 
     if sys.version_info < (3, 8):
@@ -29,7 +29,7 @@ def check_python_version():
 
 
 def install_packages():
-    """Install required packages"""
+    """Install required packages."""
     print("\\n📦 Installing required packages...")
 
     packages = [
@@ -52,7 +52,7 @@ def install_packages():
 
 
 def setup_environment():
-    """Set up environment variables"""
+    """Set up environment variables."""
     print("\\n🔧 Setting up environment variables...")
 
     env_file = ".env"
@@ -74,7 +74,7 @@ REDIS_URL=redis://localhost:6379
 
 # Logging
 LOG_LEVEL=INFO
-"""
+."""
 
     try:
         with open(env_file, "w") as f:
@@ -88,7 +88,7 @@ LOG_LEVEL=INFO
 
 
 def test_alpaca_connection():
-    """Test Alpaca API connection"""
+    """Test Alpaca API connection."""
     print("\\n🔌 Testing Alpaca connection...")
 
     try:
@@ -116,7 +116,7 @@ def test_alpaca_connection():
         client = REST(api_key, secret_key, base_url=URL(base_url))
         account = client.get_account()
 
-        print(f"✅ Connected to Alpaca successfully")
+        print("✅ Connected to Alpaca successfully")
         print(f"📊 Account Status: {account.status}")
         print(f"💰 Buying Power: ${account.buying_power}")
 
@@ -133,15 +133,13 @@ def test_alpaca_connection():
 
 
 def test_data_fetching():
-    """Test historical data fetching"""
+    """Test historical data fetching."""
     print("\\n📊 Testing data fetching...")
 
     try:
         # Add project root to path
         project_root = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, project_root)
-
-        from datetime import datetime, timedelta
 
         # Load environment variables
         from dotenv import load_dotenv
@@ -201,7 +199,7 @@ def test_data_fetching():
 
 
 def run_sample_backtest():
-    """Run a sample backtest"""
+    """Run a sample backtest."""
     print("\\n🧪 Running sample backtest...")
 
     try:
@@ -227,7 +225,7 @@ def run_sample_backtest():
 
 
 def main():
-    """Main setup function"""
+    """Main setup function."""
     print("🚀 Alpaca Integration Setup")
     print("=" * 40)
 

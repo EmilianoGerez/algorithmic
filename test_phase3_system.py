@@ -9,12 +9,12 @@ This test validates the core Phase 3 components that we have implemented:
 - Core system integration
 
 Focuses on what we've actually built rather than expected components.
-"""
+."""
 
 import asyncio
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 
 # Add the project root to the Python path
@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 def test_imports():
-    """Test that all core components can be imported"""
+    """Test that all core components can be imported."""
     print("🔍 Testing Core System Imports")
     print("=" * 50)
 
@@ -75,12 +75,12 @@ def test_imports():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ Import error: {e}")
+        print(f"  ❌ Import error: {exc}")
         return False
 
 
 async def test_live_trading_engine():
-    """Test live trading engine"""
+    """Test live trading engine."""
     print("\n🔥 Testing Live Trading Engine")
     print("=" * 50)
 
@@ -117,7 +117,7 @@ async def test_live_trading_engine():
         )
 
         # Create live trading config
-        config = LiveTradingConfig(
+        _config = LiveTradingConfig(
             mode=ExecutionMode.PAPER,
             enable_auto_trading=True,
             max_orders_per_minute=10,
@@ -127,7 +127,7 @@ async def test_live_trading_engine():
 
         # Create live trading engine
         engine = LiveTradingEngine(
-            broker_adapter=broker, risk_manager=risk_manager, config=config
+            broker_adapter=broker, risk_manager=risk_manager, config=_config
         )
 
         # Test basic operations
@@ -140,12 +140,12 @@ async def test_live_trading_engine():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ Live trading engine: FAILED - {e}")
+        print(f"  ❌ Live trading engine: FAILED - {exc}")
         return False
 
 
 async def test_streaming_system():
-    """Test streaming system"""
+    """Test streaming system."""
     print("\n📡 Testing Streaming System")
     print("=" * 50)
 
@@ -159,7 +159,7 @@ async def test_streaming_system():
         )
 
         # Create streaming config
-        config = StreamingConfig(
+        _config = StreamingConfig(
             provider=StreamingProvider.MOCK,
             symbols=["AAPL", "GOOGL", "MSFT"],
             timeframes=[TimeFrame.MINUTE_1],
@@ -179,12 +179,12 @@ async def test_streaming_system():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ Streaming system: FAILED - {e}")
+        print(f"  ❌ Streaming system: FAILED - {exc}")
         return False
 
 
 async def test_signal_processing():
-    """Test signal processing"""
+    """Test signal processing."""
     print("\n🎯 Testing Signal Processing")
     print("=" * 50)
 
@@ -227,12 +227,12 @@ async def test_signal_processing():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ Signal processing: FAILED - {e}")
+        print(f"  ❌ Signal processing: FAILED - {exc}")
         return False
 
 
 async def test_strategy_system():
-    """Test strategy system"""
+    """Test strategy system."""
     print("\n🧠 Testing Strategy System")
     print("=" * 50)
 
@@ -245,7 +245,7 @@ async def test_strategy_system():
         )
 
         # Create strategy config
-        config = create_fvg_strategy_config(
+        _config = create_fvg_strategy_config(
             symbol="AAPL",
             htf_timeframes=[TimeFrame.HOUR_4, TimeFrame.DAY_1],
             ltf_timeframe=TimeFrame.MINUTE_15,
@@ -254,7 +254,7 @@ async def test_strategy_system():
         )
 
         # Create strategy
-        strategy = FVGStrategy(config)
+        strategy = FVGStrategy(_config)
 
         # Test strategy properties
         assert strategy.config.symbol == "AAPL"
@@ -269,7 +269,7 @@ async def test_strategy_system():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ Strategy system: FAILED - {e}")
+        print(f"  ❌ Strategy system: FAILED - {exc}")
         import traceback
 
         traceback.print_exc()
@@ -277,7 +277,7 @@ async def test_strategy_system():
 
 
 def test_api_components():
-    """Test API components (structural test)"""
+    """Test API components (structural test)."""
     print("\n🌐 Testing API Components")
     print("=" * 50)
 
@@ -302,12 +302,12 @@ def test_api_components():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ API components: FAILED - {e}")
+        print(f"  ❌ API components: FAILED - {exc}")
         return False
 
 
 async def test_integration():
-    """Test system integration"""
+    """Test system integration."""
     print("\n🔄 Testing System Integration")
     print("=" * 50)
 
@@ -333,12 +333,12 @@ async def test_integration():
 
         # Test that all components can be created together
         # 1. Create strategy
-        config = create_fvg_strategy_config(
+        _config = create_fvg_strategy_config(
             symbol="AAPL",
             htf_timeframes=[TimeFrame.HOUR_4, TimeFrame.DAY_1],
             ltf_timeframe=TimeFrame.MINUTE_15,
         )
-        strategy = FVGStrategy(config)
+        strategy = FVGStrategy(_config)
 
         # 2. Create live trading components
         broker = PaperBrokerAdapter(initial_balance=Decimal("100000"))
@@ -366,11 +366,11 @@ async def test_integration():
         live_engine = LiveTradingEngine(
             broker_adapter=broker,
             risk_manager=risk_manager,
-            config=live_config,
+            _config=live_config,
         )
 
         # 3. Create streaming components
-        streaming_config = StreamingConfig(
+        _streaming_config = StreamingConfig(
             provider=StreamingProvider.MOCK,
             symbols=["AAPL"],
             timeframes=[TimeFrame.MINUTE_1],
@@ -403,7 +403,7 @@ async def test_integration():
         return True
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
-        print(f"  ❌ System integration: FAILED - {e}")
+        print(f"  ❌ System integration: FAILED - {exc}")
         import traceback
 
         traceback.print_exc()
@@ -411,7 +411,7 @@ async def test_integration():
 
 
 async def main():
-    """Main test function"""
+    """Main test function."""
     print("🚀 Phase 3 System Validation")
     print("=" * 80)
     print("Testing the complete Phase 3 system implementation")
@@ -433,7 +433,7 @@ async def main():
     total = len(results)
     success_rate = (passed / total) * 100
 
-    print(f"\n📊 Test Results Summary")
+    print("\n📊 Test Results Summary")
     print("=" * 50)
     print(f"Total tests: {total}")
     print(f"Passed: {passed}")
@@ -441,7 +441,7 @@ async def main():
     print(f"Success rate: {success_rate:.1f}%")
 
     if passed == total:
-        print(f"\n✅ All tests passed! Phase 3 system is ready.")
+        print("\n✅ All tests passed! Phase 3 system is ready.")
         print("\n🎉 Complete System Features:")
         print("  ✅ Live Trading Engine with paper trading")
         print("  ✅ Real-time Data Streaming system")

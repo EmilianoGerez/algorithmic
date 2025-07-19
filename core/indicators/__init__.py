@@ -2,7 +2,7 @@
 Core Indicators Package
 
 Contains technical indicators and analysis tools.
-"""
+."""
 
 from .fvg_detector import (
     FVGDetector,

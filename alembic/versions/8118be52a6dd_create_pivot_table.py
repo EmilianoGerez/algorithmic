@@ -1,4 +1,4 @@
-"""create pivot table
+"""Create pivot table.
 
 Revision ID: 8118be52a6dd
 Revises: dafc562b5f25
@@ -8,9 +8,9 @@ Create Date: 2025-07-15 00:46:59.354001
 
 from typing import Sequence, Union
 
-import sqlalchemy as sa
-
 from alembic import op
+
+import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "8118be52a6dd"

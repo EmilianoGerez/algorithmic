@@ -3,7 +3,7 @@ FVG Detector
 
 Fair Value Gap detection algorithm extracted from the proven legacy system.
 Clean implementation with enhanced filtering and quality scoring.
-"""
+."""
 
 from dataclasses import dataclass
 from decimal import Decimal
@@ -14,7 +14,7 @@ from ..data.models import Candle, FVGZone, SignalDirection
 
 
 class FVGQuality(Enum):
-    """FVG Quality levels"""
+    """FVG Quality levels."""
 
     LOW = "low"
     MEDIUM = "medium"
@@ -24,7 +24,7 @@ class FVGQuality(Enum):
 
 @dataclass
 class FVGFilterConfig:
-    """Configuration for FVG filtering parameters"""
+    """Configuration for FVG filtering parameters."""
 
     # Zone size filters
     min_zone_size_pips: float = 5.0
@@ -58,7 +58,7 @@ class FVGDetector:
     - Enhanced quality scoring
     - Configurable filtering
     - Better performance
-    """
+    ."""
 
     def __init__(self, config: Optional[FVGFilterConfig] = None):
         """
@@ -66,7 +66,7 @@ class FVGDetector:
 
         Args:
             config: FVG filter configuration
-        """
+        ."""
         self.config = config or FVGFilterConfig()
         self.detected_fvgs: list[FVGZone] = []
 
@@ -79,7 +79,7 @@ class FVGDetector:
 
         Returns:
             List of detected FVG zones
-        """
+        ."""
         if len(candles) < 3:
             return []
 
@@ -142,7 +142,7 @@ class FVGDetector:
 
         Returns:
             FVG zone if valid, None otherwise
-        """
+        ."""
         current_candle = candles[index]
         zone_size = float(zone_high - zone_low)
 
@@ -180,7 +180,7 @@ class FVGDetector:
         )
 
     def _is_zone_size_valid(self, zone_size: float, price: float, atr: float) -> bool:
-        """Check if zone size meets minimum requirements"""
+        """Check if zone size meets minimum requirements."""
         # Minimum pips
         if zone_size < self.config.min_zone_size_pips:
             return False
@@ -206,7 +206,7 @@ class FVGDetector:
         - Volume strength
         - Momentum
         - Market structure context
-        """
+        ."""
         strength = 0.5  # Base strength
 
         # Factor 1: Zone size relative to ATR
@@ -238,7 +238,7 @@ class FVGDetector:
         - Strength score
         - Market context
         - Historical performance patterns
-        """
+        ."""
         confidence = strength * 0.7  # Base confidence from strength
 
         # Context bonus
@@ -252,7 +252,7 @@ class FVGDetector:
         return min(confidence, 1.0)
 
     def _calculate_volume_factor(self, candles: list[Candle], index: int) -> float:
-        """Calculate volume factor for strength calculation"""
+        """Calculate volume factor for strength calculation."""
         if index < self.config.volume_context_periods:
             return 0.0
 
@@ -278,7 +278,7 @@ class FVGDetector:
         return min(volume_ratio / 2.0, 1.0)  # Normalize to 0-1
 
     def _calculate_momentum_factor(self, candles: list[Candle], index: int) -> float:
-        """Calculate momentum factor for strength calculation"""
+        """Calculate momentum factor for strength calculation."""
         if index < 10:
             return 0.0
 
@@ -294,7 +294,7 @@ class FVGDetector:
     def _is_in_consolidation(
         self, candles: list[Candle], index: int, period: int = 20
     ) -> bool:
-        """Check if price is in consolidation phase"""
+        """Check if price is in consolidation phase."""
         if index < period:
             return False
 
@@ -310,7 +310,7 @@ class FVGDetector:
         return (price_range / avg_price) < 0.02  # 2% range threshold
 
     def _has_sufficient_volume(self, candles: list[Candle], index: int) -> bool:
-        """Check if candle has sufficient volume"""
+        """Check if candle has sufficient volume."""
         if index < self.config.volume_context_periods:
             return True
 
@@ -335,7 +335,7 @@ class FVGDetector:
         return current_volume >= (avg_volume * self.config.min_volume_multiplier)
 
     def _passes_context_filters(self, candles: list[Candle], index: int) -> bool:
-        """Check if FVG passes context filters"""
+        """Check if FVG passes context filters."""
         # Weekend filter
         if self.config.exclude_weekend_fvgs:
             if candles[index].timestamp.weekday() >= 5:  # Saturday = 5, Sunday = 6
@@ -354,7 +354,7 @@ class FVGDetector:
         return True
 
     def _calculate_atr(self, candles: list[Candle], period: int = 14) -> float:
-        """Calculate Average True Range"""
+        """Calculate Average True Range."""
         if len(candles) < period:
             return 0.0
 
@@ -375,7 +375,7 @@ class FVGDetector:
         return sum(recent_trs) / len(recent_trs)
 
     def _get_quality_level(self, strength: float, confidence: float) -> FVGQuality:
-        """Determine quality level based on strength and confidence"""
+        """Determine quality level based on strength and confidence."""
         combined_score = (strength + confidence) / 2
 
         if combined_score >= self.config.premium_quality_threshold:
@@ -388,11 +388,11 @@ class FVGDetector:
             return FVGQuality.LOW
 
     def get_active_fvgs(self) -> list[FVGZone]:
-        """Get currently active FVG zones"""
+        """Get currently active FVG zones."""
         return [fvg for fvg in self.detected_fvgs if fvg.status == "active"]
 
     def update_fvg_status(self, fvg_zone: FVGZone, new_price: Decimal) -> None:
-        """Update FVG status based on price interaction"""
+        """Update FVG status based on price interaction."""
         if fvg_zone.is_price_in_zone(new_price):
             fvg_zone.touch_count += 1
             fvg_zone.status = "touched"
@@ -401,7 +401,7 @@ class FVGDetector:
         # e.g., if price moves significantly beyond the zone
 
     def get_quality_metrics(self) -> Dict[str, float]:
-        """Get quality metrics for detected FVGs"""
+        """Get quality metrics for detected FVGs."""
         if not self.detected_fvgs:
             return {}
 
@@ -425,11 +425,11 @@ class FVGDetector:
 
 
 class FVGFilterPresets:
-    """Predefined filter configurations for different trading styles"""
+    """Predefined filter configurations for different trading styles."""
 
     @staticmethod
     def conservative() -> FVGFilterConfig:
-        """Conservative filtering - only highest quality FVGs"""
+        """Conservative filtering - only highest quality FVGs."""
         return FVGFilterConfig(
             min_zone_size_pips=10.0,
             min_zone_size_percentage=0.03,
@@ -443,12 +443,12 @@ class FVGFilterPresets:
 
     @staticmethod
     def balanced() -> FVGFilterConfig:
-        """Balanced filtering - default settings"""
+        """Balanced filtering - default settings."""
         return FVGFilterConfig()
 
     @staticmethod
     def aggressive() -> FVGFilterConfig:
-        """Aggressive filtering - more FVGs, lower quality threshold"""
+        """Aggressive filtering - more FVGs, lower quality threshold."""
         return FVGFilterConfig(
             min_zone_size_pips=3.0,
             min_zone_size_percentage=0.01,
@@ -462,7 +462,7 @@ class FVGFilterPresets:
 
     @staticmethod
     def scalping() -> FVGFilterConfig:
-        """Scalping filtering - very tight filters for quick trades"""
+        """Scalping filtering - very tight filters for quick trades."""
         return FVGFilterConfig(
             min_zone_size_pips=2.0,
             min_zone_size_percentage=0.005,

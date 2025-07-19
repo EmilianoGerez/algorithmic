@@ -4,7 +4,6 @@ Unit tests for FVG detection functionality.
 
 from datetime import datetime
 from decimal import Decimal
-from unittest.mock import Mock, patch
 
 import pytest
 

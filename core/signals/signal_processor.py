@@ -3,7 +3,7 @@ Signal Processing System
 
 Core signal generation and processing logic.
 Handles multi-timeframe analysis and signal validation.
-"""
+."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -26,7 +26,7 @@ from ..indicators.technical import EMASystem
 
 
 class SignalQuality(Enum):
-    """Signal quality levels"""
+    """Signal quality levels."""
 
     LOW = "low"
     MEDIUM = "medium"
@@ -36,7 +36,7 @@ class SignalQuality(Enum):
 
 @dataclass
 class SignalContext:
-    """Context information for signal generation"""
+    """Context information for signal generation."""
 
     htf_data: Dict[TimeFrame, MarketData]
     ltf_data: MarketData
@@ -51,7 +51,7 @@ class SignalProcessor:
 
     Handles signal generation, validation, and quality assessment
     based on market data and strategy requirements.
-    """
+    ."""
 
     def __init__(self, strategy_config: StrategyConfig):
         """
@@ -59,7 +59,7 @@ class SignalProcessor:
 
         Args:
             strategy_config: Strategy configuration
-        """
+        ."""
         self.config = strategy_config
         self.fvg_detector = FVGDetector()
         self.ema_system = EMASystem()
@@ -75,7 +75,7 @@ class SignalProcessor:
 
         Returns:
             List of generated signals
-        """
+        ."""
         signals = []
 
         # Update FVG zones
@@ -98,7 +98,7 @@ class SignalProcessor:
         return validated_signals
 
     def _update_fvg_zones(self, context: SignalContext) -> None:
-        """Update FVG zones from higher timeframe data"""
+        """Update FVG zones from higher timeframe data."""
         new_fvgs = []
 
         # Process each higher timeframe
@@ -123,7 +123,7 @@ class SignalProcessor:
                 self.fvg_detector.update_fvg_status(fvg, current_price)
 
     def _generate_entry_signals(self, context: SignalContext) -> list[Signal]:
-        """Generate entry signals based on strategy logic"""
+        """Generate entry signals based on strategy logic."""
         signals = []
 
         if not context.ltf_data.candles or len(context.ltf_data.candles) < 50:
@@ -160,7 +160,7 @@ class SignalProcessor:
         return signals
 
     def _generate_exit_signals(self, context: SignalContext) -> list[Signal]:
-        """Generate exit signals for active positions"""
+        """Generate exit signals for active positions."""
         # This can be implemented based on specific exit rules
         # For now, return empty list as exits are handled by stop/target orders
         return []
@@ -168,7 +168,7 @@ class SignalProcessor:
     def _create_entry_signal(
         self, fvg_zone: FVGZone, context: SignalContext, emas: Dict[str, list]
     ) -> Optional[Signal]:
-        """Create an entry signal based on FVG zone and market conditions"""
+        """Create an entry signal based on FVG zone and market conditions."""
         current_candle = context.ltf_data.candles[-1]
 
         # Calculate entry price (current close)
@@ -220,7 +220,7 @@ class SignalProcessor:
     def _calculate_stop_and_target(
         self, fvg_zone: FVGZone, entry_price: Decimal, candles: list[Candle]
     ) -> Tuple[Optional[Decimal], Optional[Decimal]]:
-        """Calculate stop loss and take profit levels"""
+        """Calculate stop loss and take profit levels."""
         # Find swing levels for stop loss
         swing_levels = self._find_swing_levels(candles, lookback=20)
 
@@ -247,7 +247,7 @@ class SignalProcessor:
     def _find_swing_levels(
         self, candles: list[Candle], lookback: int = 20
     ) -> Dict[str, Decimal]:
-        """Find swing high and low levels"""
+        """Find swing high and low levels."""
         if len(candles) < lookback:
             lookback = len(candles)
 
@@ -261,7 +261,7 @@ class SignalProcessor:
     def _calculate_signal_confidence(
         self, fvg_zone: FVGZone, emas: Dict[str, list], context: SignalContext
     ) -> float:
-        """Calculate signal confidence score"""
+        """Calculate signal confidence score."""
         confidence = fvg_zone.confidence * 0.6  # Base confidence from FVG
 
         # EMA trend strength bonus
@@ -279,7 +279,7 @@ class SignalProcessor:
         return min(confidence, 1.0)
 
     def _is_optimal_trading_time(self, timestamp: datetime) -> bool:
-        """Check if current time is optimal for trading"""
+        """Check if current time is optimal for trading."""
         # NYC trading hours logic
         hour = timestamp.hour
 
@@ -298,7 +298,7 @@ class SignalProcessor:
         return False
 
     def _is_trending_market(self, candles: list[Candle], period: int = 20) -> bool:
-        """Check if market is trending (not consolidating)"""
+        """Check if market is trending (not consolidating)."""
         if len(candles) < period:
             return False
 
@@ -317,7 +317,7 @@ class SignalProcessor:
     def _filter_fvgs_by_quality(
         self, fvg_zones: list[FVGZone], context: SignalContext
     ) -> list[FVGZone]:
-        """Filter FVGs based on quality criteria"""
+        """Filter FVGs based on quality criteria."""
         filtered_fvgs = []
 
         for fvg in fvg_zones:
@@ -341,7 +341,7 @@ class SignalProcessor:
     def _validate_signals(
         self, signals: list[Signal], context: SignalContext
     ) -> list[Signal]:
-        """Validate and filter signals"""
+        """Validate and filter signals."""
         validated_signals = []
 
         for signal in signals:
@@ -365,7 +365,7 @@ class SignalProcessor:
         return validated_signals
 
     def _validate_signal_basic(self, signal: Signal) -> bool:
-        """Basic signal validation"""
+        """Basic signal validation."""
         if signal.entry_price <= 0:
             return False
 
@@ -378,7 +378,7 @@ class SignalProcessor:
         return True
 
     def _validate_risk_management(self, signal: Signal) -> bool:
-        """Risk management validation"""
+        """Risk management validation."""
         # Check risk/reward ratio
         actual_rr = signal.get_actual_risk_reward_ratio()
         if actual_rr is None or actual_rr < 1.5:
@@ -397,7 +397,7 @@ class SignalProcessor:
         return True
 
     def _validate_timing(self, signal: Signal, context: SignalContext) -> bool:
-        """Timing validation"""
+        """Timing validation."""
         # Check if within trading hours
         if not self._is_optimal_trading_time(signal.timestamp):
             return False
@@ -411,7 +411,7 @@ class SignalProcessor:
     def _is_too_close_to_previous_signal(
         self, signal: Signal, min_gap_minutes: int = 30
     ) -> bool:
-        """Check if signal is too close to previous signal"""
+        """Check if signal is too close to previous signal."""
         if not self.generated_signals:
             return False
 
@@ -423,7 +423,7 @@ class SignalProcessor:
         return time_gap < min_gap_minutes
 
     def _assess_signal_quality(self, signal: Signal) -> SignalQuality:
-        """Assess signal quality level"""
+        """Assess signal quality level."""
         combined_score = (signal.confidence + signal.strength) / 2
 
         if combined_score >= 0.85:
@@ -436,7 +436,7 @@ class SignalProcessor:
             return SignalQuality.LOW
 
     def get_signal_statistics(self) -> Dict[str, any]:
-        """Get signal generation statistics"""
+        """Get signal generation statistics."""
         if not self.generated_signals:
             return {}
 
@@ -467,7 +467,7 @@ class SignalProcessor:
         }
 
     def reset(self) -> None:
-        """Reset the signal processor state"""
+        """Reset the signal processor state."""
         self.generated_signals.clear()
         self.active_fvgs.clear()
 
@@ -478,7 +478,7 @@ class MultiTimeframeEngine:
 
     Coordinates analysis across multiple timeframes to generate
     high-quality trading signals.
-    """
+    ."""
 
     def __init__(self, strategy_config: StrategyConfig):
         """
@@ -486,7 +486,7 @@ class MultiTimeframeEngine:
 
         Args:
             strategy_config: Strategy configuration
-        """
+        ."""
         self.config = strategy_config
         self.signal_processor = SignalProcessor(strategy_config)
         self.timeframe_data: Dict[TimeFrame, MarketData] = {}
@@ -498,7 +498,7 @@ class MultiTimeframeEngine:
         Args:
             timeframe: Timeframe identifier
             market_data: Market data for the timeframe
-        """
+        ."""
         self.timeframe_data[timeframe] = market_data
 
     def generate_signals(self) -> list[Signal]:
@@ -507,7 +507,7 @@ class MultiTimeframeEngine:
 
         Returns:
             List of generated signals
-        """
+        ."""
         if not self.timeframe_data:
             return []
 
@@ -540,7 +540,7 @@ class MultiTimeframeEngine:
         return self.signal_processor.process_market_data(context)
 
     def _timeframe_to_minutes(self, timeframe: TimeFrame) -> int:
-        """Convert timeframe to minutes for comparison"""
+        """Convert timeframe to minutes for comparison."""
         timeframe_minutes = {
             TimeFrame.MINUTE_1: 1,
             TimeFrame.MINUTE_5: 5,
@@ -555,7 +555,7 @@ class MultiTimeframeEngine:
         return timeframe_minutes.get(timeframe, 1440)
 
     def get_engine_status(self) -> Dict[str, any]:
-        """Get engine status and statistics"""
+        """Get engine status and statistics."""
         return {
             "timeframes": [tf.value for tf in self.timeframe_data.keys()],
             "signal_processor_stats": self.signal_processor.get_signal_statistics(),

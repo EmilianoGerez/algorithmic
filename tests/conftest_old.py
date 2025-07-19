@@ -9,26 +9,24 @@ import sys
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
-import pandas as pd
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.data.models import (
     Candle,
-    FVGZone,
     MarketData,
     Signal,
     SignalDirection,
     TimeFrame,
 )
 from core.indicators.fvg_detector import (
-    FVGDetector,
-    FVGFilterConfig,
-    FVGQuality,
+    FVGFilterConfig,  # noqa: F401
 )
+from core.strategies.fvg_strategy import FVGStrategy
+from core.risk import FixedRiskPositionSizer, RiskLimits
 
 
 @pytest.fixture(scope="session")
@@ -82,7 +80,7 @@ def sample_market_data(sample_candles) -> MarketData:
 @pytest.fixture
 def fvg_strategy() -> FVGStrategy:
     """Create a configured FVG strategy for testing."""
-    from core.strategies.factory import create_fvg_strategy_config
+    from core.strategies.fvg_strategy import create_fvg_strategy_config
 
     config = create_fvg_strategy_config()
     return FVGStrategy(config)

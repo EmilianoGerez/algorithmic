@@ -1,40 +1,33 @@
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
-import asyncio
 import os
-
-# Import your core modules
 import sys
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import List
 from unittest.mock import AsyncMock, Mock
-
-import pandas as pd
-import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.data.models import (
     Candle,
     FVGZone,
-    MarketData,
-    Signal,
     SignalDirection,
     TimeFrame,
 )
 from core.indicators.fvg_detector import (
     FVGDetector,
     FVGFilterConfig,
-    FVGQuality,
 )
+
+import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 # Test Data Fixtures
 @pytest.fixture
 def sample_candles():
-    """Sample candle data for testing"""
+    """Sample candle data for testing."""
     candles = []
     base_time = datetime(2023, 1, 1, 12, 0, 0)
 

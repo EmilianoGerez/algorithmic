@@ -3,7 +3,7 @@ Example Usage of the New Core System
 
 This script demonstrates how to use the new clean core system
 to implement the FVG strategy.
-"""
+."""
 
 import os
 import sys
@@ -19,8 +19,6 @@ from core import (  # Data models; Strategy system; Indicators; Signal processin
     FVGFilterPresets,
     FVGStrategy,
     MarketData,
-    MultiTimeframeEngine,
-    SignalDirection,
     TechnicalIndicators,
     TimeFrame,
     create_fvg_strategy_config,
@@ -28,8 +26,10 @@ from core import (  # Data models; Strategy system; Indicators; Signal processin
 )
 
 
-def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -> list[Candle]:
-    """Create sample candle data for testing"""
+def create_sample_candles(
+    symbol: str, timeframe: TimeFrame, count: int = 100
+) -> list[Candle]:
+    """Create sample candle data for testing."""
     candles = []
     base_price = Decimal("50000")  # BTC price
     base_time = datetime.utcnow() - timedelta(hours=count)
@@ -62,7 +62,7 @@ def create_sample_candles(symbol: str, timeframe: TimeFrame, count: int = 100) -
 
 
 def demonstrate_fvg_detection() -> None:
-    """Demonstrate FVG detection with the new system"""
+    """Demonstrate FVG detection with the new system."""
     print("🔍 FVG Detection Demo")
     print("=" * 50)
 
@@ -88,14 +88,14 @@ def demonstrate_fvg_detection() -> None:
 
     # Get quality metrics
     metrics = detector.get_quality_metrics()
-    print(f"\n📈 Quality Metrics:")
+    print("\n📈 Quality Metrics:")
     print(f"  High Quality FVGs: {metrics.get('high_quality_count', 0)}")
     print(f"  Average Strength: {metrics.get('average_strength', 0):.2f}")
     print(f"  Average Confidence: {metrics.get('average_confidence', 0):.2f}")
 
 
 def demonstrate_ema_system() -> None:
-    """Demonstrate EMA calculations"""
+    """Demonstrate EMA calculations."""
     print("\n📊 EMA System Demo")
     print("=" * 50)
 
@@ -108,20 +108,20 @@ def demonstrate_ema_system() -> None:
     ema_20 = TechnicalIndicators.ema(candles, 20)
     ema_50 = TechnicalIndicators.ema(candles, 50)
 
-    print(f"📈 Calculated EMAs:")
+    print("📈 Calculated EMAs:")
     print(f"  EMA 9: {len(ema_9)} values")
     print(f"  EMA 20: {len(ema_20)} values")
     print(f"  EMA 50: {len(ema_50)} values")
 
     if ema_9 and ema_20 and ema_50:
-        print(f"\n🎯 Latest EMA Values:")
+        print("\n🎯 Latest EMA Values:")
         print(f"  EMA 9: {ema_9[-1].value:.2f}")
         print(f"  EMA 20: {ema_20[-1].value:.2f}")
         print(f"  EMA 50: {ema_50[-1].value:.2f}")
 
 
 def demonstrate_strategy_system() -> None:
-    """Demonstrate the strategy system"""
+    """Demonstrate the strategy system."""
     print("\n🎯 Strategy System Demo")
     print("=" * 50)
 
@@ -132,11 +132,12 @@ def demonstrate_strategy_system() -> None:
     strategy = FVGStrategy(config)
     strategy.initialize()
 
-    print(f"📋 Strategy Info:")
+    print("📋 Strategy Info:")
     print(f"  Name: {strategy.name}")
     print(f"  Symbol: {strategy.symbol}")
     print(
-        f"  Required Timeframes: {[tf.value for tf in strategy.get_required_timeframes()]}"
+        f"  Required Timeframes: "
+        f"{[tf.value for tf in strategy.get_required_timeframes()]}"
     )
     print(f"  Min History Length: {strategy.get_required_history_length()}")
 
@@ -177,13 +178,13 @@ def demonstrate_strategy_system() -> None:
 
     # Get strategy status
     status = strategy.get_strategy_status()
-    print(f"\n📊 Strategy Status:")
+    print("\n📊 Strategy Status:")
     print(f"  Active FVGs: {status['active_fvgs']}")
     print(f"  Initialized: {status['is_initialized']}")
 
 
 def demonstrate_strategy_registry() -> None:
-    """Demonstrate strategy registry"""
+    """Demonstrate strategy registry."""
     print("\n📚 Strategy Registry Demo")
     print("=" * 50)
 
@@ -201,7 +202,7 @@ def demonstrate_strategy_registry() -> None:
 
 
 def main() -> None:
-    """Main demonstration function"""
+    """Main demonstration function."""
     print("🚀 New Core System Demonstration")
     print("=" * 60)
     print("This demo shows the new clean, modular architecture")

@@ -2,7 +2,7 @@
 Core Strategies Package
 
 Contains trading strategy implementations and the strategy framework.
-"""
+."""
 
 from .base_strategy import (
     BaseStrategy,

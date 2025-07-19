@@ -3,7 +3,7 @@ Base Strategy Interface
 
 Abstract base class for all trading strategies.
 Defines the contract that all strategies must implement.
-"""
+."""
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
@@ -23,7 +23,7 @@ class BaseStrategy(ABC):
 
     All strategies must implement this interface to be compatible
     with the trading system.
-    """
+    ."""
 
     def __init__(self, config: StrategyConfig):
         """
@@ -31,7 +31,7 @@ class BaseStrategy(ABC):
 
         Args:
             config: Strategy configuration containing parameters
-        """
+        ."""
         self.config = config
         self.name = config.name
         self.symbol = config.symbol
@@ -53,7 +53,7 @@ class BaseStrategy(ABC):
         """
         Initialize the strategy.
         Called once before the strategy starts processing data.
-        """
+        ."""
 
     @abstractmethod
     def generate_signals(
@@ -67,7 +67,7 @@ class BaseStrategy(ABC):
 
         Returns:
             List of generated signals
-        """
+        ."""
 
     @abstractmethod
     def validate_signal(self, signal: Signal) -> bool:
@@ -79,7 +79,7 @@ class BaseStrategy(ABC):
 
         Returns:
             True if signal is valid, False otherwise
-        """
+        ."""
 
     @abstractmethod
     def get_required_timeframes(self) -> list[TimeFrame]:
@@ -88,7 +88,7 @@ class BaseStrategy(ABC):
 
         Returns:
             List of required timeframes
-        """
+        ."""
 
     @abstractmethod
     def get_required_history_length(self) -> int:
@@ -97,7 +97,7 @@ class BaseStrategy(ABC):
 
         Returns:
             Minimum number of candles needed
-        """
+        ."""
 
     def on_signal_generated(self, signal: Signal) -> None:
         """
@@ -106,7 +106,7 @@ class BaseStrategy(ABC):
 
         Args:
             signal: Generated signal
-        """
+        ."""
 
     def on_position_opened(self, position: Position) -> None:
         """
@@ -115,7 +115,7 @@ class BaseStrategy(ABC):
 
         Args:
             position: Opened position
-        """
+        ."""
 
     def on_position_closed(self, position: Position) -> None:
         """
@@ -124,7 +124,7 @@ class BaseStrategy(ABC):
 
         Args:
             position: Closed position
-        """
+        ."""
 
     def update_parameters(self, parameters: Dict[str, Any]) -> None:
         """
@@ -132,7 +132,7 @@ class BaseStrategy(ABC):
 
         Args:
             parameters: New parameters
-        """
+        ."""
         self.config.parameters.update(parameters)
 
     def get_parameter(self, key: str, default: Any = None) -> Any:
@@ -145,7 +145,7 @@ class BaseStrategy(ABC):
 
         Returns:
             Parameter value
-        """
+        ."""
         return self.config.parameters.get(key, default)
 
     def get_strategy_info(self) -> Dict[str, Any]:
@@ -154,7 +154,7 @@ class BaseStrategy(ABC):
 
         Returns:
             Dictionary containing strategy information
-        """
+        ."""
         return {
             "name": self.name,
             "symbol": self.symbol,
@@ -175,7 +175,7 @@ class BaseStrategy(ABC):
 
         Args:
             callback: Function to call when signal is generated
-        """
+        ."""
         self.signal_callback = callback
 
     def emit_signal(self, signal: Signal) -> None:
@@ -184,7 +184,7 @@ class BaseStrategy(ABC):
 
         Args:
             signal: Signal to emit
-        """
+        ."""
         if self.signal_callback:
             self.signal_callback(signal)
 
@@ -192,7 +192,7 @@ class BaseStrategy(ABC):
         """
         Reset the strategy state.
         Called when restarting or reinitializing the strategy.
-        """
+        ."""
         self.is_initialized = False
         self.metadata.clear()
 
@@ -209,7 +209,7 @@ class StrategyRegistry:
 
     Provides a centralized way to register, retrieve, and manage
     trading strategies.
-    """
+    ."""
 
     def __init__(self):
         self._strategies: Dict[str, type] = {}
@@ -221,7 +221,7 @@ class StrategyRegistry:
 
         Args:
             strategy_class: Strategy class to register
-        """
+        ."""
         if not issubclass(strategy_class, BaseStrategy):
             raise ValueError("Strategy class must inherit from BaseStrategy")
 
@@ -243,7 +243,7 @@ class StrategyRegistry:
 
         Returns:
             Strategy instance
-        """
+        ."""
         if strategy_name not in self._strategies:
             raise ValueError(f"Strategy '{strategy_name}' is not registered")
 
@@ -265,7 +265,7 @@ class StrategyRegistry:
 
         Returns:
             Strategy instance or None
-        """
+        ."""
         return self._instances.get(instance_key)
 
     def list_strategies(self) -> list[str]:
@@ -274,7 +274,7 @@ class StrategyRegistry:
 
         Returns:
             List of strategy names
-        """
+        ."""
         return list(self._strategies.keys())
 
     def list_instances(self) -> list[str]:
@@ -283,7 +283,7 @@ class StrategyRegistry:
 
         Returns:
             List of instance keys
-        """
+        ."""
         return list(self._instances.keys())
 
     def remove_strategy(self, strategy_name: str) -> None:
@@ -292,7 +292,7 @@ class StrategyRegistry:
 
         Args:
             strategy_name: Name of the strategy to remove
-        """
+        ."""
         if strategy_name in self._strategies:
             del self._strategies[strategy_name]
 

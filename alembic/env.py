@@ -28,7 +28,9 @@ config = context.config
 # Inyectar la URL manualmente desde variable de entorno
 db_url = os.getenv("DATABASE_URL")
 if db_url is None:
-    raise ValueError("DATABASE_URL is not set in environment variables.")
+    # For CI/CD environments without a database, use SQLite as fallback
+    db_url = "sqlite:///./temp_ci_database.db"
+    print("Warning: DATABASE_URL not set, using SQLite fallback for CI")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Logging

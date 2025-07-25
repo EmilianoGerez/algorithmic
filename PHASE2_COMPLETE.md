@@ -64,6 +64,7 @@ Phase 2 successfully implemented multi-timeframe candle aggregation with profess
 ### Architecture Quality
 
 - **Clean Interfaces**: Well-defined APIs with clear responsibilities
+- **Object-Oriented Design**: Self-contained Timeframe objects with bucket calculations
 - **Configurable**: YAML-driven timeframe configuration
 - **Extensible**: Generic ring buffer supports future data types
 - **Professional Documentation**: Google-style docstrings throughout
@@ -75,6 +76,34 @@ Phase 2 successfully implemented multi-timeframe candle aggregation with profess
 - **Timezone Aware**: Proper UTC handling for global markets
 - **Look-ahead Safe**: Strict completion before emission
 - **Production Edge Cases**: DST handling, out-of-order bar policy, stream termination
+
+## 🔄 API Improvements (Post-Implementation)
+
+### Self-Contained Timeframe Objects
+```python
+# Before: Fragmented bucket calculation  
+bucket_id = get_bucket_id(timestamp, tf_minutes)
+
+# After: Self-contained and readable
+bucket_id = timeframe.bucket_id(timestamp)
+bucket_start = timeframe.bucket_start(timestamp)
+```
+
+### Object-Oriented Aggregator Creation  
+```python
+# Before: Raw integers
+aggregator = TimeAggregator(tf_minutes=60)
+
+# After: Self-documenting Timeframe objects
+aggregator = TimeAggregator.from_timeframe(TimeframeConfig.H1)
+```
+
+**Benefits:**
+- **Readability**: `H1.bucket_id(ts)` vs `get_bucket_id(ts, 60)`
+- **Encapsulation**: Timeframe logic contained in `Timeframe` class
+- **Self-Documentation**: `TimeframeConfig.H1` vs magic number `60`
+- **Type Safety**: Strong typing with `Timeframe` objects
+- **Backward Compatibility**: Old API still works
 
 ## 🔒 Edge Case Handling Policies
 
@@ -153,8 +182,18 @@ aggregation:
 
 ```python
 from core.strategy import MultiTimeframeAggregator
+from core.strategy.timeframe import TimeframeConfig
 
-# Create aggregator for H1, H4, D1
+# Recommended: Use Timeframe objects for better encapsulation
+from core.strategy.aggregator import TimeAggregator
+h1_agg = TimeAggregator.from_timeframe(TimeframeConfig.H1)
+h4_agg = TimeAggregator.from_timeframe(TimeframeConfig.H4)
+
+# Self-contained bucket calculations (clean and readable)
+bucket_id = h1_agg.timeframe.bucket_id(candle.ts)
+bucket_start = h1_agg.timeframe.bucket_start(candle.ts)
+
+# Multi-timeframe aggregation (backward compatible)
 aggregator = MultiTimeframeAggregator([60, 240, 1440])
 
 # Process 1-minute candles

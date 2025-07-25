@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 
 from core.entities import Candle
 from core.strategy.ring_buffer import CandleBuffer
 from core.strategy.timeframe import (
-    format_timeframe_name,
-    get_bucket_id,
+    Timeframe,
+    format_timeframe_name,  # Keep for backward compatibility
 )
 
 __all__ = ["TimeAggregator", "MultiTimeframeAggregator"]
@@ -35,8 +34,12 @@ class TimeAggregator:
         buffer_size: Maximum number of source candles to keep in memory.
 
     Example:
+        >>> from core.strategy.timeframe import TimeframeConfig
         >>> aggregator = TimeAggregator(tf_minutes=60)  # H1 aggregator
+        >>> # Or using the new Timeframe objects (recommended):
+        >>> aggregator = TimeAggregator.from_timeframe(TimeframeConfig.H1)
         >>> for minute_candle in minute_candles:
+        ...     h1_candles = aggregator.update(minute_candle)
         ...     h1_candles = aggregator.update(minute_candle)
         ...     for h1_candle in h1_candles:
         ...         print(f"Completed H1: {h1_candle}")
@@ -50,6 +53,49 @@ class TimeAggregator:
     _buffer: CandleBuffer = field(init=False)
     _current_bucket_id: int | None = field(default=None, init=False)
     _name: str = field(init=False)
+    _timeframe: Timeframe | None = field(default=None, init=False)
+
+    @classmethod
+    def from_timeframe(
+        cls,
+        timeframe: Timeframe,
+        source_tf_minutes: int = 1,
+        buffer_size: int = 1500,
+    ) -> TimeAggregator:
+        """Create aggregator from Timeframe object (recommended).
+
+        This provides better encapsulation and self-documenting code.
+
+        Args:
+            timeframe: Timeframe object (e.g., TimeframeConfig.H1).
+            source_tf_minutes: Source timeframe in minutes (typically 1).
+            buffer_size: Maximum number of source candles in memory.
+
+        Returns:
+            Configured TimeAggregator instance.
+
+        Example:
+            >>> from core.strategy.timeframe import TimeframeConfig
+            >>> h1_agg = TimeAggregator.from_timeframe(TimeframeConfig.H1)
+            >>> bucket_id = h1_agg.timeframe.bucket_id(candle.ts)  # Clean and readable
+        """
+        instance = cls(
+            tf_minutes=timeframe.minutes,
+            source_tf_minutes=source_tf_minutes,
+            buffer_size=buffer_size,
+        )
+        instance._timeframe = timeframe
+        return instance
+
+    @property
+    def timeframe(self) -> Timeframe:
+        """Get the timeframe object for this aggregator.
+
+        If created with tf_minutes, creates a Timeframe on-demand.
+        """
+        if self._timeframe is None:
+            self._timeframe = Timeframe(self.tf_minutes, f"TF{self.tf_minutes}")
+        return self._timeframe
 
     def __post_init__(self) -> None:
         """Initialize internal state after dataclass creation."""
@@ -98,19 +144,19 @@ class TimeAggregator:
         # TODO: Optimization opportunity - cache bucket_id calculation
         # For long backtests, store last_bucket_id and only recalculate when
         # timeframe period has potentially changed (5-10% CPU savings)
-        bucket_id = get_bucket_id(candle.ts, self.tf_minutes)
+        bucket_id = self.timeframe.bucket_id(candle.ts)  # Self-contained and readable
         completed_candles: list[Candle] = []
 
         # POLICY: Drop out-of-order bars (late delivery from WebSocket reconnects)
         # Out-of-order detection: incoming candle belongs to an older bucket
         if (
-            self._current_bucket_id is not None 
+            self._current_bucket_id is not None
             and bucket_id < self._current_bucket_id
         ):
             # Late bar detected - drop it to maintain deterministic results
             # JUSTIFICATION:
             # - Prevents unbounded memory growth tracking historical buckets
-            # - Maintains deterministic output regardless of delivery order  
+            # - Maintains deterministic output regardless of delivery order
             # - Simplifies downstream processing (no candle "updates")
             # - Feed reliability should be handled at connection layer
             return []  # Drop the late bar, return no completions
@@ -205,9 +251,10 @@ class TimeAggregator:
             self._buffer.get_ohlcv()
         )
 
-        # Calculate timestamp for start of the completed period
-        bucket_start_minutes = bucket_id * self.tf_minutes
-        timestamp = datetime.fromtimestamp(bucket_start_minutes * 60, tz=UTC)
+        # Calculate timestamp for start of the completed period using timeframe
+        # Use any candle from buffer to get the bucket start time
+        sample_candle = self._buffer[0]  # Get first candle for timestamp reference
+        timestamp = self.timeframe.bucket_start(sample_candle.ts)
 
         return Candle(
             ts=timestamp,

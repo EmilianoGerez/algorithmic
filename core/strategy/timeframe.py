@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import NamedTuple
 
-__all__ = ["TimeframeConfig", "TimeframePeriod", "get_bucket_id", "get_bucket_start"]
+__all__ = ["TimeframeConfig", "TimeframePeriod", "Timeframe", "get_bucket_id", "get_bucket_start"]
 
 
 class TimeframePeriod(NamedTuple):
@@ -19,6 +19,45 @@ class TimeframePeriod(NamedTuple):
         """Total seconds in this timeframe period."""
         return self.minutes * 60
 
+    def bucket_id(self, timestamp: datetime) -> int:
+        """Get bucket ID for timestamp using Unix epoch division.
+
+        This ensures consistent period boundaries without drift.
+        Uses UTC epoch to avoid timezone issues.
+
+        Args:
+            timestamp: UTC datetime to get bucket for.
+
+        Returns:
+            Bucket ID as integer (minutes since epoch / timeframe_minutes).
+
+        Example:
+            >>> h1 = TimeframePeriod(60, "H1")
+            >>> ts = datetime(2024, 1, 1, 10, 30, 0, tzinfo=UTC)
+            >>> bucket_id = h1.bucket_id(ts)  # Self-contained and readable
+        """
+        epoch_minutes = int(timestamp.timestamp()) // 60
+        return epoch_minutes // self.minutes
+
+    def bucket_start(self, timestamp: datetime) -> datetime:
+        """Get start time of bucket containing the given timestamp.
+
+        Args:
+            timestamp: UTC datetime to get bucket start for.
+
+        Returns:
+            UTC datetime of bucket start.
+
+        Example:
+            >>> h1 = TimeframePeriod(60, "H1")
+            >>> ts = datetime(2024, 1, 1, 10, 30, 0, tzinfo=UTC)
+            >>> start = h1.bucket_start(ts)  # 2024-01-01 10:00:00+00:00
+        """
+        bucket_id = self.bucket_id(timestamp)
+        start_epoch_minutes = bucket_id * self.minutes
+        start_timestamp = start_epoch_minutes * 60
+        return datetime.fromtimestamp(start_timestamp, tz=UTC)
+
     def __str__(self) -> str:
         """Human-readable string representation."""
         return f"{self.name}({self.minutes} min)"
@@ -28,20 +67,24 @@ class TimeframePeriod(NamedTuple):
         return f"TimeframePeriod(minutes={self.minutes}, name='{self.name}')"
 
 
-class TimeframeConfig:
-    """Standard timeframe configurations."""
+# Alias for backward compatibility and cleaner API
+Timeframe = TimeframePeriod
 
-    M1 = TimeframePeriod(1, "M1")
-    M5 = TimeframePeriod(5, "M5")
-    M15 = TimeframePeriod(15, "M15")
-    M30 = TimeframePeriod(30, "M30")
-    H1 = TimeframePeriod(60, "H1")
-    H2 = TimeframePeriod(120, "H2")
-    H4 = TimeframePeriod(240, "H4")
-    H6 = TimeframePeriod(360, "H6")
-    H12 = TimeframePeriod(720, "H12")
-    D1 = TimeframePeriod(1440, "D1")
-    W1 = TimeframePeriod(10080, "W1")  # 7 * 24 * 60
+
+class TimeframeConfig:
+    """Standard timeframe configurations using Timeframe objects."""
+
+    M1 = Timeframe(1, "M1")
+    M5 = Timeframe(5, "M5")
+    M15 = Timeframe(15, "M15")
+    M30 = Timeframe(30, "M30")
+    H1 = Timeframe(60, "H1")
+    H2 = Timeframe(120, "H2")
+    H4 = Timeframe(240, "H4")
+    H6 = Timeframe(360, "H6")
+    H12 = Timeframe(720, "H12")
+    D1 = Timeframe(1440, "D1")
+    W1 = Timeframe(10080, "W1")  # 7 * 24 * 60
 
 
 def get_bucket_id(timestamp: datetime, tf_minutes: int) -> int:

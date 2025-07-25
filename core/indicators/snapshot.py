@@ -12,7 +12,7 @@ __all__ = ["IndicatorSnapshot"]
 class IndicatorSnapshot:
     """
     Immutable snapshot of all indicator values at a specific point in time.
-    
+
     Used by FSM and decision logic to ensure no look-ahead bias.
     All values captured AFTER updating indicators with current candle.
     """

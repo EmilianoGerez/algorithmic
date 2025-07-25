@@ -15,24 +15,24 @@ __all__ = ["IndicatorPack"]
 @dataclass
 class IndicatorPack:
     """Central coordinator for all technical indicators.
-    
+
     Manages a suite of technical indicators and provides a unified interface
     for updates and state capture. Ensures all indicators stay synchronized
     and provides immutable snapshots for decision making.
-    
+
     The pack includes:
         - EMA21 and EMA50 for trend analysis
-        - ATR for volatility measurement  
+        - ATR for volatility measurement
         - Volume SMA for volume analysis
         - Regime detector for market classification
-        
+
     Args:
         ema21_period: Period for fast EMA. Default 21.
         ema50_period: Period for slow EMA. Default 50.
         atr_period: Period for ATR calculation. Default 14.
         volume_sma_period: Period for volume averaging. Default 20.
         regime_sensitivity: Slope filter threshold for regime detection. Default 0.001.
-        
+
     Example:
         >>> pack = IndicatorPack()
         >>> pack.update(candle)
@@ -60,13 +60,13 @@ class IndicatorPack:
 
     def update(self, candle: Candle) -> None:
         """Update all indicators with new candle data.
-        
+
         Synchronously updates all indicators maintaining consistency across
         the indicator suite. This is the primary method for feeding new data.
-        
+
         Args:
             candle: New candle data containing OHLCV information.
-            
+
         Note:
             Call this once per candle to maintain synchronization across
             all indicators in the pack.
@@ -83,17 +83,17 @@ class IndicatorPack:
 
     def snapshot(self) -> IndicatorSnapshot:
         """Create immutable snapshot of current indicator state.
-        
+
         Captures the state of all indicators AFTER updating with the current
         candle. This ensures no look-ahead bias in decision making algorithms.
-        
+
         Returns:
             Immutable snapshot containing all indicator values and derived
             properties at the current timestamp.
-            
+
         Raises:
             ValueError: If called before any candle has been processed.
-            
+
         Example:
             >>> pack.update(candle)
             >>> snapshot = pack.snapshot()

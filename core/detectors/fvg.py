@@ -24,7 +24,7 @@ class FVGDetector:
         self._buffer.append(candle)
         if len(self._buffer) < 3:
             return []
-        prev, curr, nxt = self._buffer[-3], self._buffer[-2], self._buffer[-1]
+        prev, _curr, nxt = self._buffer[-3], self._buffer[-2], self._buffer[-1]
         events = []
         if prev.high < nxt.low:      # bullish gap
             events.append(FVGEvent(ts=nxt.ts, top=nxt.low, bottom=prev.high, tf=self.tf))

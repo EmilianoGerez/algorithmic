@@ -11,14 +11,14 @@ __all__ = ["VolumeSMA"]
 @dataclass
 class VolumeSMA:
     """Simple Moving Average of volume for volume analysis.
-    
+
     Tracks average volume over a specified period to identify volume surges
     and changes in market participation. Used for regime detection and
     signal filtering.
-    
+
     Args:
         period: Number of periods for volume averaging. Typically 20.
-        
+
     Example:
         >>> vol_sma = VolumeSMA(period=20)
         >>> vol_sma.update(candle)
@@ -33,7 +33,7 @@ class VolumeSMA:
 
     def update(self, candle: Candle) -> None:
         """Update Volume SMA with new candle data.
-        
+
         Args:
             candle: New candle containing volume information.
         """
@@ -58,16 +58,16 @@ class VolumeSMA:
 
     def volume_multiple(self, current_volume: float) -> float | None:
         """Calculate volume multiple versus average volume.
-        
+
         Compares current volume to the SMA to identify volume surges or lulls.
-        
+
         Args:
             current_volume: Volume value to compare against average.
-            
+
         Returns:
             Multiple of current volume vs SMA (e.g. 2.5 = 250% of average).
             None if SMA not ready or is zero.
-            
+
         Example:
             >>> multiple = vol_sma.volume_multiple(3000)
             >>> if multiple and multiple > 2.0:

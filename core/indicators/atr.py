@@ -11,20 +11,20 @@ __all__ = ["ATR"]
 @dataclass
 class ATR:
     """Average True Range (ATR) indicator for volatility measurement.
-    
-    The ATR is a technical analysis indicator that measures market volatility by 
+
+    The ATR is a technical analysis indicator that measures market volatility by
     decomposing the entire range of an asset price for that period. It is calculated
     as the simple moving average of the True Range values over a specified period.
-    
+
     True Range is defined as:
         max(high - low, abs(high - prev_close), abs(low - prev_close))
-    
+
     Args:
         period: Number of periods to use for ATR calculation. Typically 14.
-        
+
     Attributes:
         period: The period length for ATR calculation.
-        
+
     Example:
         >>> atr = ATR(period=14)
         >>> atr.update(candle)
@@ -40,14 +40,14 @@ class ATR:
 
     def update(self, candle: Candle) -> None:
         """Update ATR with new candle data.
-        
+
         Calculates the True Range for the current candle and updates the ATR
         using a simple moving average. The ATR value becomes available once
         enough candles have been processed (equal to the period).
-        
+
         Args:
             candle: The new candle data containing OHLCV information.
-            
+
         Note:
             For the first candle, True Range is simply high - low since no
             previous close is available.
@@ -76,7 +76,7 @@ class ATR:
     @property
     def value(self) -> float | None:
         """Current ATR value.
-        
+
         Returns:
             The current ATR value if enough data is available, None otherwise.
             ATR represents the average volatility over the specified period.
@@ -86,7 +86,7 @@ class ATR:
     @property
     def is_ready(self) -> bool:
         """Check if ATR has sufficient data to produce valid values.
-        
+
         Returns:
             True if ATR has processed enough candles (equal to period),
             False otherwise.

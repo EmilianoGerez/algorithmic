@@ -11,7 +11,7 @@ __all__ = ["Regime", "RegimeDetector"]
 
 class Regime(Enum):
     """Market regime classification for trend analysis.
-    
+
     Used to classify market conditions based on EMA alignment and trend strength.
     Provides ergonomic comparison methods for strategy filtering.
     """
@@ -43,24 +43,24 @@ class Regime(Enum):
 @dataclass
 class RegimeDetector:
     """Market regime classification based on EMA alignment with optional slope filter.
-    
+
     Classifies market conditions into BULL, BEAR, or NEUTRAL states based on the
     relationship between fast and slow EMAs. An optional slope filter helps avoid
     whipsaw signals during sideways markets.
-    
+
     Classification Logic:
         - EMA21 > EMA50 → BULL (if slope filter passes)
-        - EMA21 < EMA50 → BEAR (if slope filter passes)  
+        - EMA21 < EMA50 → BEAR (if slope filter passes)
         - Otherwise → NEUTRAL
-        
+
     Slope Filter:
         When enabled, requires (EMA21 - EMA50) / ATR > sensitivity threshold
         to avoid classifying minor EMA crossovers as regime changes.
-    
+
     Args:
         sensitivity: Slope filter threshold. Higher values require stronger
                     trends to classify as BULL/BEAR. Default 0.001.
-                    
+
     Example:
         >>> detector = RegimeDetector(sensitivity=0.002)
         >>> detector.update(candle, atr_value)
@@ -77,10 +77,10 @@ class RegimeDetector:
 
     def update(self, candle: Candle, atr_value: float | None = None) -> None:
         """Update regime classification with new candle data.
-        
+
         Updates the internal EMAs and prepares for regime classification.
         The ATR value is stored for potential use in slope filtering.
-        
+
         Args:
             candle: New candle data containing OHLCV information.
             atr_value: Current ATR value for slope filtering. Optional.
@@ -91,7 +91,7 @@ class RegimeDetector:
     @property
     def regime(self) -> Regime | None:
         """Current market regime without slope filtering.
-        
+
         Returns:
             Current regime classification (BULL/BEAR/NEUTRAL) or None
             if insufficient EMA data is available.
@@ -112,14 +112,14 @@ class RegimeDetector:
 
     def regime_with_slope_filter(self, atr_value: float | None) -> Regime | None:
         """Regime classification with slope filter to avoid whipsaws.
-        
+
         Applies a slope filter that requires the EMA difference to exceed
         a threshold relative to ATR before classifying as trending.
-        
+
         Args:
             atr_value: Current ATR value for slope strength calculation.
                       If None, basic regime logic is applied.
-                      
+
         Returns:
             Regime classification with slope filter applied, or None
             if insufficient data.

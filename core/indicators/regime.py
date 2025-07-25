@@ -15,6 +15,7 @@ class Regime(Enum):
     Used to classify market conditions based on EMA alignment and trend strength.
     Provides ergonomic comparison methods for strategy filtering.
     """
+
     BULL = 1
     BEAR = -1
     NEUTRAL = 0
@@ -67,6 +68,7 @@ class RegimeDetector:
         >>> if detector.regime and detector.regime.is_bullish:
         ...     # Handle bullish regime
     """
+
     sensitivity: float = 0.001
 
     def __post_init__(self) -> None:

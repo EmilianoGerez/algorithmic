@@ -10,7 +10,7 @@ from core.entities import Candle
 
 __all__ = ["RingBuffer", "CandleBuffer"]
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RingBuffer(Generic[T]):

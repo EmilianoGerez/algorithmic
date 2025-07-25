@@ -52,8 +52,10 @@ class IndicatorRegistry:
             TypeError: If invalid arguments are provided.
         """
         if name not in self._registry:
-            raise KeyError(f"Indicator '{name}' not found in registry. "
-                          f"Available: {list(self._registry.keys())}")
+            raise KeyError(
+                f"Indicator '{name}' not found in registry. "
+                f"Available: {list(self._registry.keys())}"
+            )
 
         indicator_class = self._registry[name]
         return indicator_class(**kwargs)

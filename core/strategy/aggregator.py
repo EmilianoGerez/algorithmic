@@ -102,7 +102,9 @@ class TimeAggregator:
         if self._current_bucket_id is not None and bucket_id != self._current_bucket_id:
             # We've moved to a new period - emit the completed previous period
             if len(self._buffer) > 0:  # Ensure we have data to aggregate
-                completed_candle = self._create_aggregated_candle(self._current_bucket_id)
+                completed_candle = self._create_aggregated_candle(
+                    self._current_bucket_id
+                )
                 completed_candles.append(completed_candle)
 
             # Clear buffer for new period (keep memory usage bounded)
@@ -132,8 +134,10 @@ class TimeAggregator:
         completed_candles: list[Candle] = []
 
         # Only emit if we have a complete period
-        if (self._current_bucket_id is not None and
-            len(self._buffer) >= self.candles_per_period):
+        if (
+            self._current_bucket_id is not None
+            and len(self._buffer) >= self.candles_per_period
+        ):
             completed_candle = self._create_aggregated_candle(self._current_bucket_id)
             completed_candles.append(completed_candle)
 
@@ -159,7 +163,9 @@ class TimeAggregator:
             raise ValueError("Cannot create aggregated candle from empty buffer")
 
         # Calculate OHLCV from buffer
-        open_price, high_price, low_price, close_price, volume = self._buffer.get_ohlcv()
+        open_price, high_price, low_price, close_price, volume = (
+            self._buffer.get_ohlcv()
+        )
 
         # Calculate timestamp for start of the completed period
         bucket_start_minutes = bucket_id * self.tf_minutes
@@ -171,7 +177,7 @@ class TimeAggregator:
             high=high_price,
             low=low_price,
             close=close_price,
-            volume=volume
+            volume=volume,
         )
 
     def reset(self) -> None:
@@ -222,7 +228,7 @@ class MultiTimeframeAggregator:
             aggregator = TimeAggregator(
                 tf_minutes=tf_minutes,
                 source_tf_minutes=self.source_tf_minutes,
-                buffer_size=self.buffer_size
+                buffer_size=self.buffer_size,
             )
             self._aggregators[aggregator.name] = aggregator
 

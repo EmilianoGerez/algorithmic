@@ -10,6 +10,7 @@ __all__ = ["TimeframeConfig", "TimeframePeriod", "get_bucket_id", "get_bucket_st
 
 class TimeframePeriod(NamedTuple):
     """Timeframe period configuration."""
+
     minutes: int
     name: str
 

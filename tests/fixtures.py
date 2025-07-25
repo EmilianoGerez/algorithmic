@@ -27,12 +27,13 @@ def create_test_candles(count: int = 50, base_price: float = 100.0) -> list[Cand
             high=high_price,
             low=low_price,
             close=close_price,
-            volume=volume
+            volume=volume,
         )
         candles.append(candle)
         current_price = close_price
 
     return candles
+
 
 def create_trending_candles(count: int = 50, trend: str = "up") -> list[Candle]:
     """Create trending candles for regime testing."""
@@ -60,7 +61,7 @@ def create_trending_candles(count: int = 50, trend: str = "up") -> list[Candle]:
             high=high_price,
             low=low_price,
             close=close_price,
-            volume=volume
+            volume=volume,
         )
         candles.append(candle)
         current_price = close_price

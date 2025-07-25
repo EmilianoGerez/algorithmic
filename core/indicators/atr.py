@@ -31,6 +31,7 @@ class ATR:
         >>> if atr.is_ready:
         ...     volatility = atr.value
     """
+
     period: int
 
     def __post_init__(self) -> None:
@@ -60,7 +61,7 @@ class ATR:
             true_range = max(
                 candle.high - candle.low,
                 abs(candle.high - self._prev_close),
-                abs(candle.low - self._prev_close)
+                abs(candle.low - self._prev_close),
             )
 
         self._true_ranges.append(true_range)

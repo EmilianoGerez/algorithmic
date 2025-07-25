@@ -25,6 +25,7 @@ class VolumeSMA:
         >>> if vol_sma.is_ready:
         ...     surge = vol_sma.volume_multiple(current_volume) > 2.0
     """
+
     period: int
 
     def __post_init__(self) -> None:

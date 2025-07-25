@@ -16,6 +16,7 @@ class IndicatorSnapshot:
     Used by FSM and decision logic to ensure no look-ahead bias.
     All values captured AFTER updating indicators with current candle.
     """
+
     timestamp: datetime
     ema21: float | None
     ema50: float | None
@@ -29,13 +30,15 @@ class IndicatorSnapshot:
     @property
     def is_ready(self) -> bool:
         """True if all core indicators have valid values."""
-        return all([
-            self.ema21 is not None,
-            self.ema50 is not None,
-            self.atr is not None,
-            self.volume_sma is not None,
-            self.regime is not None
-        ])
+        return all(
+            [
+                self.ema21 is not None,
+                self.ema50 is not None,
+                self.atr is not None,
+                self.volume_sma is not None,
+                self.regime is not None,
+            ]
+        )
 
     @property
     def ema_aligned_bullish(self) -> bool:

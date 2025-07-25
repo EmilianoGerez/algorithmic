@@ -41,6 +41,7 @@ class IndicatorPack:
         ...     if snapshot.regime.is_bullish:
         ...         # Process bullish signal
     """
+
     ema21_period: int = 21
     ema50_period: int = 50
     atr_period: int = 14
@@ -110,20 +111,24 @@ class IndicatorPack:
             atr=self.atr.value,
             volume_sma=self.volume_sma.value,
             regime=self.regime_detector.regime,
-            regime_with_slope=self.regime_detector.regime_with_slope_filter(self.atr.value),
+            regime_with_slope=self.regime_detector.regime_with_slope_filter(
+                self.atr.value
+            ),
             current_volume=self._last_candle.volume,
-            current_close=self._last_candle.close
+            current_close=self._last_candle.close,
         )
 
     @property
     def is_ready(self) -> bool:
         """True if all indicators have sufficient data."""
-        return all([
-            self.ema21.value is not None,
-            self.ema50.value is not None,
-            self.atr.is_ready,
-            self.volume_sma.is_ready
-        ])
+        return all(
+            [
+                self.ema21.value is not None,
+                self.ema50.value is not None,
+                self.atr.is_ready,
+                self.volume_sma.is_ready,
+            ]
+        )
 
     @property
     def warmup_periods_needed(self) -> int:
@@ -132,5 +137,5 @@ class IndicatorPack:
             self.ema21_period,
             self.ema50_period,
             self.atr_period,
-            self.volume_sma_period
+            self.volume_sma_period,
         )

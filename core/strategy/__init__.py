@@ -15,11 +15,9 @@ __all__ = [
     "get_bucket_id",
     "get_bucket_start",
     "format_timeframe_name",
-
     # Ring buffer components
     "RingBuffer",
     "CandleBuffer",
-
     # Aggregation components
     "TimeAggregator",
     "MultiTimeframeAggregator",

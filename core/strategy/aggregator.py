@@ -95,8 +95,25 @@ class TimeAggregator:
             ...     h1_candle = result[0]
             ...     print(f"H1 complete: {h1_candle.close}")
         """
+        # TODO: Optimization opportunity - cache bucket_id calculation
+        # For long backtests, store last_bucket_id and only recalculate when
+        # timeframe period has potentially changed (5-10% CPU savings)
         bucket_id = get_bucket_id(candle.ts, self.tf_minutes)
         completed_candles: list[Candle] = []
+
+        # POLICY: Drop out-of-order bars (late delivery from WebSocket reconnects)
+        # Out-of-order detection: incoming candle belongs to an older bucket
+        if (
+            self._current_bucket_id is not None 
+            and bucket_id < self._current_bucket_id
+        ):
+            # Late bar detected - drop it to maintain deterministic results
+            # JUSTIFICATION:
+            # - Prevents unbounded memory growth tracking historical buckets
+            # - Maintains deterministic output regardless of delivery order  
+            # - Simplifies downstream processing (no candle "updates")
+            # - Feed reliability should be handled at connection layer
+            return []  # Drop the late bar, return no completions
 
         # Check if we're starting a new bucket (period boundary crossed)
         if self._current_bucket_id is not None and bucket_id != self._current_bucket_id:
@@ -115,6 +132,27 @@ class TimeAggregator:
         self._current_bucket_id = bucket_id
 
         return completed_candles
+
+    def update_with_label(self, candle: Candle) -> list[tuple[str, Candle]]:
+        """Update aggregator with new source candle, returning labeled results.
+
+        Returns completed target timeframe candles with their timeframe labels.
+        This method is useful for downstream routing without additional lookups.
+
+        Args:
+            candle: New source timeframe candle (typically 1-minute).
+
+        Returns:
+            List of (timeframe_name, completed_candle) tuples.
+
+        Example:
+            >>> aggregator = TimeAggregator(tf_minutes=60)
+            >>> results = aggregator.update_with_label(minute_candle)
+            >>> for tf_name, tf_candle in results:
+            ...     print(f"{tf_name}: {tf_candle.close}")
+        """
+        completed_candles = self.update(candle)
+        return [(self.name, candle) for candle in completed_candles]
 
     def flush(self) -> list[Candle]:
         """Flush any remaining complete periods at stream end.

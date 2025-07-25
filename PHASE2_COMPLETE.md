@@ -31,9 +31,9 @@ Phase 2 successfully implemented multi-timeframe candle aggregation with profess
 
 4. **`test_aggregator.py`** - Comprehensive validation
 
-   - 17 test cases covering all functionality
+   - 21 test cases covering all functionality
    - Real-world scenarios (market hours, weekend gaps)
-   - Edge cases and error conditions
+   - Edge cases and error conditions (DST, out-of-order bars, stream termination)
    - All tests passing ✅
 
 5. **`demo_phase2.py`** - Validation demo
@@ -74,6 +74,34 @@ Phase 2 successfully implemented multi-timeframe candle aggregation with profess
 - **Ring Buffer Storage**: Memory-efficient with automatic overflow handling
 - **Timezone Aware**: Proper UTC handling for global markets
 - **Look-ahead Safe**: Strict completion before emission
+- **Production Edge Cases**: DST handling, out-of-order bar policy, stream termination
+
+## 🔒 Edge Case Handling Policies
+
+### DST Transition Handling
+
+- **Policy**: UTC epoch-based bucketing prevents DST issues
+- **Rationale**: Unix timestamps are immune to local time ambiguity
+- **Implementation**: All timeframe boundaries calculated from UTC epoch minutes
+- **Validation**: Test with November 2024 DST "fall back" scenario
+
+### Out-of-Order Bar Policy
+
+- **Policy**: DROP late-arriving bars (no re-aggregation)
+- **Rationale**:
+  - Prevents unbounded memory growth tracking historical buckets
+  - Maintains deterministic output regardless of delivery order
+  - Simplifies downstream processing (no candle "updates")
+  - Feed reliability should be handled at connection layer
+- **Implementation**: Detect `bucket_id < current_bucket_id` and return empty list
+- **Validation**: Test WebSocket reconnect late delivery scenario
+
+### Stream Termination Policy
+
+- **Policy**: Incomplete periods are NEVER emitted (strict look-ahead prevention)
+- **Rationale**: Trading systems require complete periods only to avoid bias
+- **Implementation**: `flush()` method returns empty list for incomplete buckets
+- **Validation**: Test 59-minute stream (1 short of H1) produces zero candles
 
 ## 📊 Performance Validation
 
@@ -137,6 +165,38 @@ for minute_candle in data_stream:
     for tf_name, completed_candles in results.items():
         for candle in completed_candles:
             print(f"{tf_name}: {candle.close}")
+```
+
+### Live Demo Output
+
+Run `python demo_phase2.py` to see the full validation suite:
+
+```bash
+🚀 Phase 2: TimeAggregator Validation Suite
+==================================================
+=== Phase 2 Acceptance Criteria Demo ===
+Input: 121 1-minute candles
+Expected: Exactly 2 complete H1 candles
+
+Created 121 1-minute candles
+Time range: 2024-01-01 10:00:00+00:00 to 2024-01-01 12:00:00+00:00
+
+✅ H1 candle completed at minute 61
+   H1: 2024-01-01 10:00:00+00:00 | O:99.50 H:101.49 L:99.20 C:101.19 V:61770
+✅ H1 candle completed at minute 121
+   H1: 2024-01-01 11:00:00+00:00 | O:100.10 H:102.09 L:99.80 C:101.79 V:65370
+
+✅ RESULT: 2 H1 candles completed
+✅ ACCEPTANCE CRITERIA: PASSED
+
+🎯 PHASE 2 VALIDATION SUMMARY
+==================================================
+Acceptance Criteria (121→2) ✅ PASSED
+Multi-timeframe           ✅ PASSED
+Performance (500k<1s)     ✅ PASSED
+Memory Efficiency         ✅ PASSED
+
+🎉 ALL PHASE 2 TESTS PASSED!
 ```
 
 ## 🎯 Ready for Phase 3

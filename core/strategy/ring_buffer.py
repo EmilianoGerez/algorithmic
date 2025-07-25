@@ -59,6 +59,10 @@ class RingBuffer(Generic[T]):
         """Iterate over items from oldest to newest."""
         return iter(self._buffer)
 
+    def __repr__(self) -> str:
+        """Developer-friendly representation."""
+        return f"RingBuffer(size={len(self)}/{self._maxsize}, items={len(self._buffer)})"
+
     def __getitem__(self, index: int) -> T:
         """Get item by index (0 = oldest, -1 = newest)."""
         return self._buffer[index]

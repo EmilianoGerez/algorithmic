@@ -21,6 +21,9 @@ aggregation:
   target_timeframes_minutes: [60, 240, 1440] # H1, H4, D1
   buffer_size: 1500 # Ring buffer size for memory efficiency
 
+  # Aggregation strategy
+  roll_from: "source" # "source" = from-scratch aggregation, "lower_tf" = H1→H4 chaining
+
   # Performance settings
   max_candles_per_update: 10 # Batch processing limit
   enable_streaming: true # Real-time vs batch mode

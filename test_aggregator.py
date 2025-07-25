@@ -1,6 +1,6 @@
 """Test suite for multi-timeframe aggregation components."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -418,3 +418,240 @@ class TestRealWorldScenarios:
         friday_h1 = completed_candles[0]
         assert friday_h1.open == 100.0
         assert friday_h1.close == 100.5
+
+    def test_weekend_gap_d1_aggregation(self):
+        """Test D1 aggregation with weekend gap produces single wide candle."""
+        aggregator = TimeAggregator(tf_minutes=1440)  # D1 aggregator
+
+        # Friday data - create a full day of data
+        friday = datetime(2024, 1, 5, 0, 0, 0, tzinfo=UTC)  # Friday
+        friday_candles = []
+        for i in range(1440):  # Full day = 1440 minutes
+            timestamp = friday + timedelta(minutes=i)
+            candle = Candle(
+                ts=timestamp,
+                open=100.0 + (i * 0.001),  # Gradual price movement
+                high=100.5 + (i * 0.001),
+                low=99.5 + (i * 0.001),
+                close=100.2 + (i * 0.001),
+                volume=1000,
+            )
+            friday_candles.append(candle)
+
+        # Monday data - after 48-hour weekend gap
+        monday = datetime(2024, 1, 8, 0, 0, 0, tzinfo=UTC)  # Monday
+        monday_candles = []
+        for i in range(1440):  # Full day
+            timestamp = monday + timedelta(minutes=i)
+            candle = Candle(
+                ts=timestamp,
+                open=102.0 + (i * 0.001),
+                high=102.5 + (i * 0.001),
+                low=101.5 + (i * 0.001),
+                close=102.2 + (i * 0.001),
+                volume=1200,
+            )
+            monday_candles.append(candle)
+
+        completed_candles = []
+
+        # Process Friday (should not complete until Monday starts)
+        for candle in friday_candles:
+            result = aggregator.update(candle)
+            completed_candles.extend(result)
+
+        # No D1 should be completed yet
+        assert len(completed_candles) == 0
+
+        # Process Monday data - should trigger Friday D1 completion
+        for candle in monday_candles:
+            result = aggregator.update(candle)
+            completed_candles.extend(result)
+
+        # Should have exactly one Friday D1 candle despite weekend gap
+        assert len(completed_candles) == 1
+
+        friday_d1 = completed_candles[0]
+        # Should represent Friday's date (2024-01-05)
+        assert friday_d1.ts.date() == datetime(2024, 1, 5).date()
+
+        # OHLCV should reflect full Friday trading session
+        assert friday_d1.open == 100.0  # First minute open
+        assert abs(friday_d1.close - 101.639) < 1e-10  # Last minute close (100.2 + 1439*0.001)
+        assert friday_d1.volume == 1440000  # Sum of all Friday volumes
+
+        # The weekend gap doesn't create an artificial wide candle
+        # - it's just one complete D1 period for Friday
+
+    def test_dst_fallback_hour_handling(self):
+        """Test DST fall-back hour with repeated timestamps (UTC epoch prevents issues)."""
+        aggregator = TimeAggregator(tf_minutes=60)  # H1 aggregator
+
+        # Simulate the DST "fall back" scenario where local time repeats
+        # but UTC epoch time is always increasing
+        # November 3, 2024 - DST ends at 2:00 AM, clocks "fall back" to 1:00 AM
+
+        base_utc = datetime(2024, 11, 3, 6, 0, 0, tzinfo=UTC)  # 6:00 UTC
+
+        # Create 180 minutes of data crossing the problematic local time period
+        # This represents 3 hours of UTC time, should produce 3 H1 candles
+        candles = []
+        for i in range(180):
+            timestamp = base_utc + timedelta(minutes=i)
+            candle = Candle(
+                ts=timestamp,
+                open=100.0 + i * 0.01,
+                high=101.0 + i * 0.01,
+                low=99.0 + i * 0.01,
+                close=100.5 + i * 0.01,
+                volume=1000
+            )
+            candles.append(candle)
+
+        completed_candles = []
+        for candle in candles:
+            result = aggregator.update(candle)
+            completed_candles.extend(result)
+
+        # Should get exactly 2 complete H1 candles (hours 6-7 and 7-8 UTC)
+        # The third hour (8-9) is incomplete with only 60 minutes
+        assert len(completed_candles) == 2
+
+        # Verify proper UTC-based bucketing (not affected by local DST)
+        h1_candle_1 = completed_candles[0]
+        h1_candle_2 = completed_candles[1]
+
+        assert h1_candle_1.ts == datetime(2024, 11, 3, 6, 0, 0, tzinfo=UTC)
+        assert h1_candle_2.ts == datetime(2024, 11, 3, 7, 0, 0, tzinfo=UTC)
+
+        # OHLCV should be correctly aggregated despite any local time ambiguity
+        assert h1_candle_1.open == 100.0  # First minute
+        assert h1_candle_1.close == 101.09  # 60th minute: 100.5 + 59*0.01
+        assert h1_candle_1.volume == 60000  # 60 minutes * 1000 volume
+
+    def test_out_of_order_bars_policy(self):
+        """Test handling of out-of-order bars (late delivery from WebSocket reconnect)."""
+        aggregator = TimeAggregator(tf_minutes=60)  # H1 aggregator
+
+        # Create a normal sequence of bars
+        base_time = datetime(2024, 1, 1, 10, 0, 0, tzinfo=UTC)
+
+        # Send bars 0-58 in order
+        in_order_candles = []
+        for i in range(60):  # 0 to 59
+            timestamp = base_time + timedelta(minutes=i)
+            candle = Candle(
+                ts=timestamp,
+                open=100.0 + i,
+                high=110.0 + i,
+                low=95.0 + i,
+                close=105.0 + i,
+                volume=1000
+            )
+            in_order_candles.append(candle)
+
+        # Now send a late bar from earlier in the same bucket (out of order)
+        late_candle = Candle(
+            ts=base_time + timedelta(minutes=30),  # Bar for 10:30, arrives late
+            open=130.5,  # Different values from the "in-order" bar 30
+            high=140.5,
+            low=125.5,
+            close=135.5,
+            volume=1200
+        )
+
+        completed_candles = []
+
+        # Process in-order bars (all 60 candles)
+        for candle in in_order_candles:
+            result = aggregator.update(candle)
+            completed_candles.extend(result)
+
+        # Send one bar from next hour to trigger completion
+        next_hour_candle = Candle(
+            ts=base_time + timedelta(minutes=60),  # 11:00 (next hour)
+            open=200.0,
+            high=210.0,
+            low=195.0,
+            close=205.0,
+            volume=1000
+        )
+        result = aggregator.update(next_hour_candle)
+        completed_candles.extend(result)
+
+        # Should have 1 completed H1 candle after crossing to next hour
+        assert len(completed_candles) == 1
+        h1_candle = completed_candles[0]
+
+        # Record the OHLCV before late bar
+        original_open = h1_candle.open
+        original_high = h1_candle.high
+        original_low = h1_candle.low
+        original_close = h1_candle.close
+        original_volume = h1_candle.volume
+
+        # Now send the late bar (POLICY DECISION: DROP OUT-OF-ORDER BARS)
+        # This prevents re-aggregation complexity and maintains deterministic results
+        result_late = aggregator.update(late_candle)
+
+        # Late bar should be dropped (no new completions, existing candle unchanged)
+        assert len(result_late) == 0
+        assert len(completed_candles) == 1  # Still only 1 candle
+
+        # Original H1 candle should be unchanged (late bar dropped)
+        assert h1_candle.open == original_open
+        assert h1_candle.high == original_high
+        assert h1_candle.low == original_low
+        assert h1_candle.close == original_close
+        assert h1_candle.volume == original_volume
+
+        # POLICY JUSTIFICATION:
+        # - Prevents unbounded memory growth tracking "still open" historical buckets
+        # - Maintains deterministic output regardless of delivery order
+        # - Simplifies downstream processing (no need to handle candle "updates")
+        # - Trading systems should handle feed reliability at the connection layer
+
+    def test_stream_termination_mid_bucket(self):
+        """Test that incomplete buckets are discarded on stream termination."""
+        aggregator = TimeAggregator(tf_minutes=60)  # H1 aggregator
+
+        # Send exactly 59 bars (1 minute short of complete H1)
+        base_time = datetime(2024, 1, 1, 10, 0, 0, tzinfo=UTC)
+        incomplete_candles = []
+
+        for i in range(59):  # 0 to 58 (missing minute 59)
+            timestamp = base_time + timedelta(minutes=i)
+            candle = Candle(
+                ts=timestamp,
+                open=100.0 + i,
+                high=110.0 + i,
+                low=95.0 + i,
+                close=105.0 + i,
+                volume=1000
+            )
+            incomplete_candles.append(candle)
+
+        completed_during_stream = []
+
+        # Process all 59 bars
+        for candle in incomplete_candles:
+            result = aggregator.update(candle)
+            completed_during_stream.extend(result)
+
+        # Should have NO completed H1 candles during processing
+        assert len(completed_during_stream) == 0
+
+        # Simulate stream termination - try to flush incomplete period
+        flushed_candles = aggregator.flush()
+
+        # Should have NO candles from flush (incomplete period discarded)
+        assert len(flushed_candles) == 0
+
+        # Total candles emitted should be 0
+        total_emitted = len(completed_during_stream) + len(flushed_candles)
+        assert total_emitted == 0
+
+        # POLICY VERIFICATION:
+        # - Incomplete periods are never emitted (prevents look-ahead bias)
+        # - Stream termination doesn't force emission of partial data
+        # - Trading systems get clean, complete candles only

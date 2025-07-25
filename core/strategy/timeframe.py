@@ -19,6 +19,14 @@ class TimeframePeriod(NamedTuple):
         """Total seconds in this timeframe period."""
         return self.minutes * 60
 
+    def __str__(self) -> str:
+        """Human-readable string representation."""
+        return f"{self.name}({self.minutes} min)"
+
+    def __repr__(self) -> str:
+        """Developer-friendly representation."""
+        return f"TimeframePeriod(minutes={self.minutes}, name='{self.name}')"
+
 
 class TimeframeConfig:
     """Standard timeframe configurations."""

@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol, Literal
+from typing import Protocol
 
 __all__ = ["Candle", "Event"]
 

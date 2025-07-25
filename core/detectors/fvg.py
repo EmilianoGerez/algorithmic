@@ -1,9 +1,11 @@
 """Incremental FVG detector — skeleton implementation."""
 from __future__ import annotations
-from typing import List
+
 from dataclasses import dataclass
+from datetime import datetime
+
 from core.entities import Candle
-from datetime import timedelta, datetime
+
 
 @dataclass(frozen=True)
 class FVGEvent:
@@ -15,7 +17,7 @@ class FVGEvent:
 class FVGDetector:
     def __init__(self, tf: str):
         self.tf = tf
-        self._buffer: List[Candle] = []
+        self._buffer: list[Candle] = []
 
     def update(self, candle: Candle) -> list[FVGEvent]:
         """Return events detected on CLOSED candles only."""

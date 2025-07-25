@@ -1,8 +1,12 @@
 """Very small CLI backtester stub."""
-import asyncio, argparse, csv
-from datetime import datetime, timezone
+import argparse
+import asyncio
+import csv
+from datetime import datetime
+
 from core.entities import Candle
 from core.indicators.ema import EMA
+
 
 async def csv_reader(path: str):
     with open(path, newline='') as f:

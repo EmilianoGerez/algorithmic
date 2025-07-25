@@ -1,18 +1,21 @@
+from .atr import ATR
 from .base import Indicator
 from .ema import EMA
-from .atr import ATR
-from .volume_sma import VolumeSMA
-from .regime import Regime, RegimeDetector
-from .snapshot import IndicatorSnapshot
 from .pack import IndicatorPack
+from .regime import Regime, RegimeDetector
+from .registry import INDICATOR_REGISTRY, IndicatorRegistry
+from .snapshot import IndicatorSnapshot
+from .volume_sma import VolumeSMA
 
 __all__ = [
     "Indicator",
-    "EMA", 
+    "EMA",
     "ATR",
     "VolumeSMA",
     "Regime",
-    "RegimeDetector", 
+    "RegimeDetector",
     "IndicatorSnapshot",
-    "IndicatorPack"
+    "IndicatorPack",
+    "IndicatorRegistry",
+    "INDICATOR_REGISTRY"
 ]

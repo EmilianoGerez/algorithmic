@@ -1,0 +1,24 @@
+strategy:
+  name: htf_liquidity_mtf
+  htf_list: ["H1", "H4", "D1"]
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    volume_multiple: 1.5
+    killzone: ["12:00", "14:05"]
+    regime_ok: ["bull", "neutral"]
+
+indicators:
+  ema21_period: 21
+  ema50_period: 50
+  atr_period: 14
+  volume_sma_period: 20
+  regime_sensitivity: 0.001
+
+execution:
+  broker: paper
+  risk_per_trade: 0.005
+
+feeds:
+  base_tf: 1m
+  source: csv

@@ -29,11 +29,12 @@ def create_demo_candles(count: int = 100) -> list[Candle]:
             high=price + 0.3,
             low=price - 0.2,
             close=price,
-            volume=1000 + (i % 10) * 100
+            volume=1000 + (i % 10) * 100,
         )
         candles.append(candle)
 
     return candles
+
 
 def main():
     print("🚀 Phase 1 Indicator Demo")
@@ -45,7 +46,7 @@ def main():
         ema50_period=50,
         atr_period=14,
         volume_sma_period=20,
-        regime_sensitivity=0.001
+        regime_sensitivity=0.001,
     )
 
     print(f"Warmup periods needed: {pack.warmup_periods_needed}")
@@ -63,7 +64,7 @@ def main():
         if pack.is_ready and (i + 1) % 20 == 0:
             snapshot = pack.snapshot()
 
-            print(f"\n📊 Snapshot at candle {i+1} ({snapshot.timestamp})")
+            print(f"\n📊 Snapshot at candle {i + 1} ({snapshot.timestamp})")
             print(f"  Close: ${snapshot.current_close:.2f}")
             print(f"  EMA21: ${snapshot.ema21:.2f}")
             print(f"  EMA50: ${snapshot.ema50:.2f}")
@@ -72,7 +73,9 @@ def main():
             print(f"  Volume Multiple: {snapshot.volume_multiple:.2f}x")
             print(f"  Regime: {snapshot.regime.name}")
             print(f"  Regime (slope): {snapshot.regime_with_slope.name}")
-            print(f"  EMA Aligned: {'🟢 Bullish' if snapshot.ema_aligned_bullish else '🔴 Bearish' if snapshot.ema_aligned_bearish else '🟡 Neutral'}")
+            print(
+                f"  EMA Aligned: {'🟢 Bullish' if snapshot.ema_aligned_bullish else '🔴 Bearish' if snapshot.ema_aligned_bearish else '🟡 Neutral'}"
+            )
 
     # Final summary
     final_snapshot = pack.snapshot()
@@ -84,6 +87,7 @@ def main():
 
     print("\n✅ Phase 1 implementation complete!")
     print("Ready for Phase 2: TimeAggregator")
+
 
 if __name__ == "__main__":
     main()

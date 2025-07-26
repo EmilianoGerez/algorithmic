@@ -27,7 +27,11 @@ class TestEMA:
         ema = EMA(21)
         candle = Candle(
             ts=datetime.now(),
-            open=100.0, high=101.0, low=99.0, close=100.5, volume=1000
+            open=100.0,
+            high=101.0,
+            low=99.0,
+            close=100.5,
+            volume=1000,
         )
         ema.update(candle)
         assert ema.value == 100.5  # First value should be close price
@@ -40,7 +44,11 @@ class TestEMA:
         # First candle
         candle1 = Candle(
             ts=datetime.now(),
-            open=100.0, high=101.0, low=99.0, close=100.0, volume=1000
+            open=100.0,
+            high=101.0,
+            low=99.0,
+            close=100.0,
+            volume=1000,
         )
         ema.update(candle1)
         assert ema.value == 100.0
@@ -48,7 +56,11 @@ class TestEMA:
         # Second candle
         candle2 = Candle(
             ts=datetime.now(),
-            open=100.0, high=103.0, low=99.0, close=102.0, volume=1000
+            open=100.0,
+            high=103.0,
+            low=99.0,
+            close=102.0,
+            volume=1000,
         )
         ema.update(candle2)
         # EMA = (102 - 100) * 0.5 + 100 = 101
@@ -57,7 +69,11 @@ class TestEMA:
         # Third candle
         candle3 = Candle(
             ts=datetime.now(),
-            open=102.0, high=104.0, low=101.0, close=98.0, volume=1000
+            open=102.0,
+            high=104.0,
+            low=101.0,
+            close=98.0,
+            volume=1000,
         )
         ema.update(candle3)
         # EMA = (98 - 101) * 0.5 + 101 = 99.5
@@ -75,7 +91,11 @@ class TestATR:
         atr = ATR(14)
         candle = Candle(
             ts=datetime.now(),
-            open=100.0, high=102.0, low=98.0, close=101.0, volume=1000
+            open=100.0,
+            high=102.0,
+            low=98.0,
+            close=101.0,
+            volume=1000,
         )
         atr.update(candle)
         assert atr.value is None  # Need full period
@@ -87,14 +107,22 @@ class TestATR:
         # First candle
         candle1 = Candle(
             ts=datetime.now(),
-            open=100.0, high=102.0, low=98.0, close=101.0, volume=1000
+            open=100.0,
+            high=102.0,
+            low=98.0,
+            close=101.0,
+            volume=1000,
         )
         atr.update(candle1)
 
         # Second candle with gap
         candle2 = Candle(
             ts=datetime.now(),
-            open=105.0, high=106.0, low=104.0, close=105.5, volume=1000
+            open=105.0,
+            high=106.0,
+            low=104.0,
+            close=105.5,
+            volume=1000,
         )
         atr.update(candle2)
 
@@ -123,7 +151,11 @@ class TestVolumeSMA:
         for _i, vol in enumerate(volumes):
             candle = Candle(
                 ts=datetime.now(),
-                open=100.0, high=101.0, low=99.0, close=100.0, volume=vol
+                open=100.0,
+                high=101.0,
+                low=99.0,
+                close=100.0,
+                volume=vol,
             )
             vol_sma.update(candle)
 
@@ -133,7 +165,9 @@ class TestVolumeSMA:
 
         # Test volume multiple
         expected_multiple = 3000 / expected_sma
-        assert np.allclose(vol_sma.volume_multiple(3000), expected_multiple, rtol=1e-6, atol=1e-8)
+        assert np.allclose(
+            vol_sma.volume_multiple(3000), expected_multiple, rtol=1e-6, atol=1e-8
+        )
 
 
 class TestIndicatorPack:
@@ -147,8 +181,7 @@ class TestIndicatorPack:
 
     def test_indicator_pack_update_and_snapshot(self):
         pack = IndicatorPack(
-            ema21_period=3, ema50_period=5,
-            atr_period=3, volume_sma_period=3
+            ema21_period=3, ema50_period=5, atr_period=3, volume_sma_period=3
         )
 
         candles = create_test_candles(10)
@@ -173,8 +206,7 @@ class TestIndicatorPack:
     def test_regime_detection(self):
         """Test regime detection with trending data."""
         pack = IndicatorPack(
-            ema21_period=5, ema50_period=10,
-            atr_period=5, volume_sma_period=5
+            ema21_period=5, ema50_period=10, atr_period=5, volume_sma_period=5
         )
 
         # Test bullish trend
@@ -188,8 +220,7 @@ class TestIndicatorPack:
 
         # Test bearish trend
         bear_pack = IndicatorPack(
-            ema21_period=5, ema50_period=10,
-            atr_period=5, volume_sma_period=5
+            ema21_period=5, ema50_period=10, atr_period=5, volume_sma_period=5
         )
         bear_candles = create_trending_candles(20, "down")
         for candle in bear_candles:
@@ -254,7 +285,7 @@ class TestIndicatorRegistry:
 # Property-based tests with Hypothesis
 @given(
     period=st.integers(min_value=2, max_value=10),
-    num_candles=st.integers(min_value=15, max_value=50)
+    num_candles=st.integers(min_value=15, max_value=50),
 )
 def test_ema_property_consistent_calculation(period, num_candles):
     """Property test: EMA calculation should be consistent and bounded."""
@@ -279,5 +310,5 @@ def test_ema_property_consistent_calculation(period, num_candles):
 
     # EMA should be relatively stable (no huge jumps)
     if len(values) > 1:
-        max_change = max(abs(values[i] - values[i-1]) for i in range(1, len(values)))
+        max_change = max(abs(values[i] - values[i - 1]) for i in range(1, len(values)))
         assert max_change < 50  # Reasonable for our test data

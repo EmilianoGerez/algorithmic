@@ -17,5 +17,5 @@ __all__ = [
     "IndicatorSnapshot",
     "IndicatorPack",
     "IndicatorRegistry",
-    "INDICATOR_REGISTRY"
+    "INDICATOR_REGISTRY",
 ]

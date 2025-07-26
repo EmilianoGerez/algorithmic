@@ -15,6 +15,24 @@ indicators:
   volume_sma_period: 20
   regime_sensitivity: 0.001
 
+aggregation:
+  # Source timeframe and target timeframes for multi-timeframe analysis
+  source_tf_minutes: 1 # 1-minute source data
+  target_timeframes_minutes: [60, 240, 1440] # H1, H4, D1
+  buffer_size: 1500 # Ring buffer size for memory efficiency
+
+  # Aggregation strategy
+  roll_from: "source" # "source" = from-scratch aggregation, "lower_tf" = H1→H4 chaining
+
+  # Performance settings
+  max_candles_per_update: 10 # Batch processing limit
+  enable_streaming: true # Real-time vs batch mode
+
+  # Clock-skew and ordering policies
+  out_of_order_policy: "drop" # "drop", "raise", or "recalc"
+  max_clock_skew_seconds: 300 # Maximum allowed time drift (5 minutes)
+  enable_strict_ordering: true # Enforce chronological order
+
 execution:
   broker: paper
   risk_per_trade: 0.005

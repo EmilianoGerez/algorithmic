@@ -13,7 +13,7 @@ Demonstrates:
 from datetime import datetime, timedelta
 
 from core.entities import Candle
-from core.indicators import IndicatorPack, INDICATOR_REGISTRY
+from core.indicators import INDICATOR_REGISTRY, IndicatorPack
 
 
 def create_demo_candles(count: int = 100) -> list[Candle]:
@@ -64,7 +64,7 @@ def main():
         regime_sensitivity=0.001,
     )
 
-    print(f"\n🔧 IndicatorPack Configuration:")
+    print("\n🔧 IndicatorPack Configuration:")
     print(f"  Warmup periods needed: {pack.warmup_periods_needed}")
     print(f"  Regime sensitivity: {pack.regime_sensitivity}")
 
@@ -80,7 +80,7 @@ def main():
         if pack.is_ready and (i + 1) % 25 == 0:
             snapshot = pack.snapshot()
 
-            print(f"\n📈 Enhanced Snapshot at candle {i+1}")
+            print(f"\n📈 Enhanced Snapshot at candle {i + 1}")
             print(f"  Timestamp: {snapshot.timestamp}")
             print(f"  Close: ${snapshot.current_close:.2f}")
             print(f"  EMA21: ${snapshot.ema21:.2f}")
@@ -98,22 +98,26 @@ def main():
             vol_multiple = snapshot.volume_multiple
             if vol_multiple:
                 surge_status = "🔥 SURGE" if vol_multiple > 1.5 else "📊 Normal"
-                print(f"  Volume: {snapshot.current_volume:.0f} "
-                      f"({vol_multiple:.1f}x avg) {surge_status}")
+                print(
+                    f"  Volume: {snapshot.current_volume:.0f} "
+                    f"({vol_multiple:.1f}x avg) {surge_status}"
+                )
 
     # Final comprehensive summary
     final_snapshot = pack.snapshot()
     regime = final_snapshot.regime
 
-    print(f"\n🎯 Final Professional Summary")
+    print("\n🎯 Final Professional Summary")
     print(f"  ✅ All indicators ready: {final_snapshot.is_ready}")
     print(f"  📊 Final close price: ${final_snapshot.current_close:.2f}")
     print(f"  📈 Market regime: {regime.name}")
     print(f"     • Bullish trend: {regime.is_bullish}")
-    print(f"     • EMA alignment: {'🟢 Bullish' if final_snapshot.ema_aligned_bullish else '🔴 Bearish'}")
+    print(
+        f"     • EMA alignment: {'🟢 Bullish' if final_snapshot.ema_aligned_bullish else '🔴 Bearish'}"
+    )
     print(f"  🔀 Slope-filtered regime: {final_snapshot.regime_with_slope.name}")
 
-    print(f"\n✨ Professional Phase 1 Implementation Complete!")
+    print("\n✨ Professional Phase 1 Implementation Complete!")
     print("Features delivered:")
     print("  ✅ Google-style docstrings")
     print("  ✅ Regime ergonomics (is_bullish, is_bearish, etc.)")

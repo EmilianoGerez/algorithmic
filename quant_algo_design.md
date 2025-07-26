@@ -203,4 +203,3 @@ Synthetic data generator lives in `tests/factories.py` for speed.
 ### End of Blueprint
 
 > For questions, open a GitHub Discussion or tag `@quant‑lead` in Slack.
-

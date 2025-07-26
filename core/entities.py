@@ -6,6 +6,7 @@ from typing import Protocol
 
 __all__ = ["Candle", "Event"]
 
+
 @dataclass(frozen=True, slots=True)
 class Candle:
     ts: datetime

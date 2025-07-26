@@ -3,13 +3,14 @@
 import argparse
 import asyncio
 import csv
+from collections.abc import AsyncGenerator
 from datetime import datetime
 
 from core.entities import Candle
 from core.indicators.ema import EMA
 
 
-async def csv_reader(path: str):
+async def csv_reader(path: str) -> AsyncGenerator[Candle, None]:
     with open(path, newline="") as f:
         rdr = csv.DictReader(f)
         for row in rdr:
@@ -23,7 +24,7 @@ async def csv_reader(path: str):
             )
 
 
-async def run(file: str):
+async def run(file: str) -> None:
     ema21, ema50 = EMA(21), EMA(50)
     async for cdl in csv_reader(file):
         ema21.update(cdl)

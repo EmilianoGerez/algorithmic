@@ -7,7 +7,7 @@ from core.detectors.pivot import PivotDetector
 from core.entities import Candle
 
 
-def debug_pivot():
+def debug_pivot() -> None:
     detector = PivotDetector("H1", lookback_periods=2, min_sigma=0.1)
 
     base_time = datetime(2024, 1, 1, 10, 0, tzinfo=UTC)

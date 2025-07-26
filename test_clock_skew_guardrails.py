@@ -11,7 +11,7 @@ from core.strategy.aggregator import (
 )
 
 
-def test_clock_skew_drop_policy():
+def test_clock_skew_drop_policy() -> None:
     """Test DROP policy silently ignores out-of-order candles."""
     print("Testing DROP policy...")
 
@@ -44,7 +44,7 @@ def test_clock_skew_drop_policy():
     print("  ✅ DROP policy working correctly\n")
 
 
-def test_clock_skew_raise_policy():
+def test_clock_skew_raise_policy() -> bool:
     """Test RAISE policy throws exception on out-of-order candles."""
     print("Testing RAISE policy...")
 
@@ -79,10 +79,8 @@ def test_clock_skew_raise_policy():
         print(f"  ✅ ClockSkewError raised correctly: {e}")
         return True
 
-    print()
 
-
-def test_future_candle_detection():
+def test_future_candle_detection() -> None:
     """Test detection of candles too far in the future."""
     print("Testing future candle detection...")
 
@@ -116,7 +114,7 @@ def test_future_candle_detection():
     print("  ✅ Future candle detection working correctly\n")
 
 
-def test_disabled_strict_ordering():
+def test_disabled_strict_ordering() -> None:
     """Test that disabling strict ordering allows all candles."""
     print("Testing disabled strict ordering...")
 
@@ -146,7 +144,7 @@ def test_disabled_strict_ordering():
     print("  ✅ Disabled strict ordering working correctly\n")
 
 
-def main():
+def main() -> None:
     """Run all clock-skew guardrail tests."""
     print("🛡️  Clock-Skew Guardrails Test Suite")
     print("=====================================")

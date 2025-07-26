@@ -4,7 +4,7 @@
 repos:
   # Ruff - Fast Python linter and formatter (replaces flake8, isort, black)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4 # Use the ref you want to point at
+    rev: v0.12.5 # Match CI version for consistency
     hooks:
       # Run the linter
       - id: ruff
@@ -19,7 +19,7 @@ repos:
 
   # MyPy - Static type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.17.0
     hooks:
       - id: mypy
         name: mypy (type check)

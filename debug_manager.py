@@ -7,7 +7,7 @@ from core.detectors.manager import DetectorConfig, DetectorManager
 from core.entities import Candle
 
 
-def debug_manager():
+def debug_manager() -> None:
     print("=== DetectorManager Debug ===")
 
     config = DetectorConfig(
@@ -84,9 +84,11 @@ def debug_manager():
                 )
                 if prev.high < next_candle.low:
                     gap_size = next_candle.low - prev.high
-                    gap_size_atr = gap_size / atr_ind.value
+                    atr_value = atr_ind.value or 1.0  # Avoid division by None/zero
+                    vol_value = vol_ind.value or 1.0  # Avoid division by None/zero
+                    gap_size_atr = gap_size / atr_value
                     gap_size_pct = gap_size / prev.close
-                    rel_vol = next_candle.volume / vol_ind.value
+                    rel_vol = next_candle.volume / vol_value
                     print(
                         f"    Gap size: {gap_size}, ATR: {gap_size_atr:.3f}, Pct: {gap_size_pct:.3f}, Vol: {rel_vol:.3f}"
                     )

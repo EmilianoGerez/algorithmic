@@ -7,7 +7,7 @@ The HTF detectors support configurable handling of out-of-sequence candles throu
 ```yaml
 detectors:
   # Ordering policy for out-of-sequence HTF candles
-  out_of_order_policy: "drop"  # "drop" or "raise"
+  out_of_order_policy: "drop" # "drop" or "raise"
 
   # Other detector settings...
   fvg:
@@ -23,6 +23,7 @@ detectors:
 ### Policy Options:
 
 - **`"drop"`** (default): Silently ignore out-of-order candles
+
   - ✅ Robust for production environments with clock skew
   - ✅ Matches aggregator behavior for consistency
   - ⚠️ May miss some patterns if data feed has issues
@@ -64,7 +65,7 @@ The aggregator has similar policies that work in coordination:
 
 ```yaml
 aggregation:
-  out_of_order_policy: "drop"  # Should match detector policy
-  max_clock_skew_seconds: 300   # 5-minute tolerance
-  enable_strict_ordering: true  # Enable chronological checks
+  out_of_order_policy: "drop" # Should match detector policy
+  max_clock_skew_seconds: 300 # 5-minute tolerance
+  enable_strict_ordering: true # Enable chronological checks
 ```

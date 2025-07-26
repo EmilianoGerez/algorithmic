@@ -41,7 +41,7 @@ def create_demo_candles(count: int = 100) -> list[Candle]:
     return candles
 
 
-def main():
+def main() -> None:
     print("🚀 Enhanced Phase 1 Demo - Professional Implementation")
     print("=" * 60)
 
@@ -52,8 +52,12 @@ def main():
     # Create indicators dynamically
     ema21 = INDICATOR_REGISTRY.create("ema", period=21)
     atr14 = INDICATOR_REGISTRY.create("atr", period=14)
-    print(f"Created EMA21: {type(ema21).__name__}(period={ema21.period})")
-    print(f"Created ATR14: {type(atr14).__name__}(period={atr14.period})")
+    print(
+        f"Created EMA21: {type(ema21).__name__}(period={getattr(ema21, 'period', 'N/A') if ema21 else 'N/A'})"
+    )
+    print(
+        f"Created ATR14: {type(atr14).__name__}(period={getattr(atr14, 'period', 'N/A') if atr14 else 'N/A'})"
+    )
 
     # Initialize indicator pack with professional configuration
     pack = IndicatorPack(
@@ -89,10 +93,13 @@ def main():
 
             # Demonstrate regime ergonomics
             regime = snapshot.regime
-            print(f"  Regime: {regime.name}")
-            print(f"    • Is Bullish: {regime.is_bullish} 🟢")
-            print(f"    • Is Bearish: {regime.is_bearish} 🔴")
-            print(f"    • Is Trending: {regime.is_trending} 📈")
+            if regime:
+                print(f"  Regime: {regime.name}")
+                print(f"    • Is Bullish: {regime.is_bullish} 🟢")
+                print(f"    • Is Bearish: {regime.is_bearish} 🔴")
+                print(f"    • Is Trending: {regime.is_trending} 📈")
+            else:
+                print("  Regime: Unknown")
 
             # Volume analysis
             vol_multiple = snapshot.volume_multiple
@@ -110,12 +117,15 @@ def main():
     print("\n🎯 Final Professional Summary")
     print(f"  ✅ All indicators ready: {final_snapshot.is_ready}")
     print(f"  📊 Final close price: ${final_snapshot.current_close:.2f}")
-    print(f"  📈 Market regime: {regime.name}")
-    print(f"     • Bullish trend: {regime.is_bullish}")
+    print(f"  📈 Market regime: {regime.name if regime else 'Unknown'}")
+    if regime:
+        print(f"     • Bullish trend: {regime.is_bullish}")
     print(
         f"     • EMA alignment: {'🟢 Bullish' if final_snapshot.ema_aligned_bullish else '🔴 Bearish'}"
     )
-    print(f"  🔀 Slope-filtered regime: {final_snapshot.regime_with_slope.name}")
+    print(
+        f"  🔀 Slope-filtered regime: {final_snapshot.regime_with_slope.name if final_snapshot.regime_with_slope else 'Unknown'}"
+    )
 
     print("\n✨ Professional Phase 1 Implementation Complete!")
     print("Features delivered:")

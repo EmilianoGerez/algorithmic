@@ -284,50 +284,50 @@ def main() -> bool:
 def demo_new_timeframe_api() -> bool:
     """Demo the new Timeframe object-oriented API."""
     print("\n=== New Timeframe API Demo ===")
-    
+
     from core.strategy.timeframe import TimeframeConfig
-    
+
     # Create aggregators using the new API
     print("Creating aggregators with new Timeframe objects...")
     h1_agg = TimeAggregator.from_timeframe(TimeframeConfig.H1)
     h4_agg = TimeAggregator.from_timeframe(TimeframeConfig.H4)
     d1_agg = TimeAggregator.from_timeframe(TimeframeConfig.D1)
-    
+
     print(f"H1 Aggregator: {h1_agg.timeframe}")
-    print(f"H4 Aggregator: {h4_agg.timeframe}")  
+    print(f"H4 Aggregator: {h4_agg.timeframe}")
     print(f"D1 Aggregator: {d1_agg.timeframe}")
-    
+
     # Demo self-contained bucket_id method
     test_time = datetime(2024, 1, 1, 10, 30, 0, tzinfo=UTC)
     print(f"\nTest timestamp: {test_time}")
-    
+
     print("Self-contained bucket calculations:")
     h1_bucket = h1_agg.timeframe.bucket_id(test_time)
     h4_bucket = h4_agg.timeframe.bucket_id(test_time)
     d1_bucket = d1_agg.timeframe.bucket_id(test_time)
-    
+
     print(f"  H1.bucket_id(ts): {h1_bucket}")
     print(f"  H4.bucket_id(ts): {h4_bucket}")
     print(f"  D1.bucket_id(ts): {d1_bucket}")
-    
+
     print("Bucket start times:")
     print(f"  H1 start: {h1_agg.timeframe.bucket_start(test_time)}")
     print(f"  H4 start: {h4_agg.timeframe.bucket_start(test_time)}")
     print(f"  D1 start: {d1_agg.timeframe.bucket_start(test_time)}")
-    
+
     print("\n✅ New Timeframe API: Clean, readable, and self-contained!")
     print("   - timeframe.bucket_id(ts) instead of get_bucket_id(ts, minutes)")
     print("   - timeframe.bucket_start(ts) for period boundaries")
     print("   - TimeAggregator.from_timeframe(TimeframeConfig.H1)")
-    
+
     return True
 
 
 if __name__ == "__main__":
     # Run original validation
     main_result = main()
-    
+
     # Demo new API
     demo_new_timeframe_api()
-    
+
     print(f"\n🚀 Phase 2 Final Status: {'COMPLETE' if main_result else 'INCOMPLETE'}")

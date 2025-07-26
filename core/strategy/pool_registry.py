@@ -9,13 +9,16 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any
 
 from .pool_models import (
     LiquidityPool,
+    PoolCreatedEvent,
     PoolExpiredEvent,
     PoolState,
+    PoolTouchedEvent,
     generate_pool_id,
 )
 from .ttl_wheel import TimerWheel, WheelConfig
@@ -198,9 +201,30 @@ class PoolRegistry:
         self._grace_pools: dict[str, datetime] = {}  # pool_id -> cleanup_time
         self._last_cleanup = self._ttl_wheel.current_time
 
+        # Event listeners
+        self._listeners: list[Callable[[Any], None]] = []
+
         logger.info(
             f"PoolRegistry initialized with {self.config.max_pools_per_tf} max pools per TF"
         )
+
+    def register_listener(self, listener_callback: Callable[[Any], None]) -> None:
+        """
+        Register a listener for pool lifecycle events.
+
+        Args:
+            listener_callback: Function that accepts pool lifecycle events
+                              (PoolCreatedEvent, PoolTouchedEvent, PoolExpiredEvent)
+        """
+        self._listeners.append(listener_callback)
+
+    def _notify_listeners(self, event: Any) -> None:
+        """Notify all registered listeners of a pool event."""
+        for listener in self._listeners:
+            try:
+                listener(event)
+            except Exception as e:
+                logger.warning(f"Listener failed to process event: {e}")
 
     def add(
         self,
@@ -276,6 +300,15 @@ class PoolRegistry:
             self._pools_by_tf[timeframe].add(pool_id)
             self._pools_by_state[PoolState.ACTIVE].add(pool_id)
 
+            # Notify listeners of pool creation
+            self._notify_listeners(
+                PoolCreatedEvent(
+                    pool_id=pool_id,
+                    timestamp=created_at,
+                    pool=pool,
+                )
+            )
+
             # Update metrics
             if self.metrics:
                 self.metrics.record_pool_created(timeframe)
@@ -338,6 +371,15 @@ class PoolRegistry:
             self._pools_by_state[PoolState.ACTIVE].discard(pool_id)
             self._pools_by_state[PoolState.TOUCHED].add(pool_id)
 
+            # Notify listeners of pool touch
+            self._notify_listeners(
+                PoolTouchedEvent(
+                    pool_id=pool_id,
+                    timestamp=touch_time,
+                    touch_price=touch_price,
+                )
+            )
+
             # Update metrics
             if self.metrics:
                 self.metrics.record_pool_touched(pool.timeframe)
@@ -389,6 +431,9 @@ class PoolRegistry:
                 pool_id=item.pool_id, timestamp=now, final_state=pool.state
             )
             events.append(event)
+
+            # Notify listeners of pool expiry
+            self._notify_listeners(event)
 
             # Update metrics
             if self.metrics:

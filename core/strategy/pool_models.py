@@ -8,6 +8,7 @@ and high-throughput processing.
 
 from __future__ import annotations
 
+import hashlib
 import struct
 import zlib
 from dataclasses import dataclass
@@ -22,7 +23,12 @@ __all__ = [
     "PoolCreatedEvent",
     "PoolTouchedEvent",
     "PoolExpiredEvent",
+    "HighLiquidityZone",
+    "HLZCreatedEvent",
+    "HLZUpdatedEvent",
+    "HLZExpiredEvent",
     "generate_pool_id",
+    "generate_hlz_id",
 ]
 
 
@@ -127,6 +133,71 @@ class PoolExpiredEvent:
     event_type: Literal["expired"] = "expired"
 
 
+@dataclass(slots=True, frozen=True)
+class HighLiquidityZone:
+    """
+    High-Liquidity Zone created by overlapping pools from different timeframes.
+
+    Represents areas of confluence where multiple liquidity pools intersect,
+    indicating higher probability reversal or continuation zones.
+    """
+
+    hlz_id: str
+    side: str  # "bullish", "bearish", or "neutral"
+    top: float
+    bottom: float
+    strength: float  # Aggregated strength from member pools
+    member_pool_ids: frozenset[str]  # Pool IDs that form this HLZ
+    created_at: datetime
+    timeframes: frozenset[str]  # Timeframes represented (e.g., {"H1", "H4"})
+
+    @property
+    def mid_price(self) -> float:
+        """Calculate midpoint of the HLZ."""
+        return (self.top + self.bottom) / 2.0
+
+    @property
+    def zone_height(self) -> float:
+        """Calculate height of the HLZ."""
+        return abs(self.top - self.bottom)
+
+    @property
+    def member_count(self) -> int:
+        """Number of pools forming this HLZ."""
+        return len(self.member_pool_ids)
+
+
+@dataclass(slots=True, frozen=True)
+class HLZCreatedEvent:
+    """Event emitted when a new High-Liquidity Zone is created."""
+
+    hlz_id: str
+    timestamp: datetime
+    hlz: HighLiquidityZone
+    event_type: Literal["hlz_created"] = "hlz_created"
+
+
+@dataclass(slots=True, frozen=True)
+class HLZUpdatedEvent:
+    """Event emitted when an existing HLZ is updated (member added/removed)."""
+
+    hlz_id: str
+    timestamp: datetime
+    hlz: HighLiquidityZone
+    prev_strength: float  # Previous strength for proportional consumer reactions
+    event_type: Literal["hlz_updated"] = "hlz_updated"
+
+
+@dataclass(slots=True, frozen=True)
+class HLZExpiredEvent:
+    """Event emitted when an HLZ expires (< min_members)."""
+
+    hlz_id: str
+    timestamp: datetime
+    final_member_count: int
+    event_type: Literal["hlz_expired"] = "hlz_expired"
+
+
 def generate_pool_id(
     timeframe: str, timestamp: datetime, top: float, bottom: float
 ) -> str:
@@ -168,3 +239,27 @@ def generate_pool_id(
     iso_ts = timestamp.replace(microsecond=0).isoformat()
 
     return f"{timeframe}_{iso_ts}_{price_hash:08x}"
+
+
+def generate_hlz_id(member_pool_ids: frozenset[str]) -> str:
+    """
+    Generate a deterministic HLZ ID from member pool IDs.
+
+    Uses SHA1 hash of sorted pool IDs to ensure consistent
+    ID generation regardless of member discovery order.
+
+    Args:
+        member_pool_ids: Set of pool IDs forming the HLZ
+
+    Returns:
+        Deterministic HLZ identifier string
+    """
+    # Sort pool IDs for deterministic ordering
+    sorted_ids = sorted(member_pool_ids)
+
+    # Create deterministic hash from sorted member IDs
+    combined_str = "|".join(sorted_ids)
+    hash_obj = hashlib.sha1(combined_str.encode("utf-8"))
+    hash_hex = hash_obj.hexdigest()[:12]  # 12 chars = 48-bit hash
+
+    return f"hlz_{hash_hex}"

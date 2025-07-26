@@ -65,6 +65,7 @@ python_functions = ["test_*"]
 markers = [
     "asyncio: marks tests as asyncio tests",
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["core"]

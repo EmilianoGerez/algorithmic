@@ -48,7 +48,7 @@ class ZoneWatcherConfig:
     max_active_zones: int = 1000  # Maximum zones to track simultaneously
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True, frozen=False)  # Changed to mutable for state tracking
 class ZoneMeta:
     """Metadata for tracking active zones."""
 
@@ -61,6 +61,7 @@ class ZoneMeta:
     timeframe: str  # For pools, empty for HLZs
     created_at: datetime
     last_price_check: float | None = None  # Last price that was checked
+    entry_triggered: bool = False  # Track if zone entry has been triggered
 
 
 class ZoneWatcher:
@@ -107,18 +108,26 @@ class ZoneWatcher:
         # Check each active zone for price entry
         for zone_meta in list(self._active_zones.values()):
             if self._is_price_in_zone(candle.close, zone_meta):
-                # Price entered zone - create entry event
-                event = ZoneEnteredEvent(
-                    zone_id=zone_meta.zone_id,
-                    zone_type=zone_meta.zone_type,
-                    entry_price=candle.close,
-                    timestamp=candle.ts,
-                    timeframe=zone_meta.timeframe,
-                    strength=zone_meta.strength,
-                    side=zone_meta.side,
-                )
-                events.append(event)
-                self._stats["zone_entries"] += 1
+                # Only trigger if zone entry hasn't been triggered yet
+                if not zone_meta.entry_triggered:
+                    # Price entered zone - create entry event
+                    event = ZoneEnteredEvent(
+                        zone_id=zone_meta.zone_id,
+                        zone_type=zone_meta.zone_type,
+                        entry_price=candle.close,
+                        timestamp=candle.ts,
+                        timeframe=zone_meta.timeframe,
+                        strength=zone_meta.strength,
+                        side=zone_meta.side,
+                    )
+                    events.append(event)
+                    self._stats["zone_entries"] += 1
+
+                    # Mark zone as entered
+                    zone_meta.entry_triggered = True
+            else:
+                # Price outside zone - reset entry trigger for potential re-entry
+                zone_meta.entry_triggered = False
 
         return events
 

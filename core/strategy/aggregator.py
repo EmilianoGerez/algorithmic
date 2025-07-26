@@ -1,4 +1,7 @@
-"""Multi-timeframe candle aggregator with look-ahead bias prevention."""
+"""Multi-timeframe candle aggregator with look-ahead bias prevention.
+
+See :ref:`design_notebook:Initial Implementation Sprint Plan`
+"""
 
 from __future__ import annotations
 

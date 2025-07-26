@@ -70,6 +70,26 @@ pools:
   max_pools_per_tf: 10000 # Memory safety limit per timeframe
   auto_expire_interval: 30s # How often to check for expiries
 
+# High-Liquidity Zone (HLZ) overlap detection configuration
+hlz:
+  # Minimum requirements for HLZ creation
+  min_members: 2 # Minimum number of overlapping pools
+  min_strength: 3.0 # Minimum combined strength threshold
+
+  # Timeframe weighting for strength calculation
+  tf_weight:
+    H1: 1.0 # Base weight for H1 timeframe
+    H4: 2.0 # Higher weight for H4 timeframe
+    D1: 3.0 # Highest weight for D1 timeframe
+
+  # Overlap detection settings
+  merge_tolerance: 0.5 # Points - merge HLZs if zones within tolerance
+  side_mixing: false # Whether to allow bullish/bearish pools in same HLZ
+
+  # Performance settings
+  max_active_hlzs: 1000 # Memory safety limit
+  recompute_on_update: true # Recalculate HLZs when pools change
+
 execution:
   broker: paper
   risk_per_trade: 0.005

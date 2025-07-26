@@ -522,3 +522,37 @@ class PoolRegistry:
                 if self.metrics:
                     self.metrics.pools_cleaned += 1
                 logger.debug(f"Cleaned up grace period pool {pool_id}")
+
+    def purge_before(self, timestamp: datetime) -> int:
+        """
+        Purge all expired pools that were created before the given timestamp.
+
+        Useful for offline analysis mode to garbage-collect the grace period
+        tracking without waiting for the periodic cleanup interval.
+
+        Args:
+            timestamp: Purge all expired pools created before this time
+
+        Returns:
+            Number of pools purged
+        """
+        purged_count = 0
+        to_purge = []
+
+        # Find pools in grace period that were created before timestamp
+        for pool_id in self._grace_pools:
+            pool = self.get_pool(pool_id)
+            if pool and pool.created_at < timestamp and pool.state == PoolState.EXPIRED:
+                to_purge.append(pool_id)
+
+        # Remove them
+        for pool_id in to_purge:
+            if self.remove(pool_id):
+                purged_count += 1
+                if self.metrics:
+                    self.metrics.pools_cleaned += 1
+                logger.debug(
+                    f"Purged expired pool {pool_id} (created before {timestamp})"
+                )
+
+        return purged_count

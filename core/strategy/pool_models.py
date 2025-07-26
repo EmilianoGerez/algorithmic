@@ -8,6 +8,8 @@ and high-throughput processing.
 
 from __future__ import annotations
 
+import struct
+import zlib
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -132,7 +134,7 @@ def generate_pool_id(
     Generate a fast, deterministic pool ID.
 
     Format: {tf}_{iso_timestamp}_{hash_suffix}
-    Guarantees uniqueness without UUID overhead.
+    Guarantees uniqueness and reproducible IDs across runs.
 
     Args:
         timeframe: Pool timeframe (H1, H4, D1)
@@ -143,10 +145,24 @@ def generate_pool_id(
     Returns:
         Unique pool identifier string
     """
-    # Create hash from price coordinates
-    price_hash = hash((top, bottom)) & 0xFFFF  # 16-bit hash for compactness
+    # Create deterministic hash from price coordinates using zlib.adler32
+    # Include all parameters for maximum uniqueness
+    # Convert floats to bytes for consistent hashing across platforms
+    price_bytes = struct.pack(
+        "!dd", top, bottom
+    )  # Network byte order, double precision
+    tf_bytes = timeframe.encode("utf-8")
+
+    # Include timestamp seconds to reduce collisions across time
+    timestamp_bytes = struct.pack("!q", int(timestamp.timestamp()))  # 8-byte timestamp
+
+    combined_bytes = tf_bytes + timestamp_bytes + price_bytes
+
+    price_hash = (
+        zlib.adler32(combined_bytes) & 0xFFFFFF
+    )  # 24-bit hash for better distribution
 
     # ISO timestamp without microseconds for cleaner IDs
     iso_ts = timestamp.replace(microsecond=0).isoformat()
 
-    return f"{timeframe}_{iso_ts}_{price_hash:04x}"
+    return f"{timeframe}_{iso_ts}_{price_hash:06x}"

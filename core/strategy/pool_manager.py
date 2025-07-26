@@ -190,9 +190,7 @@ class PoolManager:
 
         except Exception as e:
             logger.error(f"Failed to process detector event: {e}")
-            return EventMappingResult(
-                success=False, reason=f"Processing error: {str(e)}"
-            )
+            return EventMappingResult(success=False, reason=f"Processing error: {e!s}")
 
     def process_price_update(
         self, price: float, timestamp: datetime, timeframe: str | None = None

@@ -12,7 +12,21 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
-__all__ = ["TimerWheel", "ScheduledExpiry", "WheelConfig"]
+# TTL Wheel bucket size constants - tweak these for performance/memory trade-offs
+SEC_BUCKETS = 60  # 0-59 seconds wheel
+MIN_BUCKETS = 60  # 0-59 minutes wheel
+HOUR_BUCKETS = 24  # 0-23 hours wheel
+DAY_BUCKETS = 7  # 0-6 days wheel (weekly cycle)
+
+__all__ = [
+    "TimerWheel",
+    "ScheduledExpiry",
+    "WheelConfig",
+    "SEC_BUCKETS",
+    "MIN_BUCKETS",
+    "HOUR_BUCKETS",
+    "DAY_BUCKETS",
+]
 
 
 @dataclass(slots=True)
@@ -35,10 +49,10 @@ class WheelConfig:
     """Configuration for the TTL timing wheel."""
 
     # Wheel granularity levels (4-level hierarchical design)
-    second_slots: int = 60  # 0-59 seconds
-    minute_slots: int = 60  # 0-59 minutes
-    hour_slots: int = 24  # 0-23 hours
-    day_slots: int = 7  # 0-6 days (weekly cycle)
+    second_slots: int = SEC_BUCKETS  # 0-59 seconds
+    minute_slots: int = MIN_BUCKETS  # 0-59 minutes
+    hour_slots: int = HOUR_BUCKETS  # 0-23 hours
+    day_slots: int = DAY_BUCKETS  # 0-6 days (weekly cycle)
 
     # Performance tuning
     max_items_per_slot: int = 1000  # Warning threshold for slot size

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from core.entities import Candle
 
-__all__ = ["ATR"]
+__all__ = ["ATR", "ATRIndicator"]
 
 
 @dataclass
@@ -93,3 +93,7 @@ class ATR:
             False otherwise.
         """
         return len(self._true_ranges) == self.period
+
+
+# Alias for backwards compatibility
+ATRIndicator = ATR

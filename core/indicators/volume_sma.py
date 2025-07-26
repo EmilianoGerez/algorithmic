@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from core.entities import Candle
 
-__all__ = ["VolumeSMA"]
+__all__ = ["VolumeSMA", "VolumeSMAIndicator"]
 
 
 @dataclass
@@ -77,3 +77,7 @@ class VolumeSMA:
         if self._sma_value is None or self._sma_value == 0:
             return None
         return current_volume / self._sma_value
+
+
+# Alias for backwards compatibility
+VolumeSMAIndicator = VolumeSMA

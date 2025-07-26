@@ -33,6 +33,22 @@ aggregation:
   max_clock_skew_seconds: 300 # Maximum allowed time drift (5 minutes)
   enable_strict_ordering: true # Enforce chronological order
 
+detectors:
+  fvg:
+    min_gap_atr: 0.3 # Minimum gap size in ATR units
+    min_gap_pct: 0.05 # Minimum gap size as percentage (5%)
+    min_rel_vol: 1.2 # Minimum volume relative to SMA
+
+  pivot:
+    lookback: 5 # Lookback periods for pivot detection (3-10)
+    min_sigma: 0.5 # Minimum ATR distance for confirmation
+
+  indicators:
+    atr_period: 14 # ATR calculation period
+    volume_sma_period: 20 # Volume SMA baseline period
+
+  enabled_timeframes: ["H1", "H4", "D1"] # Active detection timeframes
+
 execution:
   broker: paper
   risk_per_trade: 0.005

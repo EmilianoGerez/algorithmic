@@ -20,7 +20,7 @@ def calculate_gap_metrics(
     atr_value: float,
     gap_type: str = "bullish",
 ) -> tuple[float, float, float]:
-    """Calculate gap size metrics for FVG detection.
+    """Calculate gap size in absolute, ATR-scaled, and percentage terms for FVG detection.
 
     Args:
         prev_candle: Previous candle in sequence.
@@ -50,7 +50,7 @@ def calculate_gap_metrics(
 
 
 def calculate_volume_ratio(current_volume: float, volume_sma: float) -> float:
-    """Calculate volume ratio relative to SMA baseline.
+    """Calculate volume ratio relative to SMA baseline for filtering.
 
     Args:
         current_volume: Current candle volume.
@@ -68,7 +68,7 @@ def normalize_strength(
     primary_scale: float = 2.0,
     secondary_scale: float = 10.0,
 ) -> float:
-    """Normalize strength value to 0.0-1.0 range.
+    """Normalize dual metrics to 0.0-1.0 strength range using max of scaled values.
 
     Args:
         primary_metric: Primary strength metric (e.g., ATR distance).
@@ -91,7 +91,7 @@ def log_detection_skip(
     tf: str,
     additional_info: str = "",
 ) -> None:
-    """Log debug information when detection is skipped.
+    """Log debug information when pattern detection is skipped (conditional for performance).
 
     Args:
         detector_name: Name of the detector (e.g., "FVG", "Pivot").
@@ -100,14 +100,21 @@ def log_detection_skip(
         tf: Timeframe identifier.
         additional_info: Additional context information.
     """
-    info_str = f" ({additional_info})" if additional_info else ""
-    logger.debug(
-        f"{detector_name} detection skipped for {tf} at {candle_ts}: {reason}{info_str}"
-    )
+    # Only construct log message if debug logging is enabled
+    if logger.isEnabledFor(logging.DEBUG):
+        info_str = f" ({additional_info})" if additional_info else ""
+        logger.debug(
+            "%s detection skipped for %s at %s: %s%s",
+            detector_name,
+            tf,
+            candle_ts,
+            reason,
+            info_str,
+        )
 
 
 def validate_candle_sequence(candles: list[Candle], min_count: int = 3) -> bool:
-    """Validate that candle sequence is sufficient and chronologically ordered.
+    """Validate candle sequence has sufficient count and chronological ordering.
 
     Args:
         candles: List of candles to validate.

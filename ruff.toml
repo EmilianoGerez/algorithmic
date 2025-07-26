@@ -18,7 +18,9 @@ select = [
 ignore = [
     "E501",   # line too long (handled by formatter)
     "B008",   # do not perform function calls in argument defaults
+    "F401",   # unused imports (common in module interfaces)
     "RUF002", # docstring contains ambiguous characters
+    "RUF015", # unnecessary iterable allocation for first element
     "RUF022", # __all__ sorting
 ]
 

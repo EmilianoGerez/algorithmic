@@ -512,9 +512,9 @@ class TestPhase4Performance:
         events_per_second = events_count / elapsed_time
 
         # Should exceed 50k events/second
-        assert (
-            events_per_second > 50000
-        ), f"Only {events_per_second:.0f} events/second, target is 50k+"
+        assert events_per_second > 50000, (
+            f"Only {events_per_second:.0f} events/second, target is 50k+"
+        )
 
         print(
             f"✓ Pool events throughput: {events_per_second:.0f} events/second (target: 50k+)"

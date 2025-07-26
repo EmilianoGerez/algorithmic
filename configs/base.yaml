@@ -28,6 +28,11 @@ aggregation:
   max_candles_per_update: 10 # Batch processing limit
   enable_streaming: true # Real-time vs batch mode
 
+  # Clock-skew and ordering policies
+  out_of_order_policy: "drop" # "drop", "raise", or "recalc"
+  max_clock_skew_seconds: 300 # Maximum allowed time drift (5 minutes)
+  enable_strict_ordering: true # Enforce chronological order
+
 execution:
   broker: paper
   risk_per_trade: 0.005

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 
 from core.entities import Candle
 from core.strategy.ring_buffer import CandleBuffer
@@ -11,7 +12,31 @@ from core.strategy.timeframe import (
     format_timeframe_name,  # Keep for backward compatibility
 )
 
-__all__ = ["TimeAggregator", "MultiTimeframeAggregator"]
+# Type aliases for cleaner annotations
+CandleEvent = tuple[str, Candle]  # (timeframe_name, completed_candle)
+
+
+class OutOfOrderPolicy(Enum):
+    """Policy for handling out-of-chronological-order candles."""
+
+    DROP = "drop"  # Silently ignore out-of-order candles
+    RAISE = "raise"  # Raise exception on out-of-order candles
+    RECALC = "recalc"  # Recalculate affected buckets (expensive)
+
+
+class ClockSkewError(Exception):
+    """Raised when candle timestamp violates clock-skew limits."""
+
+    pass
+
+
+__all__ = [
+    "CandleEvent",
+    "TimeAggregator",
+    "MultiTimeframeAggregator",
+    "OutOfOrderPolicy",
+    "ClockSkewError",
+]
 
 
 @dataclass
@@ -49,9 +74,15 @@ class TimeAggregator:
     source_tf_minutes: int = 1
     buffer_size: int = 1500
 
+    # Clock-skew and ordering controls
+    out_of_order_policy: OutOfOrderPolicy = OutOfOrderPolicy.DROP
+    max_clock_skew_seconds: int = 300  # 5 minutes default
+    enable_strict_ordering: bool = True
+
     # Internal state
     _buffer: CandleBuffer = field(init=False)
     _current_bucket_id: int | None = field(default=None, init=False)
+    _last_timestamp: int | None = field(default=None, init=False)  # For ordering checks
     _name: str = field(init=False)
     _timeframe: Timeframe | None = field(default=None, init=False)
 
@@ -61,6 +92,9 @@ class TimeAggregator:
         timeframe: Timeframe,
         source_tf_minutes: int = 1,
         buffer_size: int = 1500,
+        out_of_order_policy: OutOfOrderPolicy = OutOfOrderPolicy.DROP,
+        max_clock_skew_seconds: int = 300,
+        enable_strict_ordering: bool = True,
     ) -> TimeAggregator:
         """Create aggregator from Timeframe object (recommended).
 
@@ -70,6 +104,9 @@ class TimeAggregator:
             timeframe: Timeframe object (e.g., TimeframeConfig.H1).
             source_tf_minutes: Source timeframe in minutes (typically 1).
             buffer_size: Maximum number of source candles in memory.
+            out_of_order_policy: How to handle out-of-order candles.
+            max_clock_skew_seconds: Maximum allowed timestamp drift.
+            enable_strict_ordering: Whether to enforce chronological order.
 
         Returns:
             Configured TimeAggregator instance.
@@ -83,6 +120,9 @@ class TimeAggregator:
             tf_minutes=timeframe.minutes,
             source_tf_minutes=source_tf_minutes,
             buffer_size=buffer_size,
+            out_of_order_policy=out_of_order_policy,
+            max_clock_skew_seconds=max_clock_skew_seconds,
+            enable_strict_ordering=enable_strict_ordering,
         )
         instance._timeframe = timeframe
         return instance
@@ -96,6 +136,57 @@ class TimeAggregator:
         if self._timeframe is None:
             self._timeframe = Timeframe(self.tf_minutes, f"TF{self.tf_minutes}")
         return self._timeframe
+
+    def _validate_candle_ordering(self, candle: Candle) -> bool:
+        """Validate candle timestamp against clock-skew and ordering policies.
+
+        Args:
+            candle: Incoming candle to validate.
+
+        Returns:
+            True if candle should be processed, False if it should be dropped.
+
+        Raises:
+            ClockSkewError: If strict ordering is enabled and violation detected.
+        """
+        if not self.enable_strict_ordering:
+            return True
+
+        # Convert datetime to unix timestamp for comparison
+        current_time = int(candle.ts.timestamp())
+
+        # Check clock skew (future candles)
+        import time
+
+        now = int(time.time())
+        if current_time > now + self.max_clock_skew_seconds:
+            if self.out_of_order_policy == OutOfOrderPolicy.RAISE:
+                raise ClockSkewError(
+                    f"Candle timestamp {current_time} is {current_time - now}s "
+                    f"in the future (max allowed: {self.max_clock_skew_seconds}s)"
+                )
+            elif self.out_of_order_policy == OutOfOrderPolicy.DROP:
+                return False
+            # RECALC: process anyway, let downstream handle
+
+        # Check chronological ordering (past candles)
+        if self._last_timestamp is not None:
+            time_diff = current_time - self._last_timestamp
+
+            # Past candle detected
+            if time_diff < 0:
+                if self.out_of_order_policy == OutOfOrderPolicy.RAISE:
+                    raise ClockSkewError(
+                        f"Out-of-order candle: {current_time} < {self._last_timestamp} "
+                        f"(delta: {time_diff}s)"
+                    )
+                elif self.out_of_order_policy == OutOfOrderPolicy.DROP:
+                    return False
+                # RECALC: continue processing, will trigger bucket recalculation
+
+        # Update last seen timestamp
+        self._last_timestamp = current_time
+        return True
 
     def __post_init__(self) -> None:
         """Initialize internal state after dataclass creation."""
@@ -141,22 +232,36 @@ class TimeAggregator:
             ...     h1_candle = result[0]
             ...     print(f"H1 complete: {h1_candle.close}")
         """
+        # Validate candle ordering and clock-skew
+        if not self._validate_candle_ordering(candle):
+            return []  # Candle dropped due to policy
+
         # TODO: Optimization opportunity - cache bucket_id calculation
         # For long backtests, store last_bucket_id and only recalculate when
         # timeframe period has potentially changed (5-10% CPU savings)
         bucket_id = self.timeframe.bucket_id(candle.ts)  # Self-contained and readable
         completed_candles: list[Candle] = []
 
-        # POLICY: Drop out-of-order bars (late delivery from WebSocket reconnects)
+        # CONFIGURABLE POLICY: Handle out-of-order bars based on policy setting
         # Out-of-order detection: incoming candle belongs to an older bucket
         if self._current_bucket_id is not None and bucket_id < self._current_bucket_id:
-            # Late bar detected - drop it to maintain deterministic results
-            # JUSTIFICATION:
-            # - Prevents unbounded memory growth tracking historical buckets
-            # - Maintains deterministic output regardless of delivery order
-            # - Simplifies downstream processing (no candle "updates")
-            # - Feed reliability should be handled at connection layer
-            return []  # Drop the late bar, return no completions
+            # Late bar detected - handle per policy
+            if self.out_of_order_policy == OutOfOrderPolicy.DROP:
+                # DROP: Silent ignore (prevents unbounded memory growth)
+                # JUSTIFICATION:
+                # - Prevents unbounded memory growth tracking historical buckets
+                # - Maintains deterministic output regardless of delivery order
+                # - Simplifies downstream processing (no candle "updates")
+                # - Feed reliability should be handled at connection layer
+                return []  # Drop the late bar, return no completions
+            elif self.out_of_order_policy == OutOfOrderPolicy.RAISE:
+                raise ClockSkewError(
+                    f"Out-of-order bucket: candle bucket_id {bucket_id} < "
+                    f"current bucket_id {self._current_bucket_id}"
+                )
+            # RECALC: Continue processing (expensive but most accurate)
+            # Note: This requires historical bucket reconstruction which
+            # may need additional implementation for full support
 
         # Check if we're starting a new bucket (period boundary crossed)
         if self._current_bucket_id is not None and bucket_id != self._current_bucket_id:
@@ -176,7 +281,7 @@ class TimeAggregator:
 
         return completed_candles
 
-    def update_with_label(self, candle: Candle) -> list[tuple[str, Candle]]:
+    def update_with_label(self, candle: Candle) -> list[CandleEvent]:
         """Update aggregator with new source candle, returning labeled results.
 
         Returns completed target timeframe candles with their timeframe labels.
@@ -186,7 +291,7 @@ class TimeAggregator:
             candle: New source timeframe candle (typically 1-minute).
 
         Returns:
-            List of (timeframe_name, completed_candle) tuples.
+            List of CandleEvent tuples (timeframe_name, completed_candle).
 
         Example:
             >>> aggregator = TimeAggregator(tf_minutes=60)
@@ -284,6 +389,9 @@ class MultiTimeframeAggregator:
                            Example: [60, 240, 1440] for H1, H4, D1.
         source_tf_minutes: Source timeframe in minutes (typically 1).
         buffer_size: Buffer size for each timeframe aggregator.
+        out_of_order_policy: How to handle out-of-order candles (applied to all timeframes).
+        max_clock_skew_seconds: Maximum allowed timestamp drift.
+        enable_strict_ordering: Whether to enforce chronological order.
 
     Example:
         >>> aggregator = MultiTimeframeAggregator([60, 240, 1440])
@@ -296,6 +404,9 @@ class MultiTimeframeAggregator:
     timeframes_minutes: list[int]
     source_tf_minutes: int = 1
     buffer_size: int = 1500
+    out_of_order_policy: OutOfOrderPolicy = OutOfOrderPolicy.DROP
+    max_clock_skew_seconds: int = 300
+    enable_strict_ordering: bool = True
 
     # Internal state
     _aggregators: dict[str, TimeAggregator] = field(init=False)
@@ -311,6 +422,9 @@ class MultiTimeframeAggregator:
                 tf_minutes=tf_minutes,
                 source_tf_minutes=self.source_tf_minutes,
                 buffer_size=self.buffer_size,
+                out_of_order_policy=self.out_of_order_policy,
+                max_clock_skew_seconds=self.max_clock_skew_seconds,
+                enable_strict_ordering=self.enable_strict_ordering,
             )
             self._aggregators[aggregator.name] = aggregator
 

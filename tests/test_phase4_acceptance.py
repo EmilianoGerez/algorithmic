@@ -315,7 +315,7 @@ class TestPhase4Acceptance:
 
         # Mock detector event (similar to FVG)
         class MockFVGEvent:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.tf = "H1"
                 self.ts = self.base_time = datetime(2025, 1, 1, 12, 0, 0)
                 self.gap_top = 1.1000

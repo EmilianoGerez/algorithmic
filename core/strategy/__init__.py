@@ -22,6 +22,19 @@ from .pool_models import (
 )
 from .pool_registry import PoolRegistry, PoolRegistryConfig, PoolRegistryMetrics
 from .ring_buffer import CandleBuffer, RingBuffer
+
+# Phase 6: ZoneWatcher + FSM
+from .signal_candidate import CandidateConfig, FSMGuards, FSMResult, SignalCandidateFSM
+from .signal_models import (
+    CandidateState,
+    SignalCandidate,
+    SignalDirection,
+    TradingSignal,
+    ZoneEnteredEvent,
+    ZoneType,
+    generate_candidate_id,
+    generate_signal_id,
+)
 from .timeframe import (
     TimeframeConfig,
     format_timeframe_name,
@@ -29,6 +42,7 @@ from .timeframe import (
     get_bucket_start,
 )
 from .ttl_wheel import ScheduledExpiry, TimerWheel, WheelConfig
+from .zone_watcher import ZoneMeta, ZoneWatcher, ZoneWatcherConfig
 
 __all__ = [
     # Timeframe utilities
@@ -68,6 +82,22 @@ __all__ = [
     "OverlapConfig",
     "OverlapIndex",
     "OverlapResult",
+    # ZoneWatcher + FSM (Phase 6)
+    "ZoneWatcher",
+    "ZoneWatcherConfig",
+    "ZoneMeta",
+    "SignalCandidateFSM",
+    "CandidateConfig",
+    "FSMGuards",
+    "FSMResult",
+    "SignalCandidate",
+    "TradingSignal",
+    "ZoneEnteredEvent",
+    "CandidateState",
+    "SignalDirection",
+    "ZoneType",
+    "generate_candidate_id",
+    "generate_signal_id",
     # TTL wheel
     "TimerWheel",
     "WheelConfig",

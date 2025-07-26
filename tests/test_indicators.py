@@ -161,13 +161,14 @@ class TestVolumeSMA:
 
         assert vol_sma.is_ready
         expected_sma = sum(volumes) / len(volumes)
+        assert vol_sma.value is not None
         assert np.allclose(vol_sma.value, expected_sma, rtol=1e-6, atol=1e-8)
 
         # Test volume multiple
         expected_multiple = 3000 / expected_sma
-        assert np.allclose(
-            vol_sma.volume_multiple(3000), expected_multiple, rtol=1e-6, atol=1e-8
-        )
+        vol_multiple = vol_sma.volume_multiple(3000)
+        assert vol_multiple is not None
+        assert np.allclose(vol_multiple, expected_multiple, rtol=1e-6, atol=1e-8)
 
 
 class TestIndicatorPack:

@@ -52,7 +52,7 @@ def create_synthetic_candles(count: int, start_price: float = 100.0) -> list[Can
     return candles
 
 
-def demo_fvg_detection():
+def demo_fvg_detection() -> None:
     """Demonstrate FVG detection with hand-marked examples."""
     print("=== FVG Detection Demo ===")
 
@@ -103,7 +103,7 @@ def demo_fvg_detection():
     print(f"Registry stats: {registry.get_stats()}\n")
 
 
-def demo_pivot_detection():
+def demo_pivot_detection() -> None:
     """Demonstrate pivot detection with swing patterns."""
     print("=== Pivot Detection Demo ===")
 
@@ -149,19 +149,26 @@ def demo_pivot_detection():
         for event in events:
             registry.add_event(event)
             total_events += 1
+            price_val = getattr(event, "price", None)
+            strength_val = getattr(event, "strength_label", "N/A")
+            atr_val = getattr(event, "atr_distance", 0.0)
+
+            price_str = f"{price_val:.1f}" if price_val is not None else "N/A"
+            atr_str = f"{atr_val:.2f}" if atr_val is not None else "N/A"
+
             print(
                 f"  ✅ {EventClassifier.get_event_type(event)}: "
                 f"{event.side} at {event.ts.strftime('%H:%M')} "
-                f"price={event.price:.1f} "
-                f"strength={event.strength_label} "
-                f"atr_dist={event.atr_distance:.2f}"
+                f"price={price_str} "
+                f"strength={strength_val} "
+                f"atr_dist={atr_str}"
             )
 
     print(f"Detected {total_events} Pivot events")
     print(f"Registry stats: {registry.get_stats()}\n")
 
 
-def demo_multi_timeframe_integration():
+def demo_multi_timeframe_integration() -> None:
     """Demonstrate integration with TimeAggregator for HTF processing."""
     print("=== Multi-Timeframe Integration Demo ===")
 
@@ -219,7 +226,7 @@ def demo_multi_timeframe_integration():
     print()
 
 
-def demo_performance_benchmark():
+def demo_performance_benchmark() -> None:
     """Benchmark detector performance target: >50k HTF candles/second."""
     print("=== Performance Benchmark ===")
     print("Target: >50,000 HTF candles/second")
@@ -297,7 +304,7 @@ def demo_performance_benchmark():
     print()
 
 
-def main():
+def main() -> None:
     """Run complete Phase 3 validation suite."""
     print("🚀 Phase 3: HTF Detectors Validation Suite")
     print("=" * 50)

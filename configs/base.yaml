@@ -52,6 +52,24 @@ detectors:
 
   enabled_timeframes: ["H1", "H4", "D1"] # Active detection timeframes
 
+pools:
+  # Per-timeframe TTL configuration
+  H1:
+    ttl: 120m # 2 hours TTL for H1 pools
+    hit_tolerance: 0.0 # Exact price matching
+  H4:
+    ttl: 6h # 6 hours TTL for H4 pools
+    hit_tolerance: 0.0 # Exact price matching
+  D1:
+    ttl: 2d # 2 days TTL for D1 pools
+    hit_tolerance: 0.0 # Exact price matching
+
+  # Pool lifecycle settings
+  strength_threshold: 0.1 # Minimum detector strength to create pools
+  grace_period_minutes: 5 # Keep expired pools for analytics
+  max_pools_per_tf: 10000 # Memory safety limit per timeframe
+  auto_expire_interval: 30s # How often to check for expiries
+
 execution:
   broker: paper
   risk_per_trade: 0.005

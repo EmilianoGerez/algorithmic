@@ -7,7 +7,7 @@ from core.detectors.fvg import FVGDetector
 from core.entities import Candle
 
 
-def debug_fvg():
+def debug_fvg() -> None:
     print("=== FVG Debug ===")
     detector = FVGDetector("H1", min_gap_atr=0.1, min_gap_pct=0.01, min_rel_vol=0.8)
 

@@ -36,7 +36,7 @@ def create_demo_candles(count: int = 100) -> list[Candle]:
     return candles
 
 
-def main():
+def main() -> None:
     print("🚀 Phase 1 Indicator Demo")
     print("=" * 50)
 
@@ -71,8 +71,10 @@ def main():
             print(f"  ATR: ${snapshot.atr:.3f}")
             print(f"  Volume SMA: {snapshot.volume_sma:.0f}")
             print(f"  Volume Multiple: {snapshot.volume_multiple:.2f}x")
-            print(f"  Regime: {snapshot.regime.name}")
-            print(f"  Regime (slope): {snapshot.regime_with_slope.name}")
+            print(f"  Regime: {snapshot.regime.name if snapshot.regime else 'Unknown'}")
+            print(
+                f"  Regime (slope): {snapshot.regime_with_slope.name if snapshot.regime_with_slope else 'Unknown'}"
+            )
             print(
                 f"  EMA Aligned: {'🟢 Bullish' if snapshot.ema_aligned_bullish else '🔴 Bearish' if snapshot.ema_aligned_bearish else '🟡 Neutral'}"
             )
@@ -81,7 +83,9 @@ def main():
     final_snapshot = pack.snapshot()
     print("\n🎯 Final Results")
     print(f"  Total candles processed: {len(candles)}")
-    print(f"  Final regime: {final_snapshot.regime.name}")
+    print(
+        f"  Final regime: {final_snapshot.regime.name if final_snapshot.regime else 'Unknown'}"
+    )
     print(f"  EMA21 > EMA50: {final_snapshot.ema_aligned_bullish}")
     print(f"  All indicators ready: {final_snapshot.is_ready}")
 

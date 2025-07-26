@@ -37,7 +37,7 @@ def debug_manager():
 
     events = []
     for i, candle in enumerate(candles):
-        print(f"\nProcessing candle {i+1}: {candle}")
+        print(f"\nProcessing candle {i + 1}: {candle}")
 
         # Check indicator status
         atr_ind = manager._atr_indicators["H1"]

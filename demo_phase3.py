@@ -97,7 +97,7 @@ def demo_fvg_detection():
                 f"[{event.bottom:.1f} - {event.top:.1f}] "
                 f"strength={event.strength:.2f}"
             )
-        print(f"  Processed candle {i+1}/4: {len(events)} events")
+        print(f"  Processed candle {i + 1}/4: {len(events)} events")
 
     print(f"Detected {total_events} FVG events")
     print(f"Registry stats: {registry.get_stats()}\n")

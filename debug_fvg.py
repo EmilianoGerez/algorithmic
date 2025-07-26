@@ -27,9 +27,9 @@ def debug_fvg():
 
     print(f"ATR: {atr_value}, Volume SMA: {vol_sma_value}")
     print(f"Gap size: {108 - 102} = 6")
-    print(f"Gap size ATR: {(108-102)/atr_value} = {6/5} = 1.2")
-    print(f"Gap size %: {(108-102)/101} = {6/101:.4f}")
-    print(f"Volume ratio: {2000/1000} = 2.0")
+    print(f"Gap size ATR: {(108 - 102) / atr_value} = {6 / 5} = 1.2")
+    print(f"Gap size %: {(108 - 102) / 101} = {6 / 101:.4f}")
+    print(f"Volume ratio: {2000 / 1000} = 2.0")
 
     events = []
     for i, candle in enumerate(candles):

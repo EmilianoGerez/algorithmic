@@ -90,6 +90,21 @@ hlz:
   max_active_hlzs: 1000 # Memory safety limit
   recompute_on_update: true # Recalculate HLZs when pools change
 
+# Phase 6: ZoneWatcher + FSM Configuration
+zone_watcher:
+  price_tolerance: 0.0 # Price tolerance in points for zone entry
+  confirm_closure: false # Wait for bar close to confirm zone entry?
+  min_strength: 1.0 # Minimum zone strength to track
+  max_active_zones: 1000 # Maximum zones to track simultaneously
+
+candidate:
+  expiry_minutes: 120 # Candidate lifetime in minutes
+  filters:
+    ema_alignment: true # Require EMA alignment for signals
+    volume_multiple: 1.2 # Minimum volume vs SMA (1.2x = 20% above average)
+    killzone: ["12:00", "14:05"] # Preferred trading window (UTC)
+    regime: ["bull", "neutral"] # Allowed market regimes
+
 execution:
   broker: paper
   risk_per_trade: 0.005

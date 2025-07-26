@@ -107,7 +107,17 @@ candidate:
 
 execution:
   broker: paper
-  risk_per_trade: 0.005
+  risk:
+    model: atr # or percent
+    risk_per_trade: 0.005 # 0.5% of account per trade
+    atr_period: 14
+    sl_atr_multiple: 1.5
+    tp_rr: 2.0 # 2:1 reward to risk ratio
+    min_position: 0.01
+    max_position_pct: 0.1 # Max 10% of account in single position
+  broker_config:
+    initial_balance: 10000.0
+    commission_per_trade: 0.0
 
 feeds:
   base_tf: 1m

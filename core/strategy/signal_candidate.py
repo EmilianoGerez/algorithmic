@@ -225,6 +225,7 @@ class SignalCandidateFSM:
             zone_id=candidate.zone_id,
             zone_type=candidate.zone_type,
             direction=candidate.direction,
+            symbol="EURUSD",  # TODO: Extract from config or zone context
             entry_price=candidate.entry_price,
             current_price=bar.close,
             strength=candidate.strength,

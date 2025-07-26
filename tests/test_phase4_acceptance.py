@@ -423,7 +423,9 @@ class TestPhase4Acceptance:
         assert len(parts) == 3  # TF_timestamp_hash
         assert parts[1]  # timestamp part exists
         assert parts[2]  # hash part exists
-        assert len(parts[2]) == 6  # 6-char hex hash (24-bit for better distribution)
+        assert (
+            len(parts[2]) == 8
+        )  # 8-char hex hash (32-bit for maximum collision resistance)
 
         print("✓ Deterministic pool ID generation: PASSED")
 

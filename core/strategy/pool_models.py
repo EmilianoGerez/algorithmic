@@ -135,6 +135,8 @@ def generate_pool_id(
 
     Format: {tf}_{iso_timestamp}_{hash_suffix}
     Guarantees uniqueness and reproducible IDs across runs.
+    Uses full 32-bit hash for maximum collision resistance,
+    supporting millions of lifetime pools.
 
     Args:
         timeframe: Pool timeframe (H1, H4, D1)
@@ -159,10 +161,10 @@ def generate_pool_id(
     combined_bytes = tf_bytes + timestamp_bytes + price_bytes
 
     price_hash = (
-        zlib.adler32(combined_bytes) & 0xFFFFFF
-    )  # 24-bit hash for better distribution
+        zlib.adler32(combined_bytes) & 0xFFFFFFFF
+    )  # 32-bit hash for maximum collision resistance
 
     # ISO timestamp without microseconds for cleaner IDs
     iso_ts = timestamp.replace(microsecond=0).isoformat()
 
-    return f"{timeframe}_{iso_ts}_{price_hash:06x}"
+    return f"{timeframe}_{iso_ts}_{price_hash:08x}"

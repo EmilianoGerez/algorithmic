@@ -35,6 +35,9 @@ class DetectorConfig:
     # Volume SMA settings
     volume_sma_period: int = 20
 
+    # Ordering policy
+    out_of_order_policy: str = "drop"  # "drop" or "raise"
+
     # Enabled timeframes
     enabled_timeframes: list[str] = field(default_factory=lambda: ["H1", "H4", "D1"])
 
@@ -99,6 +102,18 @@ class DetectorManager:
         """
         if htf_label not in self.config.enabled_timeframes:
             return []
+
+        # Check for out-of-order candles
+        fvg_detector = self._fvg_detectors[htf_label]
+        if fvg_detector._buffer and candle.ts <= fvg_detector._buffer[-1].ts:
+            if self.config.out_of_order_policy == "raise":
+                raise ValueError(
+                    f"Out-of-order candle in {htf_label}: "
+                    f"{candle.ts} <= {fvg_detector._buffer[-1].ts}"
+                )
+            elif self.config.out_of_order_policy == "drop":
+                # Silently drop out-of-order candle
+                return []
 
         # Update indicators first
         self._atr_indicators[htf_label].update(candle)

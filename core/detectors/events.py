@@ -28,7 +28,7 @@ class LiquidityPoolEvent(Event, Protocol):
     strength: float  # Normalized 0.0-1.0 strength value
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BasePoolEvent:
     """Base implementation for liquidity pool events."""
 

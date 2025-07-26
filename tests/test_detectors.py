@@ -138,6 +138,52 @@ class TestFVGDetector:
         # Should pass percentage threshold (4.8% > 1%)
         assert len(events) == 1
 
+    def test_overlapping_fvgs_same_timeframe(self):
+        """Test that overlapping FVGs in same timeframe are both emitted."""
+        detector = FVGDetector("H1", min_gap_atr=0.3, min_gap_pct=0.05, min_rel_vol=1.0)
+
+        base_time = datetime(2024, 1, 1, 10, 0, tzinfo=UTC)
+
+        # Create sequence with two overlapping bullish gaps
+        candles = [
+            # First gap setup
+            Candle(base_time, 100.0, 105.0, 99.0, 102.0, 1000),  # prev1
+            Candle(
+                base_time + timedelta(hours=1), 103.0, 108.0, 102.0, 106.0, 1100
+            ),  # curr1
+            Candle(
+                base_time + timedelta(hours=2), 110.0, 115.0, 109.0, 112.0, 1500
+            ),  # next1 - first gap (105 to 109)
+            # Second gap setup (partially overlapping)
+            Candle(
+                base_time + timedelta(hours=3), 111.0, 116.0, 110.0, 114.0, 1200
+            ),  # prev2
+            Candle(
+                base_time + timedelta(hours=4), 113.0, 118.0, 112.0, 116.0, 1300
+            ),  # curr2
+            Candle(
+                base_time + timedelta(hours=5), 120.0, 125.0, 119.0, 122.0, 1600
+            ),  # next2 - second gap (116 to 119, overlaps with first)
+        ]
+
+        # ATR = 5.0, Volume SMA = 1000
+        atr_value = 5.0
+        vol_sma_value = 1000.0
+
+        events = []
+        for candle in candles:
+            events.extend(detector.update(candle, atr_value, vol_sma_value))
+
+        # Should detect multiple gaps as detector processes sliding window
+        bullish_events = [e for e in events if e.side == "bullish"]
+        assert (
+            len(bullish_events) >= 2
+        )  # At least 2 gaps, possibly more due to sliding window
+
+        # Verify that we have distinct gap ranges (Registry will handle overlaps later)
+        gap_ranges = [(e.bottom, e.top) for e in bullish_events]
+        assert len(set(gap_ranges)) >= 2  # At least 2 unique gap ranges
+
 
 class TestPivotDetector:
     """Test pivot detection with strength classification."""

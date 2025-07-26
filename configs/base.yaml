@@ -47,6 +47,9 @@ detectors:
     atr_period: 14 # ATR calculation period
     volume_sma_period: 20 # Volume SMA baseline period
 
+  # Ordering policy for out-of-sequence HTF candles
+  out_of_order_policy: "drop" # "drop" or "raise"
+
   enabled_timeframes: ["H1", "H4", "D1"] # Active detection timeframes
 
 execution:

@@ -12,7 +12,7 @@ from uuid import uuid4
 from core.entities import Candle
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PivotEvent:
     """Pivot point event with strength classification."""
 

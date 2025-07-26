@@ -9,10 +9,16 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
+from core.detectors._utils import (
+    calculate_gap_metrics,
+    calculate_volume_ratio,
+    log_detection_skip,
+    normalize_strength,
+)
 from core.entities import Candle
 
 
-@dataclass
+@dataclass(slots=True)
 class FVGEvent:
     """FVG detection event with enhanced metadata."""
 
@@ -82,22 +88,40 @@ class FVGDetector:
         prev, _, next_candle = self._buffer[-3], self._buffer[-2], self._buffer[-1]
         events = []
 
+        # Check for ATR warm-up
+        if atr_value is None or atr_value <= 0:
+            log_detection_skip(
+                "FVG",
+                "ATR not ready",
+                next_candle.ts.strftime("%H:%M:%S"),
+                self.tf,
+                f"atr_value={atr_value}",
+            )
+            return []
+
         # Calculate relative volume for filtering
-        rel_vol = next_candle.volume / vol_sma_value if vol_sma_value > 0 else 0
+        rel_vol = calculate_volume_ratio(next_candle.volume, vol_sma_value)
 
         # Volume filter: skip low-volume gaps
         if rel_vol < self.min_rel_vol:
+            log_detection_skip(
+                "FVG",
+                "Volume filter",
+                next_candle.ts.strftime("%H:%M:%S"),
+                self.tf,
+                f"rel_vol={rel_vol:.2f} < {self.min_rel_vol}",
+            )
             return []
 
         # Bullish FVG: prev.high < next.low (gap up)
         if prev.high < next_candle.low:
-            gap_size = next_candle.low - prev.high
-            gap_size_atr = gap_size / atr_value if atr_value > 0 else 0
-            gap_size_pct = gap_size / prev.close if prev.close > 0 else 0
+            gap_size, gap_size_atr, gap_size_pct = calculate_gap_metrics(
+                prev, next_candle, atr_value, "bullish"
+            )
 
             # OR logic: pass if either ATR or percentage threshold met
             if gap_size_atr >= self.min_gap_atr or gap_size_pct >= self.min_gap_pct:
-                strength = min(1.0, max(gap_size_atr / 2.0, gap_size_pct * 10))
+                strength = normalize_strength(gap_size_atr, gap_size_pct)
 
                 events.append(
                     FVGEvent(
@@ -116,13 +140,13 @@ class FVGDetector:
 
         # Bearish FVG: prev.low > next.high (gap down)
         if prev.low > next_candle.high:
-            gap_size = prev.low - next_candle.high
-            gap_size_atr = gap_size / atr_value if atr_value > 0 else 0
-            gap_size_pct = gap_size / prev.close if prev.close > 0 else 0
+            gap_size, gap_size_atr, gap_size_pct = calculate_gap_metrics(
+                prev, next_candle, atr_value, "bearish"
+            )
 
             # OR logic: pass if either ATR or percentage threshold met
             if gap_size_atr >= self.min_gap_atr or gap_size_pct >= self.min_gap_pct:
-                strength = min(1.0, max(gap_size_atr / 2.0, gap_size_pct * 10))
+                strength = normalize_strength(gap_size_atr, gap_size_pct)
 
                 events.append(
                     FVGEvent(

@@ -125,6 +125,9 @@ class RiskManager:
                 f"Position scaled down by {scale_factor:.2f} due to size limits"
             )
 
+        # Calculate notional value
+        notional = abs(float(quantity)) * signal.entry_price
+
         return PositionSizing(
             quantity=quantity,
             stop_loss=stop_loss,
@@ -132,6 +135,7 @@ class RiskManager:
             direction=signal.direction,
             risk_amount=risk_amount,
             entry_price=signal.entry_price,
+            notional=notional,
         )
 
     def _calculate_levels(

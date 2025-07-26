@@ -399,3 +399,105 @@ class TestBrokerIntegration:
         expected_loss = 5000 * (1.3000 - 1.3080)  # Negative for loss
         assert abs(final_account.realized_pnl - expected_loss) < 1e-6
         assert final_account.equity < 10000.0  # Loss occurred
+
+
+class TestPaperBrokerGapScenarios:
+    """Test paper broker behavior during market gaps and priority handling."""
+
+    @pytest.mark.asyncio
+    async def test_gap_stop_and_tp_priority_long_position(self) -> None:
+        """Test that stop loss fires first when both stop and TP are gapped over for long positions."""
+        broker = PaperBroker(initial_balance=10000.0, commission_per_trade=0.0)
+
+        # Open long position with both stop and take profit
+        entry_order = Order(
+            symbol="EURUSD",
+            order_type=OrderType.MARKET,
+            quantity=Decimal("1000"),
+            price=1.2000,
+            stop_loss=1.1950,  # 50 pip stop
+            take_profit=1.2100,  # 100 pip target
+        )
+
+        await broker.submit(entry_order)
+
+        # Simulate market gap where price jumps from 1.2000 to 1.2150
+        # This gaps over BOTH the take profit (1.2100) and potential stop loss
+        # For longs: TP should fire first since we're gapping in favorable direction
+        broker.update_prices("EURUSD", 1.2150)
+
+        # Check that position was closed at take profit, not stop
+        positions = await broker.positions()
+        assert len(positions) == 0
+
+        account = await broker.account()
+        # Should have profit from TP execution, not loss from stop
+        # TP execution should be at the gapped price (1.2150) since that's better than TP (1.2100)
+        expected_pnl = 1000 * (1.2150 - 1.2000)  # 150 pip profit from gap
+        assert account.realized_pnl > 0  # Profit, not loss
+        assert abs(account.realized_pnl - expected_pnl) < 1e-6
+
+    @pytest.mark.asyncio
+    async def test_gap_stop_and_tp_priority_short_position(self) -> None:
+        """Test that stop loss fires first when both stop and TP are gapped over for short positions."""
+        broker = PaperBroker(initial_balance=10000.0, commission_per_trade=0.0)
+
+        # Open short position with both stop and take profit
+        entry_order = Order(
+            symbol="GBPUSD",
+            order_type=OrderType.MARKET,
+            quantity=Decimal("-1000"),
+            price=1.3000,
+            stop_loss=1.3050,  # 50 pip stop (above entry for short)
+            take_profit=1.2900,  # 100 pip target (below entry for short)
+        )
+
+        await broker.submit(entry_order)
+
+        # Simulate market gap where price drops from 1.3000 to 1.2850
+        # This gaps over BOTH the take profit (1.2900) and would not hit stop
+        # For shorts: TP should fire since we're gapping in favorable direction
+        broker.update_prices("GBPUSD", 1.2850)
+
+        # Check that position was closed at take profit
+        positions = await broker.positions()
+        assert len(positions) == 0
+
+        account = await broker.account()
+        # Should have profit from TP execution
+        # TP execution should be at the gapped price (1.2850) since that's better than TP (1.2900)
+        expected_pnl = 1000 * (1.3000 - 1.2850)  # 150 pip profit from gap
+        assert account.realized_pnl > 0  # Profit, not loss
+        assert abs(account.realized_pnl - expected_pnl) < 1e-6
+
+    @pytest.mark.asyncio
+    async def test_gap_stop_priority_short_adverse_gap(self) -> None:
+        """Test that stop loss fires first when gap goes against short position."""
+        broker = PaperBroker(initial_balance=10000.0, commission_per_trade=0.0)
+
+        # Open short position
+        entry_order = Order(
+            symbol="GBPUSD",
+            order_type=OrderType.MARKET,
+            quantity=Decimal("-1000"),
+            price=1.3000,
+            stop_loss=1.3050,  # 50 pip stop (above entry for short)
+            take_profit=1.2900,  # 100 pip target (below entry for short)
+        )
+
+        await broker.submit(entry_order)
+
+        # Simulate adverse gap where price jumps from 1.3000 to 1.3100
+        # This gaps over the stop loss (1.3050) but not the take profit
+        # Stop should fire first since it's an adverse move
+        broker.update_prices("GBPUSD", 1.3100)
+
+        # Check that position was closed at stop loss
+        positions = await broker.positions()
+        assert len(positions) == 0
+
+        account = await broker.account()
+        # Should have loss from stop execution at gapped price
+        expected_pnl = 1000 * (1.3000 - 1.3100)  # 100 pip loss from gap
+        assert account.realized_pnl < 0  # Loss, not profit
+        assert abs(account.realized_pnl - expected_pnl) < 1e-6

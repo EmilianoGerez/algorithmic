@@ -408,43 +408,136 @@ class PaperBroker:
     def _check_stop_tp_triggers(self, symbol: str, current_price: float) -> None:
         """Check if current price triggers any stop loss or take profit orders.
 
+        In gap scenarios where both stop and TP are triggered, priority is given to:
+        - Take profit for favorable gaps (price moved in profit direction)
+        - Stop loss for adverse gaps (price moved against position)
+
         Args:
             symbol: Symbol being checked.
             current_price: Current market price.
         """
-        # Check stop loss triggers
-        triggered_stops = []
-        for pos_key, (stop_symbol, stop_price) in self._stop_orders.items():
-            if stop_symbol == symbol:
-                position = self._positions.get(symbol)
-                if position and (
-                    (position.quantity > 0 and current_price <= stop_price)
-                    or (position.quantity < 0 and current_price >= stop_price)
-                ):
-                    triggered_stops.append(pos_key)  # Execute triggered stop losses
-        for pos_key in triggered_stops:
-            del self._stop_orders[pos_key]
-            # Close position at stop price
-            # This is simplified - real implementation would create market order
-            self._logger.info(
-                f"Stop loss triggered for {symbol} at ${current_price:.2f}"
-            )
+        position = self._positions.get(symbol)
+        if not position:
+            return
 
-        # Similar logic for take profits
+        # Find triggered stops and TPs for this symbol
+        triggered_stops = []
         triggered_tps = []
+
+        for pos_key, (stop_symbol, stop_price) in self._stop_orders.items():
+            if stop_symbol == symbol and (
+                (position.quantity > 0 and current_price <= stop_price)
+                or (position.quantity < 0 and current_price >= stop_price)
+            ):
+                triggered_stops.append((pos_key, stop_price))
+
         for pos_key, (tp_symbol, tp_price) in self._tp_orders.items():
-            if tp_symbol == symbol:
-                position = self._positions.get(symbol)
-                if position and (
-                    (position.quantity > 0 and current_price >= tp_price)
-                    or (position.quantity < 0 and current_price <= tp_price)
-                ):
-                    triggered_tps.append(pos_key)  # Execute triggered take profits
-        for pos_key in triggered_tps:
+            if tp_symbol == symbol and (
+                (position.quantity > 0 and current_price >= tp_price)
+                or (position.quantity < 0 and current_price <= tp_price)
+            ):
+                triggered_tps.append((pos_key, tp_price))
+
+        # Handle gap scenarios where both stop and TP are triggered
+        if triggered_stops and triggered_tps:
+            # Determine gap direction relative to position
+            is_long = position.quantity > 0
+
+            # For gaps, prioritize the order that would execute first based on direction
+            # Long position: TP executes on upward gap, stop on downward gap
+            # Short position: TP executes on downward gap, stop on upward gap
+            if is_long:
+                # Long position: if price gapped up through both, TP has priority
+                # if price gapped down through both, stop has priority
+                tp_price = triggered_tps[0][1]  # Use first TP price as reference
+                stop_price = triggered_stops[0][1]  # Use first stop price as reference
+
+                if current_price >= max(tp_price, stop_price):
+                    # Upward gap - TP priority for long
+                    self._execute_tp_orders(triggered_tps, symbol, current_price)
+                    self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
+                else:
+                    # Downward gap - stop priority for long
+                    self._execute_stop_orders(triggered_stops, symbol, current_price)
+                    self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
+            else:
+                # Short position: if price gapped down through both, TP has priority
+                # if price gapped up through both, stop has priority
+                tp_price = triggered_tps[0][1]
+                stop_price = triggered_stops[0][1]
+
+                if current_price <= min(tp_price, stop_price):
+                    # Downward gap - TP priority for short
+                    self._execute_tp_orders(triggered_tps, symbol, current_price)
+                    self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
+                else:
+                    # Upward gap - stop priority for short
+                    self._execute_stop_orders(triggered_stops, symbol, current_price)
+                    self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
+        else:
+            # Normal scenario - execute whatever is triggered
+            if triggered_stops:
+                self._execute_stop_orders(triggered_stops, symbol, current_price)
+            if triggered_tps:
+                self._execute_tp_orders(triggered_tps, symbol, current_price)
+
+    def _execute_stop_orders(
+        self, triggered_stops: list, symbol: str, current_price: float
+    ) -> None:
+        """Execute triggered stop loss orders."""
+        for pos_key, stop_price in triggered_stops:
+            del self._stop_orders[pos_key]
+            self._logger.info(
+                f"Stop loss triggered for {symbol} at ${current_price:.2f} (stop: ${stop_price:.2f})"
+            )
+            # Close the position by updating with opposing quantity
+            if symbol in self._positions:
+                position = self._positions[symbol]
+                from datetime import datetime
+
+                # Update position with opposing quantity to close it
+                self._update_position(
+                    symbol,
+                    -position.quantity,  # Opposite quantity closes position
+                    current_price,
+                    datetime.utcnow(),
+                )
+
+    def _execute_tp_orders(
+        self, triggered_tps: list, symbol: str, current_price: float
+    ) -> None:
+        """Execute triggered take profit orders."""
+        for pos_key, tp_price in triggered_tps:
             del self._tp_orders[pos_key]
             self._logger.info(
-                f"Take profit triggered for {symbol} at ${current_price:.2f}"
+                f"Take profit triggered for {symbol} at ${current_price:.2f} (TP: ${tp_price:.2f})"
             )
+            # Close the position by updating with opposing quantity
+            if symbol in self._positions:
+                position = self._positions[symbol]
+                from datetime import datetime
+
+                # Update position with opposing quantity to close it
+                self._update_position(
+                    symbol,
+                    -position.quantity,  # Opposite quantity closes position
+                    current_price,
+                    datetime.utcnow(),
+                )
+
+    def _clear_remaining_orders(
+        self, triggered_stops: list, triggered_tps: list, symbol: str
+    ) -> None:
+        """Clear all remaining stop and TP orders for the symbol after gap execution."""
+        # Clear any remaining stops that weren't executed due to gap priority
+        for pos_key, _ in triggered_stops:
+            if pos_key in self._stop_orders:
+                del self._stop_orders[pos_key]
+
+        # Clear any remaining TPs that weren't executed due to gap priority
+        for pos_key, _ in triggered_tps:
+            if pos_key in self._tp_orders:
+                del self._tp_orders[pos_key]
 
     def _check_pending_orders(self, symbol: str, current_price: float) -> None:
         """Check if current price triggers any pending limit orders.

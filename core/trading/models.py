@@ -61,6 +61,7 @@ class PositionSizing:
         direction: Trade direction (LONG/SHORT)
         risk_amount: Dollar amount at risk for this trade
         entry_price: Expected entry price for the trade
+        notional: Pre-computed notional value (quantity × entry_price)
     """
 
     quantity: Decimal
@@ -69,6 +70,7 @@ class PositionSizing:
     direction: SignalDirection
     risk_amount: float
     entry_price: float
+    notional: float
 
 
 @dataclass(slots=True, frozen=True)

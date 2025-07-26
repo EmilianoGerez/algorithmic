@@ -7,8 +7,10 @@ including position sizing models, risk limits, and stop/take profit calculations
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 __all__ = ["RiskModel", "RiskConfig"]
 
@@ -38,6 +40,7 @@ class RiskConfig:
         min_position: Minimum position size (useful for futures contracts)
         max_position_pct: Maximum position size as percentage of account
         max_correlation: Maximum correlation between open positions (future use)
+        slippage_fn: Optional slippage model function(price, qty) -> slipped_price
     """
 
     model: RiskModel = RiskModel.ATR
@@ -48,6 +51,9 @@ class RiskConfig:
     min_position: float = 0.01  # Minimum position size
     max_position_pct: float = 0.1  # Max 10% of account in single position
     max_correlation: float = 0.7  # Future use for position correlation limits
+    slippage_fn: Callable[[float, float], float] | None = (
+        None  # (price, qty) -> slipped_price
+    )
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""

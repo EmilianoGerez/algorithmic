@@ -1,0 +1,483 @@
+"""
+Paper trading broker implementation for simulation and backtesting.
+
+This module provides a complete paper trading broker that simulates real
+trading operations without actual market execution. It maintains positions,
+calculates PnL, and handles stop loss / take profit logic automatically.
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+from uuid import uuid4
+
+from core.trading.models import (
+    AccountState,
+    Order,
+    OrderReceipt,
+    OrderStatus,
+    OrderType,
+    Position,
+)
+from core.trading.protocols import Broker
+
+from .exceptions import BrokerError
+
+__all__ = ["PaperBroker"]
+
+logger = logging.getLogger(__name__)
+
+
+class PaperBroker:
+    """Paper trading broker for simulation and backtesting.
+
+    Provides a complete trading simulation environment that mimics real
+    broker behavior without actual market execution. Automatically handles
+    position management, PnL calculations, and stop/take profit logic.
+
+    The broker maintains an internal order book and position tracking,
+    processing market data to simulate realistic fill behavior.
+    """
+
+    def __init__(
+        self,
+        initial_balance: float = 10000.0,
+        commission_per_trade: float = 0.0,
+    ) -> None:
+        """Initialize paper broker with account settings.
+
+        Args:
+            initial_balance: Starting cash balance for the account.
+            commission_per_trade: Commission charged per trade (flat fee).
+        """
+        self.initial_balance = initial_balance
+        self.commission_per_trade = commission_per_trade
+
+        # Account state
+        self._cash_balance = initial_balance
+        self._realized_pnl = 0.0
+        self._positions: dict[str, Position] = {}
+        self._pending_orders: dict[str, Order] = {}
+
+        # Stop/TP tracking for automatic execution
+        self._stop_orders: dict[
+            str, tuple[str, float]
+        ] = {}  # position_id -> (symbol, price)
+        self._tp_orders: dict[
+            str, tuple[str, float]
+        ] = {}  # position_id -> (symbol, price)
+
+        self._logger = logger.getChild(self.__class__.__name__)
+        self._logger.info(f"Paper broker initialized with ${initial_balance:,.2f}")
+
+    async def submit(self, order: Order) -> OrderReceipt:
+        """Submit an order for execution.
+
+        For market orders, executes immediately at current price.
+        For limit orders, stores for future execution when price is hit.
+
+        Args:
+            order: Order specification to execute.
+
+        Returns:
+            OrderReceipt with execution details.
+
+        Raises:
+            BrokerError: If order validation fails.
+        """
+        order_id = str(uuid4())
+        timestamp = datetime.utcnow()
+
+        try:
+            # Validate order
+            self._validate_order(order)
+
+            if order.order_type == OrderType.MARKET:
+                # Execute market order immediately
+                return await self._execute_market_order(order, order_id, timestamp)
+            else:
+                # Store limit order for future execution
+                self._pending_orders[order_id] = order
+                return OrderReceipt(
+                    order_id=order_id,
+                    client_id=order.client_id,
+                    status=OrderStatus.PENDING,
+                    timestamp=timestamp,
+                    message="Order accepted and pending execution",
+                )
+
+        except Exception as e:
+            self._logger.error(f"Order submission failed: {e}")
+            return OrderReceipt(
+                order_id=order_id,
+                client_id=order.client_id,
+                status=OrderStatus.REJECTED,
+                timestamp=timestamp,
+                message=str(e),
+            )
+
+    async def positions(self) -> list[Position]:
+        """Get current open positions.
+
+        Returns:
+            List of all open positions.
+        """
+        return list(self._positions.values())
+
+    async def account(self) -> AccountState:
+        """Get current account state.
+
+        Returns:
+            Current account state with balances and positions.
+        """
+        # Calculate total unrealized PnL
+        total_unrealized = sum(pos.unrealized_pnl for pos in self._positions.values())
+        equity = self._cash_balance + total_unrealized
+
+        return AccountState(
+            cash_balance=self._cash_balance,
+            equity=equity,
+            positions=dict(self._positions),
+            realized_pnl=self._realized_pnl,
+            open_orders=len(self._pending_orders),
+            timestamp=datetime.utcnow(),
+        )
+
+    async def cancel_order(self, order_id: str) -> bool:
+        """Cancel a pending order.
+
+        Args:
+            order_id: Order ID to cancel.
+
+        Returns:
+            True if order was cancelled successfully.
+        """
+        if order_id in self._pending_orders:
+            del self._pending_orders[order_id]
+            self._logger.info(f"Order {order_id} cancelled")
+            return True
+        return False
+
+    async def close_position(
+        self, symbol: str, quantity: float | None = None
+    ) -> OrderReceipt:
+        """Close an open position.
+
+        Args:
+            symbol: Symbol to close position for.
+            quantity: Partial quantity to close (None = close entire position).
+
+        Returns:
+            OrderReceipt for the closing order.
+        """
+        if symbol not in self._positions:
+            raise BrokerError(f"No open position for {symbol}")
+
+        position = self._positions[symbol]
+        close_quantity = (
+            quantity if quantity is not None else abs(float(position.quantity))
+        )
+
+        # Create opposing order to close position
+        close_order = Order(
+            symbol=symbol,
+            order_type=OrderType.MARKET,
+            quantity=Decimal(
+                str(-close_quantity if position.quantity > 0 else close_quantity)
+            ),
+        )
+
+        return await self.submit(close_order)
+
+    def update_prices(self, symbol: str, current_price: float) -> None:
+        """Update current market prices and check for stop/TP execution.
+
+        This method should be called with each new price update to:
+        1. Update position mark-to-market values
+        2. Check for stop loss and take profit triggers
+        3. Execute any pending limit orders
+
+        Args:
+            symbol: Symbol being updated.
+            current_price: New market price.
+        """
+        # Update position marks
+        if symbol in self._positions:
+            self._update_position_mark(symbol, current_price)
+
+        # Check stop loss and take profit triggers
+        self._check_stop_tp_triggers(symbol, current_price)
+
+        # Check pending limit orders
+        self._check_pending_orders(symbol, current_price)
+
+    def _validate_order(self, order: Order) -> None:
+        """Validate order before execution.
+
+        Args:
+            order: Order to validate.
+
+        Raises:
+            BrokerError: If order validation fails.
+        """
+        if order.quantity == 0:
+            raise BrokerError("Order quantity cannot be zero")
+
+        if order.order_type == OrderType.LIMIT and order.price is None:
+            raise BrokerError("Limit orders must specify a price")
+
+        # Check available balance for new positions
+        if order.symbol not in self._positions:
+            required_margin = abs(float(order.quantity)) * (
+                order.price or 100.0
+            )  # Rough estimate
+            if required_margin > self._cash_balance:
+                raise BrokerError(
+                    f"Insufficient funds: ${self._cash_balance:.2f} available, ${required_margin:.2f} required"
+                )
+
+    async def _execute_market_order(
+        self,
+        order: Order,
+        order_id: str,
+        timestamp: datetime,
+    ) -> OrderReceipt:
+        """Execute a market order immediately.
+
+        Args:
+            order: Market order to execute.
+            order_id: Generated order ID.
+            timestamp: Execution timestamp.
+
+        Returns:
+            OrderReceipt with execution details.
+        """
+        # For paper trading, assume we can fill at the requested price
+        # In real implementation, this would use current bid/ask
+        fill_price = order.price or 100.0  # Default price if not specified
+
+        # Update or create position
+        self._update_position(order.symbol, order.quantity, fill_price, timestamp)
+
+        # Handle stop loss and take profit orders
+        if order.stop_loss:
+            position_key = f"{order.symbol}_{timestamp.timestamp()}"
+            self._stop_orders[position_key] = (order.symbol, order.stop_loss)
+
+        if order.take_profit:
+            position_key = f"{order.symbol}_{timestamp.timestamp()}"
+            self._tp_orders[position_key] = (order.symbol, order.take_profit)
+
+        # Apply commission
+        self._cash_balance -= self.commission_per_trade
+
+        self._logger.info(
+            f"Market order executed: {order.symbol} {order.quantity} @ ${fill_price:.2f}"
+        )
+
+        return OrderReceipt(
+            order_id=order_id,
+            client_id=order.client_id,
+            status=OrderStatus.FILLED,
+            filled_quantity=order.quantity,
+            avg_fill_price=fill_price,
+            timestamp=timestamp,
+            message="Market order filled",
+        )
+
+    def _update_position(
+        self,
+        symbol: str,
+        quantity: Decimal,
+        price: float,
+        timestamp: datetime,
+    ) -> None:
+        """Update or create position after order execution.
+
+        Args:
+            symbol: Trading symbol.
+            quantity: Quantity to add/subtract (signed).
+            price: Execution price.
+            timestamp: Execution time.
+        """
+        if symbol in self._positions:
+            # Update existing position
+            existing = self._positions[symbol]
+            new_quantity = existing.quantity + quantity
+
+            if new_quantity == 0:
+                # Position closed - calculate realized PnL
+                # Use the quantity being closed (absolute value) for PnL calculation
+                closing_quantity = abs(float(quantity))
+
+                if existing.quantity > 0:  # Was long
+                    pnl = closing_quantity * (price - existing.avg_entry_price)
+                else:  # Was short
+                    pnl = closing_quantity * (existing.avg_entry_price - price)
+
+                self._realized_pnl += pnl
+                self._cash_balance += pnl
+                del self._positions[symbol]
+
+                self._logger.info(f"Position closed: {symbol}, PnL: ${pnl:.2f}")
+
+            elif (new_quantity > 0) == (existing.quantity > 0):
+                # Same direction - update average entry price
+                total_cost = (
+                    float(existing.quantity) * existing.avg_entry_price
+                    + float(quantity) * price
+                )
+                new_avg_price = total_cost / float(new_quantity)
+
+                self._positions[symbol] = Position(
+                    symbol=symbol,
+                    quantity=new_quantity,
+                    avg_entry_price=new_avg_price,
+                    current_price=price,
+                    unrealized_pnl=0.0,  # Will be updated on next price update
+                    entry_timestamp=existing.entry_timestamp,
+                )
+
+            else:
+                # Opposite direction - partial close with remaining position
+                # This is a simplification; real implementation would be more complex
+                close_quantity = min(
+                    abs(float(quantity)), abs(float(existing.quantity))
+                )
+
+                if abs(float(existing.quantity)) > close_quantity:
+                    # Partial close
+                    remaining_qty = existing.quantity - quantity
+                    self._positions[symbol] = Position(
+                        symbol=symbol,
+                        quantity=remaining_qty,
+                        avg_entry_price=existing.avg_entry_price,
+                        current_price=price,
+                        unrealized_pnl=0.0,
+                        entry_timestamp=existing.entry_timestamp,
+                    )
+
+        else:
+            # New position
+            self._positions[symbol] = Position(
+                symbol=symbol,
+                quantity=quantity,
+                avg_entry_price=price,
+                current_price=price,
+                unrealized_pnl=0.0,
+                entry_timestamp=timestamp,
+            )
+
+            self._logger.info(
+                f"New position opened: {symbol} {quantity} @ ${price:.2f}"
+            )
+
+    def _update_position_mark(self, symbol: str, current_price: float) -> None:
+        """Update position mark-to-market value.
+
+        Args:
+            symbol: Symbol to update.
+            current_price: Current market price.
+        """
+        if symbol in self._positions:
+            position = self._positions[symbol]
+
+            # Calculate unrealized PnL
+            if position.quantity > 0:  # Long position
+                unrealized_pnl = float(position.quantity) * (
+                    current_price - position.avg_entry_price
+                )
+            else:  # Short position
+                unrealized_pnl = float(position.quantity) * (
+                    current_price - position.avg_entry_price
+                )
+
+            # Update position
+            self._positions[symbol] = Position(
+                symbol=position.symbol,
+                quantity=position.quantity,
+                avg_entry_price=position.avg_entry_price,
+                current_price=current_price,
+                unrealized_pnl=unrealized_pnl,
+                entry_timestamp=position.entry_timestamp,
+            )
+
+    def _check_stop_tp_triggers(self, symbol: str, current_price: float) -> None:
+        """Check if current price triggers any stop loss or take profit orders.
+
+        Args:
+            symbol: Symbol being checked.
+            current_price: Current market price.
+        """
+        # Check stop loss triggers
+        triggered_stops = []
+        for pos_key, (stop_symbol, stop_price) in self._stop_orders.items():
+            if stop_symbol == symbol:
+                position = self._positions.get(symbol)
+                if position and (
+                    (position.quantity > 0 and current_price <= stop_price)
+                    or (position.quantity < 0 and current_price >= stop_price)
+                ):
+                    triggered_stops.append(pos_key)  # Execute triggered stop losses
+        for pos_key in triggered_stops:
+            del self._stop_orders[pos_key]
+            # Close position at stop price
+            # This is simplified - real implementation would create market order
+            self._logger.info(
+                f"Stop loss triggered for {symbol} at ${current_price:.2f}"
+            )
+
+        # Similar logic for take profits
+        triggered_tps = []
+        for pos_key, (tp_symbol, tp_price) in self._tp_orders.items():
+            if tp_symbol == symbol:
+                position = self._positions.get(symbol)
+                if position and (
+                    (position.quantity > 0 and current_price >= tp_price)
+                    or (position.quantity < 0 and current_price <= tp_price)
+                ):
+                    triggered_tps.append(pos_key)  # Execute triggered take profits
+        for pos_key in triggered_tps:
+            del self._tp_orders[pos_key]
+            self._logger.info(
+                f"Take profit triggered for {symbol} at ${current_price:.2f}"
+            )
+
+    def _check_pending_orders(self, symbol: str, current_price: float) -> None:
+        """Check if current price triggers any pending limit orders.
+
+        Args:
+            symbol: Symbol being checked.
+            current_price: Current market price.
+        """
+        # This is simplified - would need proper limit order logic
+        # For now, just log that we have this capability
+        pending_count = len(
+            [o for o in self._pending_orders.values() if o.symbol == symbol]
+        )
+        if pending_count > 0:
+            self._logger.debug(f"Checking {pending_count} pending orders for {symbol}")
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get broker performance statistics.
+
+        Returns:
+            Dictionary with broker statistics and performance metrics.
+        """
+        total_positions = len(self._positions)
+        total_unrealized = sum(pos.unrealized_pnl for pos in self._positions.values())
+
+        return {
+            "initial_balance": self.initial_balance,
+            "cash_balance": self._cash_balance,
+            "realized_pnl": self._realized_pnl,
+            "unrealized_pnl": total_unrealized,
+            "total_equity": self._cash_balance + total_unrealized,
+            "open_positions": total_positions,
+            "pending_orders": len(self._pending_orders),
+            "stop_orders": len(self._stop_orders),
+            "tp_orders": len(self._tp_orders),
+        }

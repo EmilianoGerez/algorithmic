@@ -62,6 +62,9 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "asyncio: marks tests as asyncio tests",
+]
 
 [tool.coverage.run]
 source = ["core"]

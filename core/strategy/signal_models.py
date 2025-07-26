@@ -109,6 +109,7 @@ class TradingSignal:
     zone_id: str  # Source zone ID
     zone_type: ZoneType
     direction: SignalDirection
+    symbol: str  # Trading symbol (e.g., "EURUSD", "BTCUSD")
     entry_price: float  # Zone entry price
     current_price: float  # Current market price when signal generated
     strength: float  # Zone strength

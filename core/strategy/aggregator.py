@@ -149,10 +149,7 @@ class TimeAggregator:
 
         # POLICY: Drop out-of-order bars (late delivery from WebSocket reconnects)
         # Out-of-order detection: incoming candle belongs to an older bucket
-        if (
-            self._current_bucket_id is not None
-            and bucket_id < self._current_bucket_id
-        ):
+        if self._current_bucket_id is not None and bucket_id < self._current_bucket_id:
             # Late bar detected - drop it to maintain deterministic results
             # JUSTIFICATION:
             # - Prevents unbounded memory growth tracking historical buckets

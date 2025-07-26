@@ -5,7 +5,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import NamedTuple
 
-__all__ = ["TimeframeConfig", "TimeframePeriod", "Timeframe", "get_bucket_id", "get_bucket_start"]
+__all__ = [
+    "TimeframeConfig",
+    "TimeframePeriod",
+    "Timeframe",
+    "get_bucket_id",
+    "get_bucket_start",
+]
 
 
 class TimeframePeriod(NamedTuple):

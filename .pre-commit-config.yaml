@@ -1,0 +1,70 @@
+# Pre-commit configuration for automatic code quality checks
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  # Ruff - Fast Python linter and formatter (replaces flake8, isort, black)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4 # Use the ref you want to point at
+    hooks:
+      # Run the linter
+      - id: ruff
+        name: ruff (linter)
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi, jupyter]
+
+      # Run the formatter
+      - id: ruff-format
+        name: ruff (formatter)
+        types_or: [python, pyi, jupyter]
+
+  # MyPy - Static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        name: mypy (type check)
+        args: [--strict]
+        files: ^core/
+        additional_dependencies: [types-PyYAML, types-requests]
+
+  # Built-in hooks for basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+      - id: end-of-file-fixer
+        name: fix end of files
+      - id: check-yaml
+        name: check yaml syntax
+      - id: check-toml
+        name: check toml syntax
+      - id: check-merge-conflict
+        name: check for merge conflicts
+      - id: check-added-large-files
+        name: check for large files
+        args: ["--maxkb=1000"]
+
+  # Pytest - Run tests if they exist
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest (if tests exist)
+        entry: bash -c 'if [ -f "tests/test_indicators.py" ]; then .venv/bin/python -m pytest tests/ -x --tb=short; else echo "No tests found, skipping pytest"; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+# Global configuration
+default_language_version:
+  python: python3
+
+# Only run on changed files for performance
+default_stages: [pre-commit]
+
+# Fail fast - stop on first failure
+fail_fast: true
+
+# Skip some hooks in CI (they run separately there)
+ci:
+  skip: [pytest-check]

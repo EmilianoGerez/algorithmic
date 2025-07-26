@@ -220,4 +220,3 @@ Below is a step‑by‑step checklist translating Phases 1 → 5 of the roa
 ### End of Blueprint
 
 > For questions, open a GitHub Discussion or tag `@quant‑lead` in Slack.
-

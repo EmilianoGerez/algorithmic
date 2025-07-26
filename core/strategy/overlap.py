@@ -385,6 +385,9 @@ class OverlapDetector:
                         self._pool_to_hlzs[member_id].discard(hlz_id)
                 else:
                     # HLZ still valid - update it
+                    prev_strength = self._active_hlzs[
+                        hlz_id
+                    ].strength  # Get previous strength
                     updated_hlz = self._recompute_hlz(hlz_id, timestamp)
                     if updated_hlz:
                         events.append(
@@ -392,6 +395,7 @@ class OverlapDetector:
                                 hlz_id=hlz_id,
                                 timestamp=timestamp,
                                 hlz=updated_hlz,
+                                prev_strength=prev_strength,
                             )
                         )
 
@@ -430,6 +434,7 @@ class OverlapDetector:
                                 hlz_id=hlz_id,
                                 timestamp=timestamp,
                                 hlz=updated_hlz,
+                                prev_strength=previous_strength,
                             )
                         ]
             return []  # No significant change needed
@@ -566,4 +571,15 @@ class OverlapDetector:
             **self._stats,
             "active_hlzs": len(self._active_hlzs),
             "total_pools": self._overlap_index.size(),
+        }
+
+    def get_prometheus_metrics(self) -> dict[str, float]:
+        """Return HLZ metrics in Prometheus format."""
+        return {
+            # HLZ counters (mirroring pool metrics)
+            "overlap_detector_hlz_created_total": float(self._stats["hlzs_created"]),
+            "overlap_detector_hlz_updated_total": float(self._stats["hlzs_updated"]),
+            "overlap_detector_hlz_expired_total": float(self._stats["hlzs_expired"]),
+            # HLZ gauge (current active count)
+            "overlap_detector_hlz_active": float(len(self._active_hlzs)),
         }

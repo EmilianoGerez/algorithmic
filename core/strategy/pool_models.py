@@ -184,6 +184,7 @@ class HLZUpdatedEvent:
     hlz_id: str
     timestamp: datetime
     hlz: HighLiquidityZone
+    prev_strength: float  # Previous strength for proportional consumer reactions
     event_type: Literal["hlz_updated"] = "hlz_updated"
 
 

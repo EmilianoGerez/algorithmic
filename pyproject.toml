@@ -51,7 +51,10 @@ module = [
     "intervaltree.*",
     "numba.*",
     "hypothesis.*",
-    "pandas_ta.*"
+    "pandas_ta.*",
+    "aiohttp.*",
+    "certifi.*",
+    "pydantic_settings.*"
 ]
 ignore_missing_imports = true
 

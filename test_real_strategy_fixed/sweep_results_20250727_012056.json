@@ -1,0 +1,177 @@
+{
+  "sweep_config": {
+    "parameters": [
+      {
+        "name": "risk.risk_per_trade",
+        "values": [
+          0.01,
+          0.02
+        ],
+        "type": "discrete"
+      },
+      {
+        "name": "strategy.zone_watcher.expiry_minutes",
+        "values": [
+          60,
+          120
+        ],
+        "type": "discrete"
+      }
+    ],
+    "max_workers": 1,
+    "total_combinations": 4
+  },
+  "execution_summary": {
+    "start_time": "2025-07-27T01:20:56.020065",
+    "end_time": "2025-07-27T01:20:56.726153",
+    "total_duration_seconds": 0.706088,
+    "successful_runs": 4,
+    "failed_runs": 0
+  },
+  "results": [
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.01,
+        "strategy.zone_watcher.expiry_minutes": 60
+      },
+      "success": true,
+      "execution_time": 0.29486703872680664,
+      "sharpe_ratio": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "error_message": null,
+      "metrics": {
+        "execution_time": {
+          "start": "2025-07-27 01:20:56.577971",
+          "end": "2025-07-27 01:20:56.585378",
+          "duration_seconds": 0.007407
+        },
+        "trade_metrics": {
+          "total_trades": 0,
+          "winning_trades": 0,
+          "losing_trades": 0,
+          "win_rate": 0.0,
+          "total_pnl": 0.0,
+          "total_fees": 0.0,
+          "max_drawdown": 0.0,
+          "max_position_size": 0.0,
+          "avg_trade_duration_minutes": 0.0
+        },
+        "custom_metrics": {},
+        "latency_stats": {},
+        "memory_stats": {
+          "peak_usage_mb": 9.347949028015137,
+          "snapshot_count": 7
+        }
+      }
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.01,
+        "strategy.zone_watcher.expiry_minutes": 120
+      },
+      "success": true,
+      "execution_time": 0.019238948822021484,
+      "sharpe_ratio": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "error_message": null,
+      "metrics": {
+        "execution_time": {
+          "start": "2025-07-27 01:20:56.604858",
+          "end": "2025-07-27 01:20:56.612154",
+          "duration_seconds": 0.007296
+        },
+        "trade_metrics": {
+          "total_trades": 0,
+          "winning_trades": 0,
+          "losing_trades": 0,
+          "win_rate": 0.0,
+          "total_pnl": 0.0,
+          "total_fees": 0.0,
+          "max_drawdown": 0.0,
+          "max_position_size": 0.0,
+          "avg_trade_duration_minutes": 0.0
+        },
+        "custom_metrics": {},
+        "latency_stats": {},
+        "memory_stats": {
+          "peak_usage_mb": 0.11530876159667969,
+          "snapshot_count": 7
+        }
+      }
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.02,
+        "strategy.zone_watcher.expiry_minutes": 60
+      },
+      "success": true,
+      "execution_time": 0.0196380615234375,
+      "sharpe_ratio": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "error_message": null,
+      "metrics": {
+        "execution_time": {
+          "start": "2025-07-27 01:20:56.624271",
+          "end": "2025-07-27 01:20:56.632073",
+          "duration_seconds": 0.007802
+        },
+        "trade_metrics": {
+          "total_trades": 0,
+          "winning_trades": 0,
+          "losing_trades": 0,
+          "win_rate": 0.0,
+          "total_pnl": 0.0,
+          "total_fees": 0.0,
+          "max_drawdown": 0.0,
+          "max_position_size": 0.0,
+          "avg_trade_duration_minutes": 0.0
+        },
+        "custom_metrics": {},
+        "latency_stats": {},
+        "memory_stats": {
+          "peak_usage_mb": 0.11463069915771484,
+          "snapshot_count": 7
+        }
+      }
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.02,
+        "strategy.zone_watcher.expiry_minutes": 120
+      },
+      "success": true,
+      "execution_time": 0.019169092178344727,
+      "sharpe_ratio": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "error_message": null,
+      "metrics": {
+        "execution_time": {
+          "start": "2025-07-27 01:20:56.644156",
+          "end": "2025-07-27 01:20:56.651752",
+          "duration_seconds": 0.007596
+        },
+        "trade_metrics": {
+          "total_trades": 0,
+          "winning_trades": 0,
+          "losing_trades": 0,
+          "win_rate": 0.0,
+          "total_pnl": 0.0,
+          "total_fees": 0.0,
+          "max_drawdown": 0.0,
+          "max_position_size": 0.0,
+          "avg_trade_duration_minutes": 0.0
+        },
+        "custom_metrics": {},
+        "latency_stats": {},
+        "memory_stats": {
+          "peak_usage_mb": 0.1163177490234375,
+          "snapshot_count": 7
+        }
+      }
+    }
+  ]
+}

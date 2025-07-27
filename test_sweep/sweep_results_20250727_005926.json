@@ -1,0 +1,85 @@
+{
+  "sweep_config": {
+    "parameters": [
+      {
+        "name": "risk.risk_per_trade",
+        "values": [
+          0.01,
+          0.02
+        ],
+        "type": "discrete"
+      },
+      {
+        "name": "strategy.zone_watcher.expiry_minutes",
+        "values": [
+          60,
+          120
+        ],
+        "type": "discrete"
+      }
+    ],
+    "max_workers": 2,
+    "total_combinations": 4
+  },
+  "execution_summary": {
+    "start_time": "2025-07-27T00:59:26.124551",
+    "end_time": "2025-07-27T00:59:26.804386",
+    "total_duration_seconds": 0.679835,
+    "successful_runs": 0,
+    "failed_runs": 4
+  },
+  "results": [
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.01,
+        "strategy.zone_watcher.expiry_minutes": 60
+      },
+      "success": false,
+      "execution_time": 0.2775118350982666,
+      "sharpe_ratio": null,
+      "total_return": null,
+      "max_drawdown": null,
+      "error_message": "Backtest failed: Invalid data format in .: expected a file path; '.' is a directory",
+      "metrics": null
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.01,
+        "strategy.zone_watcher.expiry_minutes": 120
+      },
+      "success": false,
+      "execution_time": 0.2775559425354004,
+      "sharpe_ratio": null,
+      "total_return": null,
+      "max_drawdown": null,
+      "error_message": "Backtest failed: Invalid data format in .: expected a file path; '.' is a directory",
+      "metrics": null
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.02,
+        "strategy.zone_watcher.expiry_minutes": 120
+      },
+      "success": false,
+      "execution_time": 0.02071666717529297,
+      "sharpe_ratio": null,
+      "total_return": null,
+      "max_drawdown": null,
+      "error_message": "Backtest failed: Invalid data format in .: expected a file path; '.' is a directory",
+      "metrics": null
+    },
+    {
+      "parameters": {
+        "risk.risk_per_trade": 0.02,
+        "strategy.zone_watcher.expiry_minutes": 60
+      },
+      "success": false,
+      "execution_time": 0.022145986557006836,
+      "sharpe_ratio": null,
+      "total_return": null,
+      "max_drawdown": null,
+      "error_message": "Backtest failed: Invalid data format in .: expected a file path; '.' is a directory",
+      "metrics": null
+    }
+  ]
+}

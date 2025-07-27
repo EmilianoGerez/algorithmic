@@ -1,0 +1,30 @@
+# Risk Optimization Sweep Configuration
+# This file defines parameter ranges for optimizing risk management settings
+
+# Risk model parameters
+risk.risk_per_trade:
+  - 0.005 # 0.5%
+  - 0.01 # 1.0%
+  - 0.015 # 1.5%
+  - 0.02 # 2.0%
+  - 0.025 # 2.5%
+
+# Position sizing limits
+risk.max_position_size:
+  - 1000.0
+  - 2500.0
+  - 5000.0
+  - 10000.0
+
+# Strategy signal parameters
+strategy.zone_watcher.expiry_minutes:
+  - 60 # 1 hour
+  - 120 # 2 hours
+  - 180 # 3 hours
+  - 240 # 4 hours
+
+# Commission rates for sensitivity analysis
+account.commission:
+  - 0.0005 # 0.05% (low)
+  - 0.001 # 0.1% (medium)
+  - 0.0015 # 0.15% (high)

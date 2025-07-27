@@ -1,0 +1,14 @@
+# Quick Test Sweep Configuration
+# Small parameter space for testing sweep functionality
+
+# Just 2 risk levels for quick testing
+risk.risk_per_trade:
+  - 0.01 # 1%
+  - 0.02 # 2%
+
+# 2 expiry times
+strategy.zone_watcher.expiry_minutes:
+  - 60 # 1 hour
+  - 120 # 2 hours
+
+# Total combinations: 2 x 2 = 4 runs

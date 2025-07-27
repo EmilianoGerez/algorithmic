@@ -1,0 +1,127 @@
+{
+  "parameters": {
+    "risk.risk_per_trade": 0.01,
+    "strategy.zone_watcher.expiry_minutes": 120
+  },
+  "backtest_result": {
+    "config": {
+      "strategy": {
+        "name": "htf_liquidity_mtf",
+        "symbol": "EURUSD",
+        "timeframes": [
+          "1m",
+          "1h",
+          "4h"
+        ],
+        "min_gap_size": 0.001
+      },
+      "risk": {
+        "model": "atr",
+        "risk_per_trade": 0.01,
+        "atr_period": 14,
+        "sl_atr_multiple": 1.5,
+        "tp_rr": 2.0,
+        "risk_free_rate": 0.02,
+        "trading_days_per_year": 252
+      },
+      "account": {
+        "initial_balance": 10000.0,
+        "commission_per_trade": 0.0,
+        "max_positions": 1
+      }
+    },
+    "metrics": {
+      "execution_time": {
+        "start": "2025-07-27 01:23:33.168978",
+        "end": "2025-07-27 01:23:33.176730",
+        "duration_seconds": 0.007752
+      },
+      "trade_metrics": {
+        "total_trades": 2,
+        "winning_trades": 2,
+        "losing_trades": 0,
+        "win_rate": 1.0,
+        "total_pnl": 211.94154433865683,
+        "total_fees": 457.16636728049593,
+        "max_drawdown": 0.0,
+        "max_position_size": 111111.11111112335,
+        "avg_trade_duration_minutes": 8.5
+      },
+      "custom_metrics": {},
+      "latency_stats": {},
+      "memory_stats": {
+        "peak_usage_mb": 0.11560344696044922,
+        "snapshot_count": 7
+      }
+    },
+    "timestamps": {
+      "start_time": "2025-07-27T01:23:33.155051",
+      "end_time": "2025-07-27T01:23:33.177140"
+    },
+    "execution_time_seconds": 0.022089,
+    "success": true,
+    "audit_trail": {
+      "timestamp": "2025-07-27T01:23:33.164722",
+      "git_hash": "ed4f1de18e78acf81d0ed31c4dd98d6eb68e67e2",
+      "config_hash": -3375743806844846926,
+      "python_version": "3.13.5",
+      "config": {
+        "strategy": {
+          "name": "htf_liquidity_mtf",
+          "symbol": "EURUSD",
+          "timeframes": [
+            "1m",
+            "1h",
+            "4h"
+          ],
+          "min_gap_size": 0.001
+        },
+        "risk": {
+          "model": "atr",
+          "risk_per_trade": 0.01,
+          "atr_period": 14,
+          "sl_atr_multiple": 1.5,
+          "tp_rr": 2.0,
+          "risk_free_rate": 0.02,
+          "trading_days_per_year": 252
+        },
+        "account": {
+          "initial_balance": 10000.0,
+          "commission_per_trade": 0.0,
+          "max_positions": 1
+        },
+        "data": {
+          "path": "data/EURUSD_1m_sample.csv",
+          "date_column": "timestamp",
+          "start_date": null,
+          "end_date": null,
+          "ohlcv_columns": [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume"
+          ]
+        },
+        "execution": {
+          "log_level": "INFO",
+          "log_file": null,
+          "enable_latency_profiling": true,
+          "enable_memory_tracking": true,
+          "realtime_simulation": false,
+          "use_csv_streaming": false,
+          "deterministic_seed": 42
+        },
+        "walk_forward": {
+          "folds": 3,
+          "train_fraction": 0.5
+        },
+        "sweep": {
+          "enabled": false,
+          "parameters": {},
+          "max_jobs": 4
+        }
+      }
+    }
+  }
+}

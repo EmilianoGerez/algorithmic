@@ -23,9 +23,21 @@ repos:
     hooks:
       - id: mypy
         name: mypy (type check)
-        args: [--strict]
-        files: ^core/
-        additional_dependencies: [types-PyYAML, types-requests]
+        args: [--strict, --config-file=mypy.ini]
+        files: ^(core/|services/)
+        additional_dependencies:
+          [
+            types-PyYAML,
+            types-requests,
+            types-psutil,
+            pandas-stubs,
+            pydantic>=2.0,
+            typer>=0.12,
+            polars>=0.20,
+            intervaltree>=3.1,
+            numpy,
+            matplotlib,
+          ]
 
   # Built-in hooks for basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

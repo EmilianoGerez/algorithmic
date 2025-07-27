@@ -482,7 +482,10 @@ class PaperBroker:
                 self._execute_tp_orders(triggered_tps, symbol, current_price)
 
     def _execute_stop_orders(
-        self, triggered_stops: list, symbol: str, current_price: float
+        self,
+        triggered_stops: list[tuple[str, float]],
+        symbol: str,
+        current_price: float,
     ) -> None:
         """Execute triggered stop loss orders."""
         for pos_key, stop_price in triggered_stops:
@@ -504,7 +507,7 @@ class PaperBroker:
                 )
 
     def _execute_tp_orders(
-        self, triggered_tps: list, symbol: str, current_price: float
+        self, triggered_tps: list[tuple[str, float]], symbol: str, current_price: float
     ) -> None:
         """Execute triggered take profit orders."""
         for pos_key, tp_price in triggered_tps:
@@ -526,7 +529,10 @@ class PaperBroker:
                 )
 
     def _clear_remaining_orders(
-        self, triggered_stops: list, triggered_tps: list, symbol: str
+        self,
+        triggered_stops: list[tuple[str, float]],
+        triggered_tps: list[tuple[str, float]],
+        symbol: str,
     ) -> None:
         """Clear all remaining stop and TP orders for the symbol after gap execution."""
         # Clear any remaining stops that weren't executed due to gap priority

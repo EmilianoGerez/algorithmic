@@ -1,5 +1,45 @@
+# Data configuration
+data:
+  source: csv
+  path: "data/EURUSD_1m_sample.csv" # Sample data for testing
+  symbol: EURUSD
+  timeframe: "1m"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# Runtime configuration
+runtime:
+  log_level: INFO
+  log_file: null
+  enable_latency_profiling: true
+  enable_memory_tracking: true
+  realtime_simulation: false
+  use_csv_streaming: false
+  deterministic_seed: 42
+
+# Walk-forward configuration
+walk_forward:
+  folds: 3
+  train_fraction: 0.5
+  overlap_fraction: 0.1
+
+# Sweep configuration
+sweep:
+  enabled: false
+  parameters: {}
+  n_trials: 100
+  max_workers: 4
+  isolated_worker_logging: true # Prevent parallel logging collisions
+
 strategy:
   name: htf_liquidity_mtf
+  symbol: EURUSD # Add required symbol field
   htf_list: ["H1", "H4", "D1"]
   expiry_minutes: 120
   filters:

@@ -1,0 +1,20 @@
+# Walk-forward analysis test configuration
+strategy:
+  symbol: "EURUSD"
+  zone_watcher:
+    expiry_minutes: 60
+
+walk_forward:
+  folds: 4
+  train_fraction: 0.7
+
+risk:
+  risk_per_trade: 0.01
+
+account:
+  initial_balance: 10000.0
+  commission: 0.001
+
+data:
+  path: "data/EURUSD_1m_sample.csv"
+  format: "csv"

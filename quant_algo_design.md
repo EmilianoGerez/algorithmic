@@ -163,8 +163,8 @@ Synthetic data generator lives in `tests/factories.py` for speed.
 3. **Type Safety:** mypy strict‑optional; no `Any` in core.
 4. **Formatting:** Ruff/Black enforced pre‑commit.
 5. **Docs:** Each public Protocol/class gets Google‑style docstrings + link to this notebook section.
-6. **LLM integration:**\
-   • Provide *fully‑qualified* module hints when asking an LLM to modify code.\
+6. **LLM integration:**
+   • Provide *fully‑qualified* module hints when asking an LLM to modify code.
    • Never let an LLM write infra secrets; use dotenv placeholders.
 
 ---
@@ -192,11 +192,59 @@ Synthetic data generator lives in `tests/factories.py` for speed.
 
 ## 8  Glossary
 
-- **Liquidity Pool (LP):** Price area where resting orders likely reside.
-- **HLZ:** High‑Liquidity Zone = intersection of ≥2 LPs from distinct TFs.
-- **Kill‑zone:** Preferred NY/LDN session window. Configurable.
-- **TTL wheel:** O(1) timer wheel for pool/candidate expiry.
-- **Snapshot:** Frozen indicator values computed *before* decision logic.
+* **Liquidity Pool (LP):** Price area where resting orders likely reside.
+* **HLZ:** High‑Liquidity Zone = intersection of ≥2 LPs from distinct TFs.
+* **Kill‑zone:** Preferred NY/LDN session window. Configurable.
+* **TTL wheel:** O(1) timer wheel for pool/candidate expiry.
+* **Snapshot:** Frozen indicator values computed *before* decision logic.
+
+---
+
+## 9  Initial Implementation Sprint Plan
+
+Below is a step‑by‑step checklist translating Phases 1 → 5 of the roadmap into concrete coding tasks. Follow it sequentially—each row becomes a pull‑request that yields visible progress and executable code.
+
+| Order | Road‑map Phase                     | Deliverable (code folder)                                                                      | Rationale                                                        | Acceptance test                                                                |
+| ----- | ---------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **1** | **1 – Core Entities & Indicators** | Complete `core/indicators` • EMA 50, ATR 14, Volume SMA • `IndicatorPack.snapshot()`           | Everything downstream needs reliable **incremental** indicators. | `pytest` property test: incremental EMA == pandas\_ta EMA on prefix slices.    |
+| **2** | **2 – TimeAggregator**             | Implement `core/strategy/aggregator.py` • Roll‑up 1 m → H1/H4/D1 • Emits *closed* candles only | Guarantees multi‑TF sync; prevents look‑ahead.                   | Feed 121 bars → assert 2 H1 candles, correct OHLCV sums.                       |
+| **3** | **3 – HTF Detectors**              | Flesh out `core/detectors/fvg.py`; add `pivot.py`                                              | Unlocks `LiquidityPoolCreated` events.                           | Synthetic candles → expect bullish & bearish events exactly where hand‑marked. |
+| **4** | **4 – LiquidityPoolRegistry**      | Build `core/strategy/pool_registry.py` • CRUD + TTL wheel                                      | Single source of truth for ZoneWatcher.                          | Create pools with 1‑sec TTL → advance fake clock → expiry events emitted.      |
+| **5** | **5 – OverlapDetector & HLZ**      | Implement `core/strategy/overlap.py` (interval‑tree)                                           | Enables confluence strength filtering.                           | 3 pools (H1 & H4 overlap) → expect HLZ strength = Σ weights.                   |
+| **6** | **Wire into Back‑tester**          | Extend `services/backtester.py` loop to integrate new modules; print pool/HLZ events           | Produces runnable script that shows results on real data.        | Run on sample CSV → events appear with correct timestamps.                     |
+
+> **Tip:** Create tiny fixtures (`tests/data/mini/`) for lightning‑fast unit tests (<200 ms). Capture configs in `configs/base.yaml` so threshold tweaks never touch code.
+
+---
+
+## 10  Phase 8 — Back‑test, Walk‑Forward & Sweep
+
+> **Scope**: Wire the full strategy stack into the CLI runner, enable deterministic back‑tests, walk‑forward evaluation, and grid‑search sweeps.
+
+| Order | Deliverable                                       | Key Tasks                                                                               | Acceptance Test                                           |
+| ----- | ------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **1** | **Strategy Factory** (`core/strategy/factory.py`) | Build all Phase 1‑7 components (Indicators → Broker) from one config.                   | Feed 10 synthetic bars; expect exactly 1 `TradingSignal`. |
+| **2** | **Broker plug‑in**                                | Pipe READY signals → `RiskManager.size()` → `PaperBroker.submit()`; write `trades.csv`. | Trade‑log SHA‑256 identical on two seeded runs.           |
+| **3** | **Metrics collector**                             | Add Sharpe, Max‑DD, Win‑rate, latency. Dump `summary.json`.                             | Values match Excel reference in fixture.                  |
+| **4** | **Walk‑Forward runner**                           | CLI flags `--folds`, `--train-fraction`; rebuild strategy per fold.                     | 4‑fold test outputs 4 rows + aggregate row.               |
+| **5** | **Hyper‑parameter sweep** (`multirun`)            | Hydra overrides spawn parallel runs, write `results.csv` sorted by Sharpe.              | 3‑run sweep completes and leaderboard sorted.             |
+| **6** | *(stretch)* Equity‑curve plot                     | `--plot` calls `python_user_visible` in ChatGPT sessions.                               | Visual curve renders.                                     |
+
+### Config keys
+
+```yaml
+strategy:
+  walk_forward:
+    folds: 6
+    train_fraction: 0.5
+sweep:
+  risk.risk_per_trade: [0.0025, 0.005, 0.01]
+  candidate.expiry_minutes: [60, 120]
+```
+
+### Performance target
+
+*1‑year BTC‑USD, 1‑min candles → full strategy loop finishes in < 15 s on laptop.*
 
 ---
 

@@ -257,7 +257,7 @@ class TestPaperBroker:
         # Open position first with async call
         import asyncio
 
-        async def setup_position():
+        async def setup_position() -> None:
             order = Order(
                 symbol="EURUSD",
                 order_type=OrderType.MARKET,
@@ -272,7 +272,7 @@ class TestPaperBroker:
         broker.update_prices("EURUSD", 1.2050)
 
         # Check unrealized PnL
-        async def check_pnl():
+        async def check_pnl() -> None:
             positions = await broker.positions()
             position = positions[0]
             expected_pnl = 1000 * (1.2050 - 1.2000)

@@ -1,0 +1,24 @@
+strategy:
+  symbol: BTCUSDT
+  timeframes: ["1m", "1h"]
+  min_gap_size: 0.001
+
+data:
+  path: "test_data.csv"
+  date_column: "timestamp"
+  ohlcv_columns: ["open", "high", "low", "close", "volume"]
+
+account:
+  starting_balance: 10000.0
+  commission: 0.001
+  slippage_bps: 5.0
+  commission_per_trade: 0.0
+  max_positions: 1
+
+risk:
+  model: "atr"
+  risk_per_trade: 0.02
+  atr_period: 14
+  sl_atr_multiple: 1.5
+  tp_rr: 2.0
+  risk_free_rate: 0.02

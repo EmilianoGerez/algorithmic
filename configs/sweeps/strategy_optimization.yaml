@@ -1,0 +1,43 @@
+# Strategy Performance Sweep Configuration
+# Comprehensive parameter optimization for strategy components
+
+# Indicator settings
+strategy.indicators.ema21_period:
+  - 18
+  - 21
+  - 24
+
+strategy.indicators.ema50_period:
+  - 45
+  - 50
+  - 55
+
+# FVG Detection parameters
+strategy.fvg.min_gap_pips:
+  - 5
+  - 10
+  - 15
+  - 20
+
+# Zone watcher settings
+strategy.zone_watcher.expiry_minutes:
+  - 60 # 1 hour
+  - 120 # 2 hours
+  - 180 # 3 hours
+
+# Risk management
+risk.risk_per_trade:
+  - 0.01 # 1%
+  - 0.015 # 1.5%
+  - 0.02 # 2%
+
+# Stop loss and take profit ratios
+strategy.signals.stop_loss_pct:
+  - 0.02 # 2%
+  - 0.025 # 2.5%
+  - 0.03 # 3%
+
+strategy.signals.take_profit_pct:
+  - 0.04 # 4% (2:1 RR)
+  - 0.05 # 5% (2.5:1 RR)
+  - 0.06 # 6% (3:1 RR)

@@ -188,12 +188,17 @@ class AlpacaBroker(HttpLiveBroker):
             alpaca_type = self._map_order_type(order.order_type)
 
             # Prepare order data
+            client_order_id = order.client_id or f"order_{int(time.time() * 1000)}"
+            # Prefix with "algo-" for easy identification in Alpaca UI
+            alpaca_client_id = f"algo-{client_order_id}"
+
             order_data = {
                 "symbol": order.symbol,
                 "qty": str(abs(order.quantity)),
                 "side": alpaca_side,
                 "type": alpaca_type,
                 "time_in_force": "day",  # Day order by default
+                "client_order_id": alpaca_client_id,
             }
 
             # Add price for limit orders

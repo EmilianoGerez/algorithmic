@@ -37,11 +37,24 @@ logger = logging.getLogger(__name__)
 
 
 class BinanceConfig(BaseSettings):
-    """Binance API configuration loaded from environment variables."""
+    """Binance API configuration loaded from environment variables.
+
+    Configuration options:
+    - position_side_mode: "ONEWAY" (default) or "HEDGE" for position management
+    - recv_window_ms: API receive window in milliseconds (default 5000)
+    """
 
     binance_api_key: str = ""
     binance_api_secret: str = ""
     binance_testnet: bool = True
+
+    # Position side mode configuration
+    # ONEWAY: Traditional mode - one position per symbol
+    # HEDGE: Advanced mode - separate LONG/SHORT positions per symbol
+    position_side_mode: str = "ONEWAY"  # "ONEWAY" or "HEDGE"
+
+    # Clock skew handling - receive window for API requests
+    recv_window_ms: int = 5000  # Default 5 second receive window
 
     model_config = {"env_file": ".env", "case_sensitive": False, "extra": "ignore"}
 
@@ -51,6 +64,8 @@ class BinanceConfig(BaseSettings):
             raise ValueError("BINANCE_API_KEY environment variable is required")
         if not self.binance_api_secret:
             raise ValueError("BINANCE_API_SECRET environment variable is required")
+        if self.position_side_mode not in ["ONEWAY", "HEDGE"]:
+            raise ValueError("position_side_mode must be 'ONEWAY' or 'HEDGE'")
 
 
 class BinanceFuturesBroker(HttpLiveBroker):
@@ -93,6 +108,52 @@ class BinanceFuturesBroker(HttpLiveBroker):
         self._listen_key: str | None = None
         self._order_map: dict[str, str] = {}  # local_id -> binance_id
         self._reverse_order_map: dict[str, str] = {}  # binance_id -> local_id
+
+        # Clock skew handling
+        self._config = config
+        self._server_time_offset: int = 0  # ms offset from server time
+        self._recv_window_margin: int = 0  # additional margin for recv window
+
+    async def initialize(self) -> None:
+        """Initialize broker connection and sync with server time.
+
+        Should be called after creating the broker instance.
+        """
+        await self._sync_server_time()
+        await self._setup_position_side_mode()
+
+    async def _setup_position_side_mode(self) -> None:
+        """Configure position side mode for the account.
+
+        Sets up ONEWAY (default) or HEDGE mode based on configuration.
+        This only needs to be called once per account.
+        """
+        try:
+            # Check current position side mode
+            response = await self._http_request("GET", "/positionSide/dual", {})
+            current_dual_side = response.get("dualSidePosition", False)
+
+            # Determine target mode
+            target_dual_side = self._config.position_side_mode == "HEDGE"
+
+            if current_dual_side != target_dual_side:
+                # Change position side mode
+                await self._http_request(
+                    "POST",
+                    "/positionSide/dual",
+                    data={"dualSidePosition": "true" if target_dual_side else "false"},
+                )
+                self.logger.info(
+                    f"Position side mode changed to {self._config.position_side_mode}"
+                )
+            else:
+                self.logger.info(
+                    f"Position side mode already set to {self._config.position_side_mode}"
+                )
+
+        except Exception as e:
+            self.logger.warning(f"Failed to set position side mode: {e}")
+            # Non-critical error - continue with current mode
 
     async def submit(self, order: Order) -> OrderReceipt:
         """Submit order to Binance Futures.
@@ -280,6 +341,60 @@ class BinanceFuturesBroker(HttpLiveBroker):
             "EXPIRED": OrderStatus.CANCELLED,
         }
         return mapping.get(binance_status, OrderStatus.PENDING)
+
+    async def _sync_server_time(self) -> None:
+        """Synchronize with Binance server time to handle clock skew.
+
+        Fetches server time from /fapi/v1/time and calculates offset
+        to adjust recvWindow margin for reliable API calls.
+        """
+        try:
+            response = await self._http_request("GET", "/time", {})
+            server_time = response["serverTime"]
+            local_time = int(time.time() * 1000)
+
+            # Calculate offset (server - local)
+            self._server_time_offset = server_time - local_time
+
+            # Set recv window margin based on offset magnitude
+            offset_abs = abs(self._server_time_offset)
+            if offset_abs > 1000:  # More than 1 second difference
+                self._recv_window_margin = min(offset_abs + 1000, 3000)  # Cap at 3s
+                self.logger.warning(
+                    f"Large clock skew detected: {self._server_time_offset}ms. "
+                    f"Adjusting recvWindow margin to {self._recv_window_margin}ms"
+                )
+            else:
+                self._recv_window_margin = 500  # Small default margin
+
+            self.logger.info(
+                f"Server time sync: offset={self._server_time_offset}ms, "
+                f"margin={self._recv_window_margin}ms"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Failed to sync server time: {e}")
+            # Use conservative default
+            self._recv_window_margin = 2000
+
+    async def _http_request(
+        self,
+        method: str,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        signed: bool = True,
+        retry_count: int = 0,
+    ) -> dict[str, Any]:
+        """Override to add recvWindow for authenticated requests."""
+        if signed and params is not None:
+            # Add recvWindow with calculated margin for clock skew
+            recv_window = self._config.recv_window_ms + self._recv_window_margin
+            params["recvWindow"] = recv_window
+
+        return await super()._http_request(
+            method, endpoint, params, data, signed, retry_count
+        )
 
     async def start_websocket(self) -> None:
         """Start WebSocket connection for real-time updates."""

@@ -75,7 +75,9 @@ module = [
     "pandas_ta.*",
     "aiohttp.*",
     "certifi.*",
-    "pydantic_settings.*"
+    "pydantic_settings.*",
+    "matplotlib.*",
+    "yaml.*"
 ]
 ignore_missing_imports = true
 

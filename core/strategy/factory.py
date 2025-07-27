@@ -535,13 +535,16 @@ class StrategyFactory:
 
     @staticmethod
     def build(
-        config: Any, metrics_collector: MetricsCollector | None = None
+        config: Any,
+        metrics_collector: MetricsCollector | None = None,
+        shared_risk_manager: MockRiskManager | None = None,
     ) -> IntegratedStrategy:
         """Build complete strategy from configuration.
 
         Args:
             config: Strategy configuration
             metrics_collector: Optional metrics collector
+            shared_risk_manager: Optional shared risk manager for ATR warm-up reuse
 
         Returns:
             Configured IntegratedStrategy instance
@@ -551,8 +554,12 @@ class StrategyFactory:
         # Create broker with metrics collector
         broker = MockPaperBroker(config, metrics_collector)
 
-        # Create risk manager
-        risk_manager = MockRiskManager(config)
+        # Create or reuse risk manager for ATR warm-up caching
+        if shared_risk_manager is not None:
+            risk_manager = shared_risk_manager
+            logger.debug("Reusing shared risk manager for ATR warm-up")
+        else:
+            risk_manager = MockRiskManager(config)
 
         # Create integrated strategy
         strategy = IntegratedStrategy(config, broker, risk_manager)

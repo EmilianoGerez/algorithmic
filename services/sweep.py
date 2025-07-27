@@ -60,6 +60,7 @@ class SweepConfiguration:
     timeout_seconds: int = 300
     output_dir: str = "sweep_results"
     save_individual_results: bool = True
+    isolated_worker_logging: bool = True  # Pipe each worker's logs to its result folder
 
     def __post_init__(self) -> None:
         if not self.parameters:
@@ -180,6 +181,57 @@ class ParameterSweepEngine:
         # Set final value
         current[keys[-1]] = value
 
+    def _setup_isolated_logging(self, parameters: dict[str, Any]) -> list[Any]:
+        """Set up isolated logging for this worker process.
+
+        Args:
+            parameters: Parameter combination for this run
+
+        Returns:
+            List of original handlers to restore later
+        """
+        # Create worker-specific log file
+        worker_id = "_".join(f"{k}_{v}" for k, v in parameters.items())
+        # Sanitize filename
+        worker_id = "".join(c if c.isalnum() or c in "-_." else "_" for c in worker_id)
+        log_file = Path(self.output_path) / f"worker_{worker_id}.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Get root logger and save original handlers
+        root_logger = logging.getLogger()
+        original_handlers = root_logger.handlers[:]
+
+        # Remove existing handlers
+        for handler in original_handlers:
+            root_logger.removeHandler(handler)
+
+        # Add file handler for this worker
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+        root_logger.addHandler(file_handler)
+        root_logger.setLevel(logging.INFO)
+
+        return original_handlers
+
+    def _restore_logging(self, original_handlers: list[Any]) -> None:
+        """Restore original logging configuration.
+
+        Args:
+            original_handlers: Original handlers to restore
+        """
+        root_logger = logging.getLogger()
+
+        # Remove worker-specific handlers
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+            handler.close()
+
+        # Restore original handlers
+        for handler in original_handlers:
+            root_logger.addHandler(handler)
+
     def run_single_combination(self, parameters: dict[str, Any]) -> SweepResult:
         """Run backtest for a single parameter combination.
 
@@ -190,6 +242,11 @@ class ParameterSweepEngine:
             SweepResult with execution details
         """
         start_time = time.time()
+
+        # Set up isolated logging if enabled
+        original_handlers = None
+        if self.config.isolated_worker_logging:
+            original_handlers = self._setup_isolated_logging(parameters)
 
         try:
             # Create configuration for this combination
@@ -220,6 +277,10 @@ class ParameterSweepEngine:
                 success=False,
                 error_message=error_msg,
             )
+        finally:
+            # Restore original logging if we set up isolated logging
+            if self.config.isolated_worker_logging and original_handlers is not None:
+                self._restore_logging(original_handlers)
 
     def run_sweep(self) -> list[SweepResult]:
         """Execute complete parameter sweep with parallel processing.

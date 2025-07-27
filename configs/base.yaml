@@ -34,6 +34,8 @@ sweep:
   enabled: false
   parameters: {}
   n_trials: 100
+  max_workers: 4
+  isolated_worker_logging: true # Prevent parallel logging collisions
 
 strategy:
   name: htf_liquidity_mtf

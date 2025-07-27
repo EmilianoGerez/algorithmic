@@ -85,6 +85,10 @@ class RiskConfig(BaseModel):
     trading_days_per_year: int = Field(
         default=252, description="Trading days per year for metrics"
     )
+    use_population_std: bool = Field(
+        default=True,
+        description="Use population std dev (ddof=0) for long backtests, sample std dev (ddof=1) for short samples",
+    )
 
 
 class AccountConfig(BaseModel):
@@ -351,7 +355,8 @@ class WalkForwardResult:
         total_pnls = [r.metrics.total_pnl for r in self.fold_results]
         win_rates = [r.metrics.win_rate for r in self.fold_results]
 
-        # Calculate stability statistics
+        # Calculate stability statistics using population std dev (ddof=0)
+        # This is appropriate for long backtests as suggested in production guidelines
         self.stability_metrics = {
             "sharpe_mean": sum(sharpe_ratios) / len(sharpe_ratios)
             if sharpe_ratios
@@ -361,7 +366,7 @@ class WalkForwardResult:
                     (x - sum(sharpe_ratios) / len(sharpe_ratios)) ** 2
                     for x in sharpe_ratios
                 )
-                / len(sharpe_ratios)
+                / len(sharpe_ratios)  # Population std dev (ddof=0)
             )
             ** 0.5
             if len(sharpe_ratios) > 1
@@ -369,7 +374,7 @@ class WalkForwardResult:
             "pnl_mean": sum(total_pnls) / len(total_pnls) if total_pnls else 0,
             "pnl_std": (
                 sum((x - sum(total_pnls) / len(total_pnls)) ** 2 for x in total_pnls)
-                / len(total_pnls)
+                / len(total_pnls)  # Population std dev (ddof=0)
             )
             ** 0.5
             if len(total_pnls) > 1

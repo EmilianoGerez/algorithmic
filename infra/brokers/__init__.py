@@ -1,15 +1,23 @@
 """
-Paper trading broker implementation for backtesting and simulation.
+Broker implementations for backtesting and live trading.
 
-This package provides a paper trading broker that simulates real trading
-without actual market execution. It maintains positions, calculates PnL,
-and provides the same interface as live brokers.
+This package provides both paper trading (simulation) and live broker
+implementations for connecting to real exchanges and brokers.
 """
 
+from .alpaca import AlpacaBroker, AlpacaConfig
+from .base_live import HttpLiveBroker, LiveBrokerConfig
+from .binance_futures import BinanceConfig, BinanceFuturesBroker
 from .broker import PaperBroker
 from .exceptions import BrokerError
 
 __all__ = [
     "BrokerError",
     "PaperBroker",
+    "HttpLiveBroker",
+    "LiveBrokerConfig",
+    "BinanceFuturesBroker",
+    "BinanceConfig",
+    "AlpacaBroker",
+    "AlpacaConfig",
 ]

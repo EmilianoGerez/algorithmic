@@ -21,6 +21,13 @@ from hydra import compose, initialize
 from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 
+from core.risk.live_reconciler import LiveReconciler
+
+# Live trading imports
+from infra.brokers import AlpacaBroker, BinanceFuturesBroker
+from infra.brokers.alpaca import AlpacaConfig
+from infra.brokers.binance_futures import BinanceConfig
+
 from ..models import BacktestConfig, BacktestResult
 from ..runner import BacktestRunner
 
@@ -119,6 +126,82 @@ def generate_equity_curve_plot(
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
+
+
+async def _run_live_trading(broker_name: str, cfg: DictConfig, verbose: bool) -> None:
+    """Execute live trading with specified broker.
+
+    Args:
+        broker_name: Either 'binance' or 'alpaca'
+        cfg: Configuration object
+        verbose: Enable verbose output
+    """
+    import asyncio
+    import os
+
+    from infra.brokers.alpaca import AlpacaBroker
+    from infra.brokers.binance_futures import BinanceFuturesBroker
+
+    broker: BinanceFuturesBroker | AlpacaBroker
+
+    if broker_name == "binance":
+        # Validate Binance API credentials
+        api_key = os.getenv("BINANCE_API_KEY")
+        api_secret = os.getenv("BINANCE_API_SECRET")
+
+        if not api_key or not api_secret:
+            typer.echo(
+                "❌ Missing Binance API credentials. Set BINANCE_API_KEY and BINANCE_API_SECRET",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+        config = BinanceConfig(
+            binance_api_key=api_key,
+            binance_api_secret=api_secret,
+            binance_testnet=True,  # Always use testnet for safety
+        )
+
+        broker = BinanceFuturesBroker(config)
+        typer.echo("✅ Binance Futures testnet broker initialized")
+
+    elif broker_name == "alpaca":
+        # Validate Alpaca API credentials
+        api_key = os.getenv("ALPACA_API_KEY")
+        api_secret = os.getenv("ALPACA_API_SECRET")
+
+        if not api_key or not api_secret:
+            typer.echo(
+                "❌ Missing Alpaca API credentials. Set ALPACA_API_KEY and ALPACA_API_SECRET",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+        alpaca_config = AlpacaConfig(
+            alpaca_key_id=api_key,
+            alpaca_secret=api_secret,
+            alpaca_paper=True,  # Always use paper trading for safety
+        )
+
+        broker = AlpacaBroker(alpaca_config)
+        typer.echo("✅ Alpaca paper trading broker initialized")
+    else:
+        typer.echo(f"❌ Unsupported broker: {broker_name}", err=True)
+        raise typer.Exit(1)
+
+    # Test broker connection
+    typer.echo("🔍 Testing broker connection...")
+    account_info = await broker.account()
+
+    if verbose:
+        typer.echo(f"Account balance: ${account_info.cash_balance:.2f}")
+        typer.echo(f"Account equity: ${account_info.equity:.2f}")
+
+    # For now, just test the connection
+    typer.echo("✅ Live trading connection test successful")
+
+    # Clean up
+    await broker.close()
 
 
 # Initialize Typer app
@@ -321,7 +404,9 @@ def save_walk_forward_summary(results: list[BacktestResult], filepath: Path) -> 
 
 @app.command()
 def run(
-    data: str = typer.Argument(..., help="Path to historical data file"),
+    data: str = typer.Argument(
+        None, help="Path to historical data file (optional for live trading)"
+    ),
     config: str = typer.Option(
         "configs/base.yaml", "--config", "-c", help="Configuration file"
     ),
@@ -334,6 +419,9 @@ def run(
     ),
     plot: bool = typer.Option(False, "--plot", help="Generate equity curve plot"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+    live: str | None = typer.Option(
+        None, "--live", "-l", help="Enable live trading: 'binance' or 'alpaca'"
+    ),
 ) -> None:
     """Execute backtest with specified configuration.
 
@@ -343,15 +431,43 @@ def run(
 
         # Walk-forward analysis
         quantbt run --data data/BTC_1m.csv --walk 6 --config configs/btc.yaml
+
+        # Live trading with Binance testnet
+        quantbt run --config configs/btc.yaml --live binance
+
+        # Live trading with Alpaca paper
+        quantbt run --config configs/stocks.yaml --live alpaca
     """
 
     # Validate inputs
-    data_path = Path(data)
-    if not data_path.exists():
-        typer.echo(f"Error: Data file not found: {data_path}", err=True)
-        raise typer.Exit(1)
-
     config_path = Path(config)
+
+    # Live trading mode validation
+    if live:
+        if live not in ["binance", "alpaca"]:
+            typer.echo(
+                f"Error: Invalid live broker '{live}'. Use 'binance' or 'alpaca'",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+        # For live trading, data path is optional
+        if data and not Path(data).exists():
+            typer.echo(
+                f"⚠️ Data file not found: {data}. Live mode will use broker feeds.",
+                err=True,
+            )
+        data_path = Path(data) if data else None
+    else:
+        # For backtesting, data path is required
+        if not data:
+            typer.echo("Error: Data file required for backtesting mode", err=True)
+            raise typer.Exit(1)
+        data_path = Path(data)
+        if not data_path.exists():
+            typer.echo(f"Error: Data file not found: {data_path}", err=True)
+            raise typer.Exit(1)
+
     if not config_path.exists():
         typer.echo(f"Error: Config file not found: {config_path}", err=True)
         raise typer.Exit(1)
@@ -380,8 +496,31 @@ def run(
         cfg["walk_forward"]["folds"] = walk
         cfg["walk_forward"]["train_fraction"] = train_fraction
 
-    # Set data path from command line argument
-    cfg["data"]["path"] = str(data_path)
+    # Set data path from command line argument (if provided)
+    if data_path:
+        cfg["data"]["path"] = str(data_path)
+
+    # Configure live trading if requested
+    if live:
+        # Ensure execution section exists
+        if "execution" not in cfg:
+            cfg["execution"] = {}
+        cfg["execution"]["mode"] = "live"
+        cfg["execution"]["live"] = {"broker": live}
+
+        # Disable walk-forward for live trading
+        if walk:
+            typer.echo(
+                "⚠️ Walk-forward analysis disabled in live trading mode", err=True
+            )
+            walk = None
+
+        typer.echo(f"🚀 Live trading mode enabled with {live.upper()} broker")
+    else:
+        # Ensure we're in backtest mode
+        if "execution" not in cfg:
+            cfg["execution"] = {}
+        cfg["execution"]["mode"] = "backtest"
 
     # Create result directory with audit trail
     output_path = Path(output)
@@ -395,23 +534,36 @@ def run(
         if walk:
             typer.echo(f"Walk-forward folds: {walk}")
 
-    # Execute backtest
+    # Execute based on mode
     try:
-        # Convert OmegaConf to BacktestConfig
-        config_dict = OmegaConf.to_container(cfg, resolve=True)
-        backtest_config = BacktestConfig(**config_dict)
+        if live:
+            # Live trading execution
+            import asyncio
 
-        runner = BacktestRunner(backtest_config)
-
-        if walk:
-            # Walk-forward analysis
-            typer.echo(f"Running walk-forward analysis with {walk} folds...")
-            results = runner.run_walk_forward()
-            typer.echo(f"✅ Walk-forward analysis completed: {len(results)} folds")
+            asyncio.run(_run_live_trading(live, cfg, verbose))
         else:
-            # Single backtest
-            typer.echo("Running single backtest...")
-            result = runner.run()
+            # Convert OmegaConf to BacktestConfig
+            config_container = OmegaConf.to_container(cfg, resolve=True)
+            if not isinstance(config_container, dict):
+                raise ValueError("Configuration must be a dictionary")
+
+            # Use cast to tell mypy this is the right type
+            from typing import cast
+
+            typed_config_dict = cast(dict[str, Any], config_container)
+            backtest_config = BacktestConfig(**typed_config_dict)
+
+            runner = BacktestRunner(backtest_config)
+
+            if walk:
+                # Walk-forward analysis
+                typer.echo(f"Running walk-forward analysis with {walk} folds...")
+                results = runner.run_walk_forward()
+                typer.echo(f"✅ Walk-forward analysis completed: {len(results)} folds")
+            else:
+                # Single backtest
+                typer.echo("Running single backtest...")
+                result = runner.run()
 
             # Extract metrics from result
             total_trades = (

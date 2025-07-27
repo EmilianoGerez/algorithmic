@@ -146,7 +146,12 @@ candidate:
     regime: ["bull", "neutral"] # Allowed market regimes
 
 execution:
-  broker: paper
+  mode: live # live | backtest
+  broker: binance # binance | alpaca | paper
+  live:
+    ws_retry_sec: 5
+    rest_retry_sec: 2
+    reconcile_interval: 30
   risk:
     model: atr # or percent
     risk_per_trade: 0.005 # 0.5% of account per trade

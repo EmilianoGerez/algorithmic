@@ -1,3 +1,24 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "algorithmic"
+version = "0.1.0"
+description = "Quantitative trading algorithms with backtesting and live trading capabilities"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.setuptools.packages.find]
+include = ["core*", "infra*", "services*"]
+exclude = ["tests*", "data*", "results*", "configs*"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 88
@@ -51,7 +72,12 @@ module = [
     "intervaltree.*",
     "numba.*",
     "hypothesis.*",
-    "pandas_ta.*"
+    "pandas_ta.*",
+    "aiohttp.*",
+    "certifi.*",
+    "pydantic_settings.*",
+    "matplotlib.*",
+    "yaml.*"
 ]
 ignore_missing_imports = true
 

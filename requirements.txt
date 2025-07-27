@@ -1,11 +1,15 @@
 hydra-core>=1.3
+omegaconf>=2.3  # Configuration management for Hydra
 pydantic>=2.0
+pydantic-settings>=2.0  # For BaseSettings configuration classes
 polars>=0.20
 intervaltree>=3.1
 typer>=0.12  # CLI framework for backtesting commands
 numpy
 numba
+matplotlib  # For plotting functionality in CLI
 aiohttp
+certifi  # SSL certificate verification
 websockets
 pytest
 pytest-asyncio>=0.21.0  # Required for async test support
@@ -20,3 +24,10 @@ pytest-cov>=4.0
 coverage>=7.0
 pre-commit>=3.0  # Automated code quality checks
 types-psutil  # Type stubs for psutil library
+pandas-stubs  # Type stubs for pandas library
+types-PyYAML  # Type stubs for YAML library
+
+# Live trading dependencies
+pydantic[dotenv]>=2.0  # For environment variable loading
+aiohttp>=3.8  # Async HTTP client for broker APIs
+python-dotenv>=1.0.0  # Environment variable loading

@@ -300,6 +300,24 @@ class MetricsCollector:
         """
         self.custom_metrics[name] = value
 
+    def increment_counter(self, name: str, increment: int = 1) -> None:
+        """Increment a counter metric.
+
+        Args:
+            name: Counter name
+            increment: Amount to increment by (default 1)
+        """
+        current = self.custom_metrics.get(name, 0)
+        self.custom_metrics[name] = current + increment
+
+    def record_signal_emitted(self) -> None:
+        """Record a trading signal emission."""
+        self.increment_counter("signals_emitted_total")
+
+    def record_candidate_expired(self) -> None:
+        """Record a signal candidate expiration."""
+        self.increment_counter("candidates_expired_total")
+
     def take_memory_snapshot(self) -> MemorySnapshot | None:
         """Take memory snapshot if tracking enabled.
 

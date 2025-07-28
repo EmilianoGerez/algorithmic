@@ -419,11 +419,14 @@ class IntegratedStrategy:
         # Config validation
         if not use_mock:
             # Validate HLZ configuration when using real HTF strategy
-            if (not config.detectors.get("pivot", {}).get("enabled", False) and 
-                config.hlz.get("min_members", 2) > 2):
+            pivot_enabled = config.detectors.get("pivot", {}).get("enabled", False)
+            hlz_min_members = config.hlz.get("min_members", 2)
+            
+            if not pivot_enabled and hlz_min_members > 2:
                 logger.warning(
-                    "HLZ min_members > 2 but pivot detector disabled. "
-                    "HLZ creation probability may be low with FVG-only detection."
+                    f"CONFIG SANITY: detectors.pivot.enabled == false but hlz.min_members = {hlz_min_members}. "
+                    f"HLZ counts may be lower than expected with FVG-only detection. "
+                    f"Consider setting hlz.min_members = 2 or enabling pivot detector."
                 )
         
         if not use_mock and config.strategy.name.lower() == "htf_liquidity_mtf":
@@ -662,6 +665,10 @@ class IntegratedStrategy:
                     signal = updated_candidate.to_signal()
                     logger.info(f"Generated trading signal from candidate {updated_candidate.candidate_id}")
                     
+                    # Record signal emission metrics
+                    if self.metrics_collector:
+                        self.metrics_collector.record_signal_emitted()
+                    
                     # Size position with risk manager
                     size = self.risk_manager.size_position(signal, self.broker.get_balance())
                     
@@ -680,6 +687,11 @@ class IntegratedStrategy:
                 # Clean up expired candidates
                 elif hasattr(updated_candidate, 'state') and str(updated_candidate.state).upper() == 'EXPIRED':
                     logger.debug(f"Removing expired candidate {updated_candidate.candidate_id}")
+                    
+                    # Record candidate expiration metrics
+                    if self.metrics_collector:
+                        self.metrics_collector.record_candidate_expired()
+                    
                     # Don't add to updated_candidates (effectively removes it)
                 
                 else:

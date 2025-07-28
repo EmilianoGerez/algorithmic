@@ -9,7 +9,7 @@ numpy
 numba
 matplotlib  # For plotting functionality in CLI
 plotly>=5.0  # Interactive plotting for visualization
-mplfinance>=0.12  # Static candlestick charts
+mplfinance>=0.12.10b0  # Static candlestick charts (using latest beta)
 pyarrow>=10.0  # Parquet file support for events data
 aiohttp
 requests>=2.31.0  # HTTP client for data fetching scripts

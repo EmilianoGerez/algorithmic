@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 from core.detectors.fvg import FVGDetector
 from core.entities import Candle
-from core.indicators.base import IndicatorPack
+from core.indicators.pack import IndicatorPack
 from core.indicators.ema import EMA
 
 
@@ -642,31 +642,48 @@ class IntegratedStrategy:
         
         # 5. Run candidate FSM for all active candidates
         if hasattr(self.zone_watcher, 'active_candidates'):
-            for candidate in list(self.zone_watcher.active_candidates):
-                # Update candidate with current bar and indicators
-                candidate.update(candle, self.indicators)
+            updated_candidates = []
+            candidates_to_remove = []
+            
+            for candidate in self.zone_watcher.active_candidates:
+                # Create indicator snapshot for FSM processing
+                snapshot = self.indicators.snapshot()
+                
+                # Update candidate with current bar and indicators using FSM
+                updated_candidate = candidate.update(candle, snapshot, self.zone_watcher.candidate_fsm)
                 
                 # Check if candidate is ready for trading
-                if hasattr(candidate, 'is_ready') and candidate.is_ready():
+                if updated_candidate.is_ready():
                     # Convert candidate to trading signal
-                    signal = candidate.to_signal() if hasattr(candidate, 'to_signal') else None
-                    if signal:
-                        # Size position with risk manager
-                        size = self.risk_manager.size_position(signal, self.broker.get_balance())
+                    signal = updated_candidate.to_signal()
+                    logger.info(f"Generated trading signal from candidate {updated_candidate.candidate_id}")
+                    
+                    # Size position with risk manager
+                    size = self.risk_manager.size_position(signal, self.broker.get_balance())
+                    
+                    if size > 0:
+                        # Submit order to broker
+                        trade_id = self.broker.submit_order(signal, size)
+                        logger.info(f"Submitted order {trade_id} from candidate {updated_candidate.candidate_id}")
                         
-                        if size > 0:
-                            # Submit order to broker
-                            trade_id = self.broker.submit_order(signal, size)
-                            logger.info(f"Submitted order {trade_id} from candidate {candidate.candidate_id}")
-                            
-                            # Mark candidate as submitted
-                            if hasattr(candidate, 'mark_submitted'):
-                                candidate.mark_submitted(trade_id)
+                        # Mark candidate as submitted
+                        if hasattr(updated_candidate, 'mark_submitted'):
+                            updated_candidate.mark_submitted(trade_id)
+                    
+                    # Keep the candidate (could be useful for tracking)
+                    updated_candidates.append(updated_candidate)
                 
                 # Clean up expired candidates
-                elif hasattr(candidate, 'state') and str(candidate.state).upper() == 'EXPIRED':
-                    self.zone_watcher.active_candidates.remove(candidate)
-                    logger.debug(f"Removed expired candidate {candidate.candidate_id}")
+                elif hasattr(updated_candidate, 'state') and str(updated_candidate.state).upper() == 'EXPIRED':
+                    logger.debug(f"Removing expired candidate {updated_candidate.candidate_id}")
+                    # Don't add to updated_candidates (effectively removes it)
+                
+                else:
+                    # Keep active candidates that aren't ready or expired
+                    updated_candidates.append(updated_candidate)
+            
+            # Replace the candidates list with updated ones
+            self.zone_watcher.active_candidates = updated_candidates
             
         return None
 

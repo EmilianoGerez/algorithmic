@@ -11,10 +11,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from core.entities import Candle
 from core.indicators.snapshot import IndicatorSnapshot
+
+if TYPE_CHECKING:
+    from .signal_candidate import SignalCandidateFSM
 
 __all__ = [
     "CandidateState",
@@ -103,14 +106,24 @@ class SignalCandidate:
         """Check if candidate is ready for trading signal execution."""
         return self.state is CandidateState.READY
     
-    def update(self, candle: "Candle", indicators: "IndicatorSnapshot") -> "SignalCandidate":
+    def update(self, candle: Candle, indicators: IndicatorSnapshot, fsm: SignalCandidateFSM | None = None) -> SignalCandidate:
         """Update candidate state through FSM processing.
         
-        This method would normally delegate to the FSM, but for now returns self.
-        The actual FSM processing should be handled by the containing strategy.
+        Args:
+            candle: Current price bar
+            indicators: Indicator snapshot
+            fsm: Signal candidate FSM instance
+            
+        Returns:
+            Updated candidate with new state
         """
-        # This is a placeholder - actual FSM processing happens in strategy
-        return self
+        if fsm is None:
+            # Return self if no FSM provided (placeholder behavior)
+            return self
+            
+        # Process through FSM
+        result = fsm.process(self, candle, indicators)
+        return result.updated_candidate
     
     def to_signal(self) -> "TradingSignal":
         """Convert ready candidate to trading signal.
@@ -122,7 +135,10 @@ class SignalCandidate:
         
         if not self.is_ready():
             raise ValueError(f"Candidate {self.candidate_id} not ready for signal conversion")
-            
+        
+        # Convert direction to side for broker compatibility
+        side = "buy" if self.direction == SignalDirection.LONG else "sell"
+        
         return TradingSignal(
             signal_id=generate_signal_id(self.candidate_id, datetime.now()),
             candidate_id=self.candidate_id,
@@ -136,7 +152,7 @@ class SignalCandidate:
             confidence=0.8,  # TODO: Calculate from filters
             timestamp=datetime.now(),
             timeframe="5m",  # TODO: Get from config
-            metadata={}
+            metadata={"side": side}  # Add side for broker compatibility
         )
     
     def mark_submitted(self, order_id: str) -> None:
@@ -172,6 +188,33 @@ class TradingSignal:
     def is_short(self) -> bool:
         """Check if signal is for short position."""
         return self.direction == SignalDirection.SHORT
+    
+    @property
+    def side(self) -> str:
+        """Get trading side as string for broker compatibility."""
+        return "buy" if self.is_long else "sell"
+    
+    @property
+    def stop_loss(self) -> float:
+        """Calculate stop loss based on entry price and ATR."""
+        # Simple ATR-based stop loss (1.5x ATR)
+        atr_multiple = 1.5
+        estimated_atr = self.entry_price * 0.01  # 1% as rough ATR estimate
+        
+        if self.is_long:
+            return self.entry_price - (estimated_atr * atr_multiple)
+        else:
+            return self.entry_price + (estimated_atr * atr_multiple)
+    
+    @property 
+    def take_profit(self) -> float:
+        """Calculate take profit based on 2:1 risk/reward ratio."""
+        risk_distance = abs(self.entry_price - self.stop_loss)
+        
+        if self.is_long:
+            return self.entry_price + (risk_distance * 2.0)
+        else:
+            return self.entry_price - (risk_distance * 2.0)
 
 
 def generate_candidate_id(zone_id: str, timestamp: datetime) -> str:

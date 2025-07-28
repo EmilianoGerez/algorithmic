@@ -5,7 +5,8 @@ from .pack import IndicatorPack
 from .regime import Regime, RegimeDetector
 from .registry import INDICATOR_REGISTRY, IndicatorRegistry
 from .snapshot import IndicatorSnapshot
-from .volume_sma import VolumeSMA
+from .volume import VolumeSMA  # Use the volume.py implementation
+from .volume_sma import VolumeSMA as VolumeSMAIndicator
 
 __all__ = [
     "Indicator",

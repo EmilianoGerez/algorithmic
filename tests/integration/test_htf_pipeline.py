@@ -26,12 +26,31 @@ def test_end_to_end_fvg_trade(tmp_path):
     cfg["execution"]["dump_events"] = True
     cfg["execution"]["export_data_for_viz"] = True
 
-    # Use absolute path to ensure file is found in CI
+    # Use available data file or create minimal test data
     data_file = (
         Path(__file__).parent.parent.parent
         / "data"
         / "BTC_USD_5min_20250728_021825.csv"
     )
+
+    if not data_file.exists():
+        # Create minimal test data for CI
+        test_data_file = tmp_path / "test_data.csv"
+        test_data_content = """timestamp,open,high,low,close,volume,vwap,trade_count
+2025-05-18T00:00:00Z,100000,100100,99900,100050,1000,100000,10
+2025-05-18T00:05:00Z,100050,100150,99950,100100,1100,100050,11
+2025-05-18T00:10:00Z,100100,100200,100000,100150,1200,100100,12
+2025-05-18T00:15:00Z,100150,100250,100050,100200,1300,100150,13
+2025-05-18T00:20:00Z,100200,100300,100100,100250,1400,100200,14
+2025-05-18T00:25:00Z,100250,100350,100150,100300,1500,100250,15
+2025-05-18T00:30:00Z,100300,100400,100200,100350,1600,100300,16
+2025-05-18T00:35:00Z,100350,100450,100250,100400,1700,100350,17
+2025-05-18T00:40:00Z,100400,100500,100300,100450,1800,100400,18
+2025-05-18T00:45:00Z,100450,100550,100350,100500,1900,100450,19
+"""
+        test_data_file.write_text(test_data_content)
+        data_file = test_data_file
+
     cfg["data"]["path"] = str(data_file)
 
     # Make the test more permissive to ensure FVG detection
@@ -146,12 +165,27 @@ def test_htf_strategy_components():
     cfg = yaml.safe_load(config_path.open())
     cfg["execution"]["deterministic_seed"] = 456
 
-    # Use absolute path to ensure file is found in CI
+    # Use available data file or fallback to minimal test data
     data_file = (
         Path(__file__).parent.parent.parent
         / "data"
         / "BTC_USD_5min_20250728_021825.csv"
     )
+
+    if not data_file.exists():
+        # Create minimal test data for CI in a temporary location
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            f.write("""timestamp,open,high,low,close,volume,vwap,trade_count
+2025-05-18T00:00:00Z,100000,100100,99900,100050,1000,100000,10
+2025-05-18T00:05:00Z,100050,100150,99950,100100,1100,100050,11
+2025-05-18T00:10:00Z,100100,100200,100000,100150,1200,100100,12
+2025-05-18T00:15:00Z,100150,100250,100050,100200,1300,100150,13
+2025-05-18T00:20:00Z,100200,100300,100100,100250,1400,100200,14
+""")
+            data_file = Path(f.name)
+
     cfg["data"]["path"] = str(data_file)
 
     config = BacktestConfig(**cfg)

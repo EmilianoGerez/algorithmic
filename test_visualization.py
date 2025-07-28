@@ -14,7 +14,7 @@ from quant_algo.visual.plot_builder import (
 )
 
 
-def create_sample_data():
+def create_sample_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Create sample trade and event data for testing."""
     # Load actual BTC data
     data_path = Path("data/BTC_5m.csv")
@@ -66,15 +66,13 @@ def create_sample_data():
     return df, trades_df, events_df
 
 
-def test_static_chart():
+def test_static_chart() -> bool:
     """Test static mplfinance chart generation."""
     print("🔄 Testing static chart generation...")
 
     data_df, trades_df, events_df = create_sample_data()
 
-    # Test static chart
-    output_path = Path("results/test_static_chart.png")
-    output_path.parent.mkdir(exist_ok=True)
+    output_path = Path("test_static_chart.png")
 
     try:
         build_static_chart_from_data(
@@ -91,7 +89,7 @@ def test_static_chart():
         return False
 
 
-def test_interactive_chart():
+def test_interactive_chart() -> bool:
     """Test interactive Plotly chart generation."""
     print("🔄 Testing interactive chart generation...")
 
@@ -116,7 +114,7 @@ def test_interactive_chart():
         return False
 
 
-def test_chatgpt_display():
+def test_chatgpt_display() -> bool:
     """Test ChatGPT environment detection and display."""
     print("🔄 Testing ChatGPT display...")
 
@@ -136,7 +134,7 @@ def test_chatgpt_display():
         return False
 
 
-def main():
+def main() -> None:
     """Run all visualization tests."""
     print("🧪 Testing Visualization System")
     print("=" * 50)

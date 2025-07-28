@@ -7,12 +7,13 @@ This demonstrates the complete visualization workflow with realistic data.
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 
-def create_mock_backtest_data(results_dir: Path, data_file: str):
+def create_mock_backtest_data(results_dir: Path, data_file: str) -> bool:
     """Create mock backtest data files for visualization testing."""
 
     results_dir = Path(results_dir)
@@ -39,7 +40,7 @@ def create_mock_backtest_data(results_dir: Path, data_file: str):
     print(f"✅ Created data.csv with {len(market_df)} candles")
 
     # 2. Create trades.csv (mock trades)
-    trades = []
+    trades: list[dict[str, Any]] = []
 
     # Generate realistic trades every 20-50 candles
     for i in range(10, len(market_df), np.random.randint(20, 50)):
@@ -182,7 +183,7 @@ strategy:
     return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Create mock backtest data for visualization testing"
     )

@@ -11,7 +11,9 @@ import mplfinance as mpf
 import pandas as pd
 
 
-def create_static_chart(results_dir, output_file=None):
+def create_static_chart(
+    results_dir: str | Path, output_file: str | None = None
+) -> bool:
     """Create a static chart from backtest results."""
 
     results_dir = Path(results_dir)
@@ -117,10 +119,11 @@ def create_static_chart(results_dir, output_file=None):
                 )
 
     # Set output file
+    output_path: Path
     if output_file is None:
-        output_file = results_dir / "visualization_chart.png"
+        output_path = results_dir / "visualization_chart.png"
     else:
-        output_file = Path(output_file)
+        output_path = Path(output_file)
 
     # Create the plot
     try:
@@ -132,12 +135,12 @@ def create_static_chart(results_dir, output_file=None):
             ylabel="Price ($)",
             volume=False,
             addplot=additional_plots if additional_plots else None,
-            savefig={"fname": str(output_file), "dpi": 150, "bbox_inches": "tight"},
+            savefig={"fname": str(output_path), "dpi": 150, "bbox_inches": "tight"},
             show_nontrading=False,
             warn_too_much_data=1000,
         )
 
-        print(f"✅ Chart saved to: {output_file}")
+        print(f"✅ Chart saved to: {output_path}")
         return True
 
     except Exception as e:
@@ -145,7 +148,7 @@ def create_static_chart(results_dir, output_file=None):
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate static backtest visualization"
     )

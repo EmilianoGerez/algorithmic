@@ -493,6 +493,9 @@ class IntegratedStrategy:
             
             self.htf_stack.zone_watcher = ZoneWatcher(zone_config, candidate_config)
             
+            # Wire PoolManager to notify ZoneWatcher of pool events
+            self.htf_stack.pool_manager.zone_watcher = self.htf_stack.zone_watcher
+            
             # Detectors create liquidity pool events (with aggregator injection)
             self.htf_stack.detectors = []
             

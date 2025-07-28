@@ -119,6 +119,7 @@ class PoolManager:
         self.registry = registry
         self.config = config or PoolManagerConfig()
         self._last_expiry_check = datetime.now()
+        self.zone_watcher = None  # Will be set by factory during wiring
 
         logger.info(
             f"PoolManager initialized with TTLs: {self.config.ttl_by_timeframe}"
@@ -178,6 +179,18 @@ class PoolManager:
                         f"in {event.tf} at [{bottom:.5f}, {top:.5f}] "
                         f"strength={strength:.3f} ttl={ttl}"
                     )
+
+                # Emit PoolCreatedEvent to ZoneWatcher if connected
+                if hasattr(self, 'zone_watcher') and self.zone_watcher:
+                    # Get the created pool from registry
+                    pool = self.registry.get_pool(pool_id)
+                    if pool:
+                        pool_created_event = PoolCreatedEvent(
+                            pool_id=pool_id,
+                            timestamp=event.ts,
+                            pool=pool
+                        )
+                        self.zone_watcher.on_pool_event(pool_created_event)
 
                 return EventMappingResult(
                     success=True, pool_id=pool_id, pool_created=True

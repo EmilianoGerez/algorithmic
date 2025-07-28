@@ -25,7 +25,14 @@ def test_end_to_end_fvg_trade(tmp_path):
     cfg["execution"]["deterministic_seed"] = 123
     cfg["execution"]["dump_events"] = True
     cfg["execution"]["export_data_for_viz"] = True
-    cfg["data"]["path"] = "data/BTC_USD_5min_20250728_021825.csv"
+
+    # Use absolute path to ensure file is found in CI
+    data_file = (
+        Path(__file__).parent.parent.parent
+        / "data"
+        / "BTC_USD_5min_20250728_021825.csv"
+    )
+    cfg["data"]["path"] = str(data_file)
 
     # Make the test more permissive to ensure FVG detection
     cfg["strategy"]["htf_list"] = [
@@ -138,7 +145,14 @@ def test_htf_strategy_components():
     config_path = Path("configs/base.yaml")
     cfg = yaml.safe_load(config_path.open())
     cfg["execution"]["deterministic_seed"] = 456
-    cfg["data"]["path"] = "data/BTC_USD_5min_20250728_021825.csv"  # Use available file
+
+    # Use absolute path to ensure file is found in CI
+    data_file = (
+        Path(__file__).parent.parent.parent
+        / "data"
+        / "BTC_USD_5min_20250728_021825.csv"
+    )
+    cfg["data"]["path"] = str(data_file)
 
     config = BacktestConfig(**cfg)
     runner = BacktestRunner(config)

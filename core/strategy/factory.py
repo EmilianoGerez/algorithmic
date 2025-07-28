@@ -639,8 +639,34 @@ class IntegratedStrategy:
         for zone_entry in zone_entries:
             candidate = self.zone_watcher.spawn_candidate(zone_entry, candle.ts)
             logger.debug(f"Spawned candidate {candidate.candidate_id} from zone {zone_entry.zone_id}")
-            # Note: Full FSM processing would happen here in a complete implementation
-            # For now, return None to avoid generating signals until FSM is integrated
+        
+        # 5. Run candidate FSM for all active candidates
+        if hasattr(self.zone_watcher, 'active_candidates'):
+            for candidate in list(self.zone_watcher.active_candidates):
+                # Update candidate with current bar and indicators
+                candidate.update(candle, self.indicators)
+                
+                # Check if candidate is ready for trading
+                if hasattr(candidate, 'is_ready') and candidate.is_ready():
+                    # Convert candidate to trading signal
+                    signal = candidate.to_signal() if hasattr(candidate, 'to_signal') else None
+                    if signal:
+                        # Size position with risk manager
+                        size = self.risk_manager.size_position(signal, self.broker.get_balance())
+                        
+                        if size > 0:
+                            # Submit order to broker
+                            trade_id = self.broker.submit_order(signal, size)
+                            logger.info(f"Submitted order {trade_id} from candidate {candidate.candidate_id}")
+                            
+                            # Mark candidate as submitted
+                            if hasattr(candidate, 'mark_submitted'):
+                                candidate.mark_submitted(trade_id)
+                
+                # Clean up expired candidates
+                elif hasattr(candidate, 'state') and str(candidate.state).upper() == 'EXPIRED':
+                    self.zone_watcher.active_candidates.remove(candidate)
+                    logger.debug(f"Removed expired candidate {candidate.candidate_id}")
             
         return None
 

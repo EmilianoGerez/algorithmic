@@ -98,6 +98,51 @@ class SignalCandidate:
             expires_at=self.expires_at,
             last_bar_timestamp=bar_timestamp,
         )
+    
+    def is_ready(self) -> bool:
+        """Check if candidate is ready for trading signal execution."""
+        return self.state is CandidateState.READY
+    
+    def update(self, candle: "Candle", indicators: "IndicatorSnapshot") -> "SignalCandidate":
+        """Update candidate state through FSM processing.
+        
+        This method would normally delegate to the FSM, but for now returns self.
+        The actual FSM processing should be handled by the containing strategy.
+        """
+        # This is a placeholder - actual FSM processing happens in strategy
+        return self
+    
+    def to_signal(self) -> "TradingSignal":
+        """Convert ready candidate to trading signal.
+        
+        Returns:
+            TradingSignal ready for broker submission
+        """
+        from datetime import datetime
+        
+        if not self.is_ready():
+            raise ValueError(f"Candidate {self.candidate_id} not ready for signal conversion")
+            
+        return TradingSignal(
+            signal_id=generate_signal_id(self.candidate_id, datetime.now()),
+            candidate_id=self.candidate_id,
+            zone_id=self.zone_id,
+            zone_type=self.zone_type,
+            direction=self.direction,
+            symbol="BTCUSD",  # TODO: Get from config
+            entry_price=self.entry_price,
+            current_price=self.entry_price,  # TODO: Get from market data
+            strength=self.strength,
+            confidence=0.8,  # TODO: Calculate from filters
+            timestamp=datetime.now(),
+            timeframe="5m",  # TODO: Get from config
+            metadata={}
+        )
+    
+    def mark_submitted(self, order_id: str) -> None:
+        """Mark candidate as submitted with order ID."""
+        # For immutable design, this could update metadata or state
+        pass
 
 
 @dataclass(slots=True, frozen=True)

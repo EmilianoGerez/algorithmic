@@ -84,6 +84,9 @@ class ZoneWatcher:
 
         # Fast lookup for active zones (stateless design)
         self._active_zones: dict[str, ZoneMeta] = {}
+        
+        # Track active signal candidates for FSM processing
+        self.active_candidates: list[Any] = []  # List of SignalCandidate instances
 
         # Statistics
         self._stats = {
@@ -181,6 +184,8 @@ class ZoneWatcher:
             timestamp=timestamp,
         )
 
+        # Track active candidate for FSM processing
+        self.active_candidates.append(candidate)
         self._stats["candidates_spawned"] += 1
         return candidate
 

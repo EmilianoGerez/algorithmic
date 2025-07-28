@@ -88,7 +88,9 @@ class TimerWheel:
     def __init__(self, config: WheelConfig | None = None):
         """Initialize the timing wheel with configuration."""
         self.config = config or WheelConfig()
-        self.current_time = datetime.now()
+        # Use UTC timezone-aware datetime for consistency with market data
+        from datetime import timezone
+        self.current_time = datetime.now(timezone.utc)
 
         # Initialize wheel levels
         self._wheels: list[list[list[ScheduledExpiry]]] = [

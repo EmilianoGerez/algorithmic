@@ -560,6 +560,10 @@ class IntegratedStrategy:
         with measure_operation("strategy_on_candle"):
             self.candles_processed += 1
 
+            # Sync timer wheel with candle time for timezone consistency
+            if hasattr(self, 'htf_stack') and self.htf_stack and self.htf_stack.pool_registry:
+                self.htf_stack.pool_registry._ttl_wheel.current_time = candle.ts
+
             # Update indicators
             with measure_operation("update_indicators"):
                 self.indicators.update(candle)

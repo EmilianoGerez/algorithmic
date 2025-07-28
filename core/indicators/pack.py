@@ -131,6 +131,16 @@ class IndicatorPack:
         )
 
     @property
+    def atr_value(self) -> float | None:
+        """Current ATR value for compatibility with factory."""
+        return self.atr.value
+
+    @property
+    def volume_sma_value(self) -> float | None:
+        """Current volume SMA value for compatibility with factory.""" 
+        return self.volume_sma.value
+
+    @property
     def warmup_periods_needed(self) -> int:
         """Maximum warmup period needed across all indicators."""
         return max(

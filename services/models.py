@@ -43,6 +43,8 @@ class StrategyConfig(BaseModel):
 
     name: str = Field(description="Strategy name/identifier")
     symbol: str = Field(description="Trading symbol (e.g., EURUSD, BTCUSD)")
+    use_mock_strategy: bool = Field(default=False, description="Use simple mock strategy instead of full HTF system")
+    htf_list: list[str] = Field(default=["H4", "D1"], description="Higher timeframe list for liquidity detection")
     timeframes: list[str] = Field(
         default=["1m", "1h", "4h"], description="List of timeframes to use"
     )

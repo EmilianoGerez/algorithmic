@@ -34,6 +34,7 @@ sweep:
 strategy:
   name: htf_liquidity_mtf
   symbol: BTCUSD
+  use_mock_strategy: false # Set to true for simple EMA mock, false for full HTF system
   htf_list: ["H4", "D1"] # only H4 & D1 liquidity pools
   expiry_minutes: 120
   filters:
@@ -53,7 +54,7 @@ indicators:
 # ---------- Aggregation ----------
 aggregation:
   source_tf_minutes: 5 # feed resolution
-  target_timeframes_minutes: [240, 1440] # H4, D1
+  target_timeframes_minutes: [240, 1440] # H4, D1 only (removed H1 for FVG-only strategy)
   buffer_size: 1500
   roll_from: "source"
   out_of_order_policy: "drop"
@@ -116,7 +117,7 @@ candidate:
 
 # ---------- Execution (Paper back-test) ----------
 execution:
-  mode: backtest # live | backtest
+  mode: backtest # live | backtest (live requires feeds.source = websocket)
   broker: paper
   log_level: INFO
   enable_latency_profiling: true

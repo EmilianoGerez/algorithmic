@@ -17,14 +17,6 @@ data:
     close: close
     volume: volume
 
-# ---------- Runtime ----------
-runtime:
-  log_level: INFO
-  enable_latency_profiling: true
-  enable_memory_tracking: true
-  realtime_simulation: false       # batch back-test
-  deterministic_seed: 42
-
 # ---------- Walk-forward ----------
 walk_forward:
   folds: 3
@@ -42,7 +34,7 @@ sweep:
 strategy:
   name: htf_liquidity_mtf
   symbol: BTCUSD
-  htf_list: ["H4", "D1"]           # only H4 & D1 liquidity pools
+  htf_list: ["H4", "D1"] # only H4 & D1 liquidity pools
   expiry_minutes: 120
   filters:
     ema_alignment: true
@@ -60,8 +52,8 @@ indicators:
 
 # ---------- Aggregation ----------
 aggregation:
-  source_tf_minutes: 5             # feed resolution
-  target_timeframes_minutes: [240, 1440]  # H4, D1
+  source_tf_minutes: 5 # feed resolution
+  target_timeframes_minutes: [240, 1440] # H4, D1
   buffer_size: 1500
   roll_from: "source"
   out_of_order_policy: "drop"
@@ -77,7 +69,7 @@ detectors:
     min_rel_vol: 1.2
 
   pivot:
-    enabled: false                # ← pivot detector OFF
+    enabled: false # ← pivot detector OFF
 
   enabled_timeframes: ["H4", "D1"]
 
@@ -124,8 +116,15 @@ candidate:
 
 # ---------- Execution (Paper back-test) ----------
 execution:
-  mode: backtest                 # live | backtest
+  mode: backtest # live | backtest
   broker: paper
+  log_level: INFO
+  enable_latency_profiling: true
+  enable_memory_tracking: true
+  realtime_simulation: false # batch back-test
+  deterministic_seed: 42
+  dump_events: true # enable events.parquet export for visualization
+  export_data_for_viz: true # enable data.csv and trades.csv export
   risk:
     model: atr
     risk_per_trade: 0.005

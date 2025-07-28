@@ -551,6 +551,7 @@ def run(
             from typing import cast
 
             typed_config_dict = cast(dict[str, Any], config_container)
+            
             backtest_config = BacktestConfig(**typed_config_dict)
 
             runner = BacktestRunner(backtest_config)
@@ -597,9 +598,48 @@ def run(
                     generate_equity_curve_plot(results, result_dir)
                 else:
                     typer.echo("Generating equity curve plot...")
-                    generate_equity_curve_plot([result], result_dir)
+                    
+                    # Enhanced visualization with candlestick + overlays
+                    try:
+                        from quant_algo.visual.plot_builder import build_plotly, display_chart_in_chatgpt
+                        import os
+                        
+                        # Create run context for visualization
+                        class RunContext:
+                            def __init__(self, out_dir, symbol="BTCUSD"):
+                                self.out_dir = Path(out_dir)
+                                self.data_path = self.out_dir / "data.csv"
+                                self.trades_path = self.out_dir / "trades.csv"
+                                self.events_path = self.out_dir / "events.parquet"
+                                self.symbol = symbol
+                        
+                        run_ctx = RunContext(
+                            result.result_dir if result.result_dir else result_dir, 
+                            cfg.get("data", {}).get("symbol", "BTCUSD")
+                        )
+                        
+                        # Generate Plotly chart
+                        if run_ctx.data_path.exists():
+                            fig = build_plotly(run_ctx)
+                            
+                            # Display in ChatGPT or save to file
+                            if os.getenv('CHATGPT_ENV') == '1':
+                                display_chart_in_chatgpt(fig)
+                                typer.echo("📊 Interactive chart displayed in ChatGPT")
+                            else:
+                                chart_path = result_dir / "interactive_chart.html"
+                                fig.write_html(str(chart_path))
+                                typer.echo(f"📊 Interactive chart saved to {chart_path}")
+                        else:
+                            # Fallback to equity curve
+                            generate_equity_curve_plot([result], result_dir)
+                            
+                    except ImportError:
+                        # Fallback to basic equity curve
+                        generate_equity_curve_plot([result], result_dir)
+                        
                 typer.echo(
-                    f"📊 Equity curve plot saved to {result_dir}/equity_curve.png"
+                    f"📊 Charts saved to {result_dir}/"
                 )
             except Exception as e:
                 typer.echo(f"⚠️ Plot generation failed: {e}", err=True)

@@ -18,6 +18,14 @@ from core.detectors.fvg import FVGDetector
 from core.entities import Candle
 from core.indicators.base import IndicatorPack
 from core.indicators.ema import EMA
+from core.strategy import (
+    OverlapDetector,
+    PoolManager,
+    PoolRegistry,
+    TimeAggregator,
+    ZoneWatcher,
+    ZoneWatcherConfig,
+)
 from services.metrics import MetricsCollector, measure_operation
 
 logger = logging.getLogger(__name__)
@@ -374,11 +382,93 @@ class IntegratedStrategy:
         # Initialize indicators
         self.indicators = IndicatorPack()
 
-        # Initialize detectors (mock for now)
-        self.fvg_detector = FVGDetector(config)
-
-        # Initialize zone watcher
-        self.zone_watcher = MockZoneWatcher(config)
+        # Initialize strategy components based on strategy name
+        logger.info(f"Config type: {type(config)}")
+        logger.info(f"Strategy name: {getattr(config.strategy, 'name', 'NO_NAME')}")
+        
+        if hasattr(config, 'strategy') and hasattr(config.strategy, 'name') and config.strategy.name.lower() == "htf_liquidity_mtf":
+            # ── Build full HTF liquidity detection stack ────────────────────────────
+            logger.info("Building real HTF liquidity strategy")
+            
+            # Core registry and overlap detection
+            from .pool_registry import PoolRegistryConfig
+            from .overlap import OverlapConfig
+            
+            registry_config = PoolRegistryConfig(
+                grace_period_minutes=config.pools["grace_period_minutes"],
+                max_pools_per_tf=config.pools["max_pools_per_tf"]
+            )
+            self.pool_registry = PoolRegistry(registry_config)
+            
+            overlap_config = OverlapConfig(
+                min_members=config.hlz["min_members"],
+                min_strength=config.hlz["min_strength"],
+                tf_weight=config.hlz["tf_weight"],
+                merge_tolerance=config.hlz["merge_tolerance"],
+                side_mixing=config.hlz["side_mixing"]
+            )
+            self.overlap_detector = OverlapDetector(overlap_config, self.pool_registry)
+            
+            # Pool manager coordinates detector events → pools → HLZ
+            from .pool_manager import PoolManagerConfig
+            
+            pool_mgr_config = PoolManagerConfig(
+                enable_event_logging=True
+            )
+            self.pool_manager = PoolManager(self.pool_registry, pool_mgr_config)
+            
+            # Zone watcher monitors pool/HLZ touches → signal candidates
+            from .signal_candidate import CandidateConfig
+            
+            candidate_config = CandidateConfig(
+                expiry_minutes=config.candidate["expiry_minutes"],
+                ema_alignment=config.candidate["filters"]["ema_alignment"],
+                volume_multiple=config.candidate["filters"]["volume_multiple"],
+                killzone_start=config.candidate["filters"]["killzone"][0],
+                killzone_end=config.candidate["filters"]["killzone"][1],
+                regime_allowed=config.candidate["filters"]["regime"]
+            )
+            
+            zone_config = ZoneWatcherConfig(
+                price_tolerance=config.zone_watcher["price_tolerance"],
+                confirm_closure=config.zone_watcher["confirm_closure"],
+                min_strength=config.zone_watcher["min_strength"],
+                max_active_zones=config.zone_watcher["max_active_zones"]
+            )
+            
+            self.zone_watcher = ZoneWatcher(zone_config, candidate_config)
+            
+            # Detectors create liquidity pool events
+            self.detectors = []
+            if config.detectors["fvg"]["enabled"]:
+                # Create FVG detectors for each enabled timeframe
+                htf_list = getattr(config.strategy, "htf_list", ["H4", "D1"])
+                for tf in htf_list:
+                    fvg_detector = FVGDetector(
+                        tf=tf,
+                        min_gap_atr=config.detectors["fvg"].get("min_gap_atr", 0.5),
+                        min_gap_pct=config.detectors["fvg"].get("min_gap_pct", 0.001),
+                        min_rel_vol=config.detectors["fvg"].get("min_rel_vol", 1.2)
+                    )
+                    self.detectors.append(fvg_detector)
+            
+            # Time aggregator for HTF candle generation (H4 = 240min, D1 = 1440min)
+            self.time_aggregators = {}
+            htf_list = getattr(config.strategy, "htf_list", ["H4", "D1"])
+            for tf_name in htf_list:
+                tf_minutes = 240 if tf_name == "H4" else 1440 if tf_name == "D1" else int(tf_name[:-1])
+                aggregator = TimeAggregator(
+                    tf_minutes=tf_minutes,
+                    source_tf_minutes=config.aggregation.get("source_tf_minutes", 5),
+                    buffer_size=config.aggregation.get("buffer_size", 1000)
+                )
+                self.time_aggregators[tf_name] = aggregator
+            
+        else:
+            # Fallback to mock for legacy/demo strategies
+            logger.info("Using mock zone watcher (legacy mode)")
+            self.fvg_detector = FVGDetector(config)
+            self.zone_watcher = MockZoneWatcher(config)
 
         # Metrics
         self.candles_processed = 0
@@ -409,9 +499,14 @@ class IntegratedStrategy:
             with measure_operation("update_positions"):
                 self.broker.update_positions(candle)
 
-            # Check for new signals
+            # Process strategy based on type
             with measure_operation("check_signals"):
-                signal = self.zone_watcher.update(candle, self.indicators)
+                if hasattr(self, 'time_aggregator') and hasattr(self, 'detectors'):
+                    # Real HTF strategy workflow
+                    signal = self._process_htf_strategy(candle)
+                else:
+                    # Mock strategy workflow
+                    signal = self.zone_watcher.update(candle, self.indicators)
 
                 if signal:
                     # Size position with risk manager
@@ -422,6 +517,51 @@ class IntegratedStrategy:
                     if size > 0:
                         # Submit order to broker
                         self.broker.submit_order(signal, size)
+
+    def _process_htf_strategy(self, candle: Candle) -> Any:
+        """Process real HTF liquidity strategy workflow.
+        
+        Args:
+            candle: Current 5-minute source candle
+            
+        Returns:
+            TradingSignal if conditions met, None otherwise
+        """
+        # 1. Update time aggregators - generates HTF candles
+        all_htf_candles = []
+        for tf_name, aggregator in self.time_aggregators.items():
+            htf_candles = aggregator.update(candle)
+            for htf_candle in htf_candles:
+                all_htf_candles.append((tf_name, htf_candle))
+        
+        # 2. Process each HTF candle through detectors
+        for tf_name, htf_candle in all_htf_candles:
+            atr_value = self.indicators.atr_value
+            vol_sma_value = self.indicators.volume_sma_value
+            
+            if atr_value is not None and vol_sma_value is not None:
+                # Run detectors matching this timeframe
+                for detector in self.detectors:
+                    if hasattr(detector, 'tf') and detector.tf == tf_name:
+                        events = detector.update(htf_candle, atr_value, vol_sma_value)
+                        
+                        # Process events through pool manager
+                        for event in events:
+                            result = self.pool_manager.process_detector_event(event)
+                            if result.success and result.pool_created:
+                                logger.debug(f"Created pool {result.pool_id} from {tf_name} FVG")
+        
+        # 3. Check zone watcher for price entries using current 5m candle
+        zone_entries = self.zone_watcher.on_price_update(candle)
+        
+        # 4. Process any zone entries through signal candidate FSM
+        for zone_entry in zone_entries:
+            candidate = self.zone_watcher.spawn_candidate(zone_entry, candle.ts)
+            logger.debug(f"Spawned candidate {candidate.candidate_id} from zone {zone_entry.zone_id}")
+            # Note: Full FSM processing would happen here in a complete implementation
+            # For now, return None to avoid generating signals until FSM is integrated
+            
+        return None
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get strategy performance statistics.
@@ -549,7 +689,7 @@ class StrategyFactory:
         Returns:
             Configured IntegratedStrategy instance
         """
-        logger.info(f"Building strategy for symbol: {config.symbol}")
+        logger.info(f"Building strategy for symbol: {config.strategy.symbol}")
 
         # Create broker with metrics collector
         broker = MockPaperBroker(config, metrics_collector)

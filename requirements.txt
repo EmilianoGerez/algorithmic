@@ -8,6 +8,9 @@ typer>=0.12  # CLI framework for backtesting commands
 numpy
 numba
 matplotlib  # For plotting functionality in CLI
+plotly>=5.0  # Interactive plotting for visualization
+mplfinance>=0.12  # Static candlestick charts
+pyarrow>=10.0  # Parquet file support for events data
 aiohttp
 requests>=2.31.0  # HTTP client for data fetching scripts
 certifi  # SSL certificate verification

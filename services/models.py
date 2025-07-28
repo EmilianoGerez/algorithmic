@@ -149,10 +149,19 @@ class ExecutionConfig(BaseModel):
     deterministic_seed: int | None = Field(
         default=42, description="Random seed for deterministic results"
     )
+    dump_events: bool = Field(
+        default=False, description="Enable events.parquet export for visualization"
+    )
+    export_data_for_viz: bool = Field(
+        default=False, description="Enable data.csv and trades.csv export"
+    )
 
 
 class BacktestConfig(BaseModel):
     """Complete backtesting configuration."""
+    
+    class Config:
+        extra = "allow"  # Allow extra fields from YAML
 
     strategy: StrategyConfig = Field(
         default_factory=lambda: StrategyConfig(name="default", symbol="BTCUSDT")
@@ -163,6 +172,17 @@ class BacktestConfig(BaseModel):
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     walk_forward: WalkForwardConfig = Field(default_factory=WalkForwardConfig)
     sweep: SweepConfig = Field(default_factory=SweepConfig)
+    
+    # HTF liquidity strategy configuration sections (optional)
+    pools: dict = Field(default_factory=dict)
+    hlz: dict = Field(default_factory=dict)
+    zone_watcher: dict = Field(default_factory=dict)
+    candidate: dict = Field(default_factory=dict)
+    indicators: dict = Field(default_factory=dict)
+    aggregation: dict = Field(default_factory=dict)
+    fvg: dict = Field(default_factory=dict)
+    pivot: dict = Field(default_factory=dict)
+    feeds: dict = Field(default_factory=dict)
 
     @classmethod
     def from_hydra_config(cls, cfg: DictConfig) -> BacktestConfig:

@@ -1,10 +1,14 @@
-# Data configuration
+# =========================
+#  Back-test master config
+# =========================
+
+# ---------- Data ----------
 data:
   source: csv
-  path: "data/EURUSD_1m_sample.csv" # Sample data for testing
-  symbol: EURUSD
-  timeframe: "1m"
-  date_format: "%Y-%m-%d %H:%M:%S"
+  path: "data/BTC_USD_5min_20250727_231139.csv"
+  symbol: BTCUSD
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
   columns:
     timestamp: timestamp
     open: open
@@ -13,34 +17,32 @@ data:
     close: close
     volume: volume
 
-# Runtime configuration
+# ---------- Runtime ----------
 runtime:
   log_level: INFO
-  log_file: null
   enable_latency_profiling: true
   enable_memory_tracking: true
-  realtime_simulation: false
-  use_csv_streaming: false
+  realtime_simulation: false       # batch back-test
   deterministic_seed: 42
 
-# Walk-forward configuration
+# ---------- Walk-forward ----------
 walk_forward:
   folds: 3
   train_fraction: 0.5
   overlap_fraction: 0.1
 
-# Sweep configuration
+# ---------- Sweep (disabled here) ----------
 sweep:
   enabled: false
   parameters: {}
   n_trials: 100
   max_workers: 4
-  isolated_worker_logging: true # Prevent parallel logging collisions
 
+# ---------- Strategy core ----------
 strategy:
   name: htf_liquidity_mtf
-  symbol: EURUSD # Add required symbol field
-  htf_list: ["H1", "H4", "D1"]
+  symbol: BTCUSD
+  htf_list: ["H4", "D1"]           # only H4 & D1 liquidity pools
   expiry_minutes: 120
   filters:
     ema_alignment: true
@@ -48,6 +50,7 @@ strategy:
     killzone: ["12:00", "14:05"]
     regime_ok: ["bull", "neutral"]
 
+# ---------- Indicator periods ----------
 indicators:
   ema21_period: 21
   ema50_period: 50
@@ -55,115 +58,87 @@ indicators:
   volume_sma_period: 20
   regime_sensitivity: 0.001
 
+# ---------- Aggregation ----------
 aggregation:
-  # Source timeframe and target timeframes for multi-timeframe analysis
-  source_tf_minutes: 1 # 1-minute source data
-  target_timeframes_minutes: [60, 240, 1440] # H1, H4, D1
-  buffer_size: 1500 # Ring buffer size for memory efficiency
+  source_tf_minutes: 5             # feed resolution
+  target_timeframes_minutes: [240, 1440]  # H4, D1
+  buffer_size: 1500
+  roll_from: "source"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
 
-  # Aggregation strategy
-  roll_from: "source" # "source" = from-scratch aggregation, "lower_tf" = H1→H4 chaining
-
-  # Performance settings
-  max_candles_per_update: 10 # Batch processing limit
-  enable_streaming: true # Real-time vs batch mode
-
-  # Clock-skew and ordering policies
-  out_of_order_policy: "drop" # "drop", "raise", or "recalc"
-  max_clock_skew_seconds: 300 # Maximum allowed time drift (5 minutes)
-  enable_strict_ordering: true # Enforce chronological order
-
+# ---------- Detectors ----------
 detectors:
   fvg:
-    min_gap_atr: 0.3 # Minimum gap size in ATR units
-    min_gap_pct: 0.05 # Minimum gap size as percentage (5%)
-    min_rel_vol: 1.2 # Minimum volume relative to SMA
+    enabled: true
+    min_gap_atr: 0.3
+    min_gap_pct: 0.05
+    min_rel_vol: 1.2
 
   pivot:
-    lookback: 5 # Lookback periods for pivot detection (3-10)
-    min_sigma: 0.5 # Minimum ATR distance for confirmation
+    enabled: false                # ← pivot detector OFF
 
-  indicators:
-    atr_period: 14 # ATR calculation period
-    volume_sma_period: 20 # Volume SMA baseline period
+  enabled_timeframes: ["H4", "D1"]
 
-  # Ordering policy for out-of-sequence HTF candles
-  out_of_order_policy: "drop" # "drop" or "raise"
-
-  enabled_timeframes: ["H1", "H4", "D1"] # Active detection timeframes
-
+# ---------- Pool registry ----------
 pools:
-  # Per-timeframe TTL configuration
-  H1:
-    ttl: 120m # 2 hours TTL for H1 pools
-    hit_tolerance: 0.0 # Exact price matching
   H4:
-    ttl: 6h # 6 hours TTL for H4 pools
-    hit_tolerance: 0.0 # Exact price matching
+    ttl: 6h
+    hit_tolerance: 0.0
   D1:
-    ttl: 2d # 2 days TTL for D1 pools
-    hit_tolerance: 0.0 # Exact price matching
+    ttl: 2d
+    hit_tolerance: 0.0
 
-  # Pool lifecycle settings
-  strength_threshold: 0.1 # Minimum detector strength to create pools
-  grace_period_minutes: 5 # Keep expired pools for analytics
-  max_pools_per_tf: 10000 # Memory safety limit per timeframe
-  auto_expire_interval: 30s # How often to check for expiries
+  strength_threshold: 0.05
+  grace_period_minutes: 5
+  max_pools_per_tf: 10000
+  auto_expire_interval: "30s"
 
-# High-Liquidity Zone (HLZ) overlap detection configuration
+# ---------- HLZ overlap ----------
 hlz:
-  # Minimum requirements for HLZ creation
-  min_members: 2 # Minimum number of overlapping pools
-  min_strength: 3.0 # Minimum combined strength threshold
-
-  # Timeframe weighting for strength calculation
+  min_members: 2
+  min_strength: 3.0
   tf_weight:
-    H1: 1.0 # Base weight for H1 timeframe
-    H4: 2.0 # Higher weight for H4 timeframe
-    D1: 3.0 # Highest weight for D1 timeframe
+    H4: 2.0
+    D1: 3.0
+  merge_tolerance: 0.5
+  side_mixing: false
+  max_active_hlzs: 1000
+  recompute_on_update: true
 
-  # Overlap detection settings
-  merge_tolerance: 0.5 # Points - merge HLZs if zones within tolerance
-  side_mixing: false # Whether to allow bullish/bearish pools in same HLZ
-
-  # Performance settings
-  max_active_hlzs: 1000 # Memory safety limit
-  recompute_on_update: true # Recalculate HLZs when pools change
-
-# Phase 6: ZoneWatcher + FSM Configuration
+# ---------- Zone watcher & FSM ----------
 zone_watcher:
-  price_tolerance: 0.0 # Price tolerance in points for zone entry
-  confirm_closure: false # Wait for bar close to confirm zone entry?
-  min_strength: 1.0 # Minimum zone strength to track
-  max_active_zones: 1000 # Maximum zones to track simultaneously
+  price_tolerance: 0.0
+  confirm_closure: false
+  min_strength: 1.0
+  max_active_zones: 1000
 
 candidate:
-  expiry_minutes: 120 # Candidate lifetime in minutes
+  expiry_minutes: 120
   filters:
-    ema_alignment: true # Require EMA alignment for signals
-    volume_multiple: 1.2 # Minimum volume vs SMA (1.2x = 20% above average)
-    killzone: ["12:00", "14:05"] # Preferred trading window (UTC)
-    regime: ["bull", "neutral"] # Allowed market regimes
+    ema_alignment: true
+    volume_multiple: 1.2
+    killzone: ["12:00", "14:05"]
+    regime: ["bull", "neutral"]
 
+# ---------- Execution (Paper back-test) ----------
 execution:
-  mode: live # live | backtest
-  broker: binance # binance | alpaca | paper
-  live:
-    ws_retry_sec: 5
-    rest_retry_sec: 2
-    reconcile_interval: 30
+  mode: backtest                 # live | backtest
+  broker: paper
   risk:
-    model: atr # or percent
-    risk_per_trade: 0.005 # 0.5% of account per trade
+    model: atr
+    risk_per_trade: 0.005
     atr_period: 14
     sl_atr_multiple: 1.5
-    tp_rr: 2.0 # 2:1 reward to risk ratio
+    tp_rr: 2.0
     min_position: 0.01
-    max_position_pct: 0.1 # Max 10% of account in single position
+    max_position_pct: 0.1
   broker_config:
     initial_balance: 10000.0
     commission_per_trade: 0.0
 
+# ---------- Feed layer ----------
 feeds:
-  base_tf: 1m
+  base_tf: 5m
   source: csv

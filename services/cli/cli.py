@@ -566,16 +566,22 @@ def run(
                 result = runner.run()
 
             # Extract metrics from result
-            total_trades = (
-                getattr(result.metrics, "total_trades", 0)
-                if hasattr(result, "metrics")
-                else 0
-            )
-            total_pnl = (
-                getattr(result.metrics, "total_pnl", 0.0)
-                if hasattr(result, "metrics")
-                else 0.0
-            )
+            if hasattr(result, "metrics") and isinstance(result.metrics, dict):
+                trade_metrics = result.metrics.get("trade_metrics", {})
+                total_trades = trade_metrics.get("total_trades", 0)
+                total_pnl = trade_metrics.get("total_pnl", 0.0)
+            else:
+                # Fallback for object-style metrics
+                total_trades = (
+                    getattr(result.metrics, "total_trades", 0)
+                    if hasattr(result, "metrics")
+                    else 0
+                )
+                total_pnl = (
+                    getattr(result.metrics, "total_pnl", 0.0)
+                    if hasattr(result, "metrics")
+                    else 0.0
+                )
 
             typer.echo(
                 f"✅ Backtest completed: {total_trades} trades, P&L: ${total_pnl:.2f}"

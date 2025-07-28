@@ -9,6 +9,7 @@ numpy
 numba
 matplotlib  # For plotting functionality in CLI
 aiohttp
+requests>=2.31.0  # HTTP client for data fetching scripts
 certifi  # SSL certificate verification
 websockets
 pytest
@@ -24,6 +25,7 @@ pytest-cov>=4.0
 coverage>=7.0
 pre-commit>=3.0  # Automated code quality checks
 types-psutil  # Type stubs for psutil library
+types-requests>=2.31.0  # Type stubs for requests library
 pandas-stubs  # Type stubs for pandas library
 types-PyYAML  # Type stubs for YAML library
 

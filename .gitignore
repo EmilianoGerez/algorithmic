@@ -260,3 +260,6 @@ mlruns/
 *.tar.gz
 *.tar.bz2
 *.tgz
+
+# Quality assurance
+.ruff_cache

@@ -11,14 +11,65 @@ all components for deterministic backtesting.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from core.detectors.fvg import FVGDetector
 from core.entities import Candle
-from core.indicators.base import IndicatorPack
-from core.indicators.ema import EMA
+from core.indicators.pack import IndicatorPack
+from core.strategy import (
+    OverlapDetector,
+    PoolManager,
+    PoolRegistry,
+    TimeAggregator,
+    ZoneWatcher,
+    ZoneWatcherConfig,
+)
 from services.metrics import MetricsCollector, measure_operation
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class HTFStack:
+    """Container for HTF strategy components with lifecycle management."""
+
+    pool_registry: Any = None
+    overlap_detector: Any = None
+    pool_manager: Any = None
+    zone_watcher: Any = None
+    detectors: list[Any] | None = None
+    time_aggregators: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Initialize list and dict fields after construction."""
+        if self.detectors is None:
+            self.detectors = []
+        if self.time_aggregators is None:
+            self.time_aggregators = {}
+
+    def shutdown(self) -> None:
+        """Clean shutdown for all components."""
+        for comp in [
+            self.pool_registry,
+            self.overlap_detector,
+            self.pool_manager,
+            self.zone_watcher,
+        ]:
+            if hasattr(comp, "shutdown"):
+                comp.shutdown()
+
+        if self.detectors:
+            for detector in self.detectors:
+                if hasattr(detector, "shutdown"):
+                    detector.shutdown()
+
+        if self.time_aggregators:
+            for aggregator in self.time_aggregators.values():
+                if hasattr(aggregator, "shutdown"):
+                    aggregator.shutdown()
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +132,8 @@ class MockZoneWatcher:
             TradingSignal if conditions met, None otherwise
         """
         # Enhanced signal logic: generate signals based on multiple conditions
-        ema21 = indicators.ema21_value
-        ema50 = indicators.ema50_value
+        ema21 = indicators.ema21.value
+        ema50 = indicators.ema50.value
 
         if ema21 is None or ema50 is None:
             return None
@@ -139,7 +190,13 @@ class MockRiskManager:
     def __init__(self, config: Any) -> None:
         self.config = config
         # Access nested risk configuration
-        if hasattr(config, "risk") and hasattr(config.risk, "risk_per_trade"):
+        if (
+            hasattr(config, "execution")
+            and hasattr(config.execution, "risk")
+            and hasattr(config.execution.risk, "risk_per_trade")
+        ):
+            self.risk_per_trade = config.execution.risk.risk_per_trade
+        elif hasattr(config, "risk") and hasattr(config.risk, "risk_per_trade"):
             self.risk_per_trade = config.risk.risk_per_trade
         else:
             self.risk_per_trade = 0.01  # Default 1% risk
@@ -374,14 +431,151 @@ class IntegratedStrategy:
         # Initialize indicators
         self.indicators = IndicatorPack()
 
-        # Initialize detectors (mock for now)
-        self.fvg_detector = FVGDetector(config)
+        # Initialize strategy components based on strategy configuration
+        logger.info(f"Config type: {type(config)}")
+        logger.info(f"Strategy name: {getattr(config.strategy, 'name', 'NO_NAME')}")
 
-        # Initialize zone watcher
-        self.zone_watcher = MockZoneWatcher(config)
+        use_mock = getattr(config.strategy, "use_mock_strategy", False)
+
+        # Config validation
+        if not use_mock:
+            # Validate HLZ configuration when using real HTF strategy
+            pivot_enabled = config.detectors.get("pivot", {}).get("enabled", False)
+            hlz_min_members = config.hlz.get("min_members", 2)
+
+            if not pivot_enabled and hlz_min_members > 2:
+                logger.warning(
+                    f"CONFIG SANITY: detectors.pivot.enabled == false but hlz.min_members = {hlz_min_members}. "
+                    f"HLZ counts may be lower than expected with FVG-only detection. "
+                    f"Consider setting hlz.min_members = 2 or enabling pivot detector."
+                )
+
+        if not use_mock and config.strategy.name.lower() == "htf_liquidity_mtf":
+            # ── Build full HTF liquidity detection stack ────────────────────────────
+            logger.info("Building real HTF liquidity strategy")
+
+            # Initialize HTF stack container
+            self.htf_stack = HTFStack()
+
+            # Time aggregators (built first, used by detectors)
+            self.htf_stack.time_aggregators = {}
+            htf_list = getattr(config.strategy, "htf_list", ["H4", "D1"])
+            for tf_name in htf_list:
+                tf_minutes = (
+                    240
+                    if tf_name == "H4"
+                    else 1440
+                    if tf_name == "D1"
+                    else int(tf_name[:-1])
+                )
+                aggregator = TimeAggregator(
+                    tf_minutes=tf_minutes,
+                    source_tf_minutes=config.aggregation.get("source_tf_minutes", 5),
+                    buffer_size=config.aggregation.get("buffer_size", 1000),
+                )
+                self.htf_stack.time_aggregators[tf_name] = aggregator
+
+            # Core registry and overlap detection
+            from .overlap import OverlapConfig
+            from .pool_registry import PoolRegistryConfig
+
+            registry_config = PoolRegistryConfig(
+                grace_period_minutes=config.pools["grace_period_minutes"],
+                max_pools_per_tf=config.pools["max_pools_per_tf"],
+            )
+            self.htf_stack.pool_registry = PoolRegistry(registry_config)
+
+            overlap_config = OverlapConfig(
+                min_members=config.hlz["min_members"],
+                min_strength=config.hlz["min_strength"],
+                tf_weight=config.hlz["tf_weight"],
+                merge_tolerance=config.hlz["merge_tolerance"],
+                side_mixing=config.hlz["side_mixing"],
+            )
+            self.htf_stack.overlap_detector = OverlapDetector(
+                overlap_config, self.htf_stack.pool_registry
+            )
+
+            # Pool manager coordinates detector events → pools → HLZ
+            from .pool_manager import PoolManagerConfig
+
+            pool_mgr_config = PoolManagerConfig(enable_event_logging=True)
+            self.htf_stack.pool_manager = PoolManager(
+                self.htf_stack.pool_registry, pool_mgr_config
+            )
+
+            # Zone watcher monitors pool/HLZ touches → signal candidates
+            from .signal_candidate import CandidateConfig
+
+            candidate_config = CandidateConfig(
+                expiry_minutes=config.candidate["expiry_minutes"],
+                ema_alignment=config.candidate["filters"]["ema_alignment"],
+                volume_multiple=config.candidate["filters"]["volume_multiple"],
+                killzone_start=config.candidate["filters"]["killzone"][0],
+                killzone_end=config.candidate["filters"]["killzone"][1],
+                regime_allowed=config.candidate["filters"]["regime"],
+            )
+
+            zone_config = ZoneWatcherConfig(
+                price_tolerance=config.zone_watcher["price_tolerance"],
+                confirm_closure=config.zone_watcher["confirm_closure"],
+                min_strength=config.zone_watcher["min_strength"],
+                max_active_zones=config.zone_watcher["max_active_zones"],
+            )
+
+            self.htf_stack.zone_watcher = ZoneWatcher(zone_config, candidate_config)
+
+            # Wire PoolManager to notify ZoneWatcher of pool events
+            self.htf_stack.pool_manager.zone_watcher = self.htf_stack.zone_watcher
+
+            # Detectors create liquidity pool events (with aggregator injection)
+            self.htf_stack.detectors = []
+
+            # Only create enabled detectors to save memory
+            if config.detectors["fvg"]["enabled"]:
+                # Create FVG detectors for each enabled timeframe
+                htf_list = getattr(config.strategy, "htf_list", ["H4", "D1"])
+                for tf in htf_list:
+                    fvg_detector = FVGDetector(
+                        tf=tf,
+                        min_gap_atr=config.detectors["fvg"].get("min_gap_atr", 0.5),
+                        min_gap_pct=config.detectors["fvg"].get("min_gap_pct", 0.001),
+                        min_rel_vol=config.detectors["fvg"].get("min_rel_vol", 1.2),
+                    )
+                    self.htf_stack.detectors.append(fvg_detector)
+
+            # Only create pivot detector if enabled
+            if config.detectors.get("pivot", {}).get("enabled", False):
+                logger.warning("Pivot detector requested but not implemented yet")
+                # TODO: Add pivot detector when implemented
+                # from .pivot_detector import PivotDetector
+                # pivot_detector = PivotDetector(config.detectors["pivot"], self.htf_stack.pool_manager)
+                # self.htf_stack.detectors.append(pivot_detector)
+
+            # For backward compatibility, expose key components as attributes
+            self.pool_registry = self.htf_stack.pool_registry
+            self.zone_watcher = self.htf_stack.zone_watcher
+            self.pool_manager = self.htf_stack.pool_manager
+            self.detectors = self.htf_stack.detectors
+            self.time_aggregators = self.htf_stack.time_aggregators
+
+        else:
+            # Fallback to mock for legacy/demo strategies
+            logger.info("Using mock zone watcher (legacy mode)")
+            # Create a simple FVG detector for 5-minute timeframe
+            self.fvg_detector = FVGDetector(
+                tf="5m", min_gap_atr=0.5, min_gap_pct=0.001, min_rel_vol=1.2
+            )
+            self.zone_watcher = MockZoneWatcher(config)
+            # htf_stack is None for mock strategy
 
         # Metrics
         self.candles_processed = 0
+
+    def shutdown(self) -> None:
+        """Clean shutdown for all components."""
+        if hasattr(self, "htf_stack") and self.htf_stack:
+            self.htf_stack.shutdown()
 
     def on_candle(self, candle: Candle) -> None:
         """Process incoming candle through the full strategy pipeline.
@@ -392,26 +586,41 @@ class IntegratedStrategy:
         with measure_operation("strategy_on_candle"):
             self.candles_processed += 1
 
+            # Sync timer wheel with candle time for timezone consistency
+            if (
+                hasattr(self, "htf_stack")
+                and self.htf_stack
+                and self.htf_stack.pool_registry
+            ):
+                self.htf_stack.pool_registry._ttl_wheel.current_time = candle.ts
+
             # Update indicators
             with measure_operation("update_indicators"):
                 self.indicators.update(candle)
 
-            # Update FVG detector with ATR and volume SMA
+            # Update FVG detector with ATR and volume SMA (for legacy mode)
             with measure_operation("update_detectors"):
-                atr_value = self.indicators.atr_value
-                vol_sma_value = self.indicators.volume_sma_value
+                if not hasattr(self, "htf_stack") or not self.htf_stack:
+                    # Only update legacy FVG detector in mock mode
+                    atr_value = self.indicators.atr_value
+                    vol_sma_value = self.indicators.volume_sma_value
 
-                # Only update FVG detector if we have indicator values
-                if atr_value is not None and vol_sma_value is not None:
-                    self.fvg_detector.update(candle, atr_value, vol_sma_value)
+                    # Only update FVG detector if we have indicator values
+                    if atr_value is not None and vol_sma_value is not None:
+                        self.fvg_detector.update(candle, atr_value, vol_sma_value)
 
             # Update broker positions first
             with measure_operation("update_positions"):
                 self.broker.update_positions(candle)
 
-            # Check for new signals
+            # Process strategy based on type
             with measure_operation("check_signals"):
-                signal = self.zone_watcher.update(candle, self.indicators)
+                if hasattr(self, "htf_stack") and self.htf_stack:
+                    # Real HTF strategy workflow
+                    signal = self._process_htf_strategy(candle)
+                else:
+                    # Mock strategy workflow
+                    signal = self.zone_watcher.update(candle, self.indicators)
 
                 if signal:
                     # Size position with risk manager
@@ -422,6 +631,131 @@ class IntegratedStrategy:
                     if size > 0:
                         # Submit order to broker
                         self.broker.submit_order(signal, size)
+
+    def _process_htf_strategy(self, candle: Candle) -> Any:
+        """Process real HTF liquidity strategy workflow.
+
+        Args:
+            candle: Current 5-minute source candle
+
+        Returns:
+            TradingSignal if conditions met, None otherwise
+        """
+        # 1. Update time aggregators - generates HTF candles
+        all_htf_candles = []
+        for tf_name, aggregator in self.time_aggregators.items():
+            htf_candles = aggregator.update(candle)
+            for htf_candle in htf_candles:
+                all_htf_candles.append((tf_name, htf_candle))
+
+        # 2. Process each HTF candle through detectors
+        for tf_name, htf_candle in all_htf_candles:
+            atr_value = self.indicators.atr_value
+            vol_sma_value = self.indicators.volume_sma_value
+
+            if atr_value is not None and vol_sma_value is not None:
+                # Run detectors matching this timeframe
+                for detector in self.detectors:
+                    if hasattr(detector, "tf") and detector.tf == tf_name:
+                        events = detector.update(htf_candle, atr_value, vol_sma_value)
+
+                        # Process events through pool manager
+                        if hasattr(detector, "pool_manager") and detector.pool_manager:
+                            for event in events:
+                                result = detector.pool_manager.process_detector_event(
+                                    event
+                                )
+                                if result.success and result.pool_created:
+                                    logger.debug(
+                                        f"Created pool {result.pool_id} from {tf_name} FVG"
+                                    )
+
+        # 3. Check zone watcher for price entries using current 5m candle
+        zone_entries = self.zone_watcher.on_price_update(candle)
+
+        # 4. Process any zone entries through signal candidate FSM
+        for zone_entry in zone_entries:
+            candidate = self.zone_watcher.spawn_candidate(zone_entry, candle.ts)
+            logger.debug(
+                f"Spawned candidate {candidate.candidate_id} from zone {zone_entry.zone_id}"
+            )
+
+        # 5. Run candidate FSM for all active candidates
+        if hasattr(self.zone_watcher, "active_candidates"):
+            updated_candidates = []
+
+            for candidate in self.zone_watcher.active_candidates:
+                # Create indicator snapshot for FSM processing
+                snapshot = self.indicators.snapshot()
+
+                # Update candidate with current bar and indicators using FSM
+                updated_candidate = candidate.update(
+                    candle, snapshot, self.zone_watcher.candidate_fsm
+                )
+
+                # Check if candidate is ready for trading
+                if updated_candidate.is_ready():
+                    # Convert candidate to trading signal
+                    signal = updated_candidate.to_signal()
+                    logger.info(
+                        f"Generated trading signal from candidate {updated_candidate.candidate_id}"
+                    )
+                    logger.debug(
+                        f"Signal details: entry={signal.entry_price}, stop_loss={signal.stop_loss}, side={signal.side}"
+                    )
+
+                    # Record signal emission metrics
+                    if hasattr(self, "metrics_collector") and self.metrics_collector:
+                        self.metrics_collector.record_signal_emitted()
+
+                    # Size position with risk manager
+                    size = self.risk_manager.size_position(
+                        signal, self.broker.get_balance()
+                    )
+                    logger.debug(
+                        f"Position size calculated: {size}, account_balance: {self.broker.get_balance()}"
+                    )
+
+                    if size > 0:
+                        # Submit order to broker
+                        trade_id = self.broker.submit_order(signal, size)
+                        logger.info(
+                            f"Submitted order {trade_id} from candidate {updated_candidate.candidate_id}"
+                        )
+
+                        # Mark candidate as submitted
+                        if hasattr(updated_candidate, "mark_submitted"):
+                            updated_candidate.mark_submitted(trade_id)
+
+                    # Remove candidate after signal generation (don't add to updated_candidates)
+                    # This prevents duplicate signals from the same candidate
+                    logger.debug(
+                        f"Removing candidate {updated_candidate.candidate_id} after signal generation"
+                    )
+
+                # Clean up expired candidates
+                elif (
+                    hasattr(updated_candidate, "state")
+                    and str(updated_candidate.state).upper() == "EXPIRED"
+                ):
+                    logger.debug(
+                        f"Removing expired candidate {updated_candidate.candidate_id}"
+                    )
+
+                    # Record candidate expiration metrics
+                    if hasattr(self, "metrics_collector") and self.metrics_collector:
+                        self.metrics_collector.record_candidate_expired()
+
+                    # Don't add to updated_candidates (effectively removes it)
+
+                else:
+                    # Keep active candidates that aren't ready or expired
+                    updated_candidates.append(updated_candidate)
+
+            # Replace the candidates list with updated ones
+            self.zone_watcher.active_candidates = updated_candidates
+
+        return None
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get strategy performance statistics.
@@ -549,7 +883,7 @@ class StrategyFactory:
         Returns:
             Configured IntegratedStrategy instance
         """
-        logger.info(f"Building strategy for symbol: {config.symbol}")
+        logger.info(f"Building strategy for symbol: {config.strategy.symbol}")
 
         # Create broker with metrics collector
         broker = MockPaperBroker(config, metrics_collector)

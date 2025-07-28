@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from ..detectors.events import LiquidityPoolEvent
 from .pool_models import PoolCreatedEvent, PoolExpiredEvent, PoolTouchedEvent
-from .pool_registry import PoolRegistry
+from .pool_registry import LiquidityPool, PoolRegistry
 
 __all__ = ["PoolManager", "PoolManagerConfig", "EventMappingResult"]
 
@@ -119,6 +119,7 @@ class PoolManager:
         self.registry = registry
         self.config = config or PoolManagerConfig()
         self._last_expiry_check = datetime.now()
+        self.zone_watcher = None  # Will be set by factory during wiring
 
         logger.info(
             f"PoolManager initialized with TTLs: {self.config.ttl_by_timeframe}"
@@ -178,6 +179,16 @@ class PoolManager:
                         f"in {event.tf} at [{bottom:.5f}, {top:.5f}] "
                         f"strength={strength:.3f} ttl={ttl}"
                     )
+
+                # Emit PoolCreatedEvent to ZoneWatcher if connected
+                if hasattr(self, "zone_watcher") and self.zone_watcher:
+                    # Get the created pool from registry - it should exist since we just created it
+                    pool = self.registry.get_pool(pool_id)  # type: ignore[unreachable]
+                    if pool:  # Only emit event if pool was successfully retrieved
+                        pool_created_event = PoolCreatedEvent(
+                            pool_id=pool_id, timestamp=event.ts, pool=pool
+                        )
+                        self.zone_watcher.on_pool_event(pool_created_event)
 
                 return EventMappingResult(
                     success=True, pool_id=pool_id, pool_created=True

@@ -1,0 +1,28 @@
+# Test config for sanity warning
+data:
+  source: csv
+  path: "data/BTC_USD_5min_20250728_021825.csv"
+  symbol: BTCUSD
+  timeframe: "5m"
+
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSD
+  use_mock_strategy: false
+  htf_list: ["H4", "D1"]
+
+detectors:
+  fvg:
+    enabled: true
+    min_gap_atr: 0.3
+  pivot:
+    enabled: false # This should trigger warning
+
+hlz:
+  min_members: 4 # This combined with pivot disabled should warn
+  min_strength: 3.0
+
+execution:
+  mode: backtest
+  broker: paper
+  deterministic_seed: 42

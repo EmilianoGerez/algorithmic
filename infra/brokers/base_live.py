@@ -20,7 +20,6 @@ from typing import Any
 
 import aiohttp
 import certifi
-from pydantic_settings import BaseSettings
 
 from core.trading.models import AccountState, Order, OrderReceipt, Position
 from core.trading.protocols import Broker

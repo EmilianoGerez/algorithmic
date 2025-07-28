@@ -22,7 +22,6 @@ from core.trading.models import (
     OrderType,
     Position,
 )
-from core.trading.protocols import Broker
 
 from .exceptions import BrokerError
 

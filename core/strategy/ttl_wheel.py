@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 # TTL Wheel bucket size constants - tweak these for performance/memory trade-offs
@@ -88,7 +88,8 @@ class TimerWheel:
     def __init__(self, config: WheelConfig | None = None):
         """Initialize the timing wheel with configuration."""
         self.config = config or WheelConfig()
-        self.current_time = datetime.now()
+        # Use UTC timezone-aware datetime for consistency with market data
+        self.current_time = datetime.now(UTC)
 
         # Initialize wheel levels
         self._wheels: list[list[list[ScheduledExpiry]]] = [

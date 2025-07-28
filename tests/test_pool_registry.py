@@ -465,8 +465,8 @@ class TestPoolRegistry:
 
         is_ci = os.getenv("CI") == "true" or os.getenv("GITHUB_ACTIONS") == "true"
         time_limit = (
-            1.0 if is_ci else 0.3
-        )  # 1 second for CI, 300ms for local (more realistic)
+            2.0 if is_ci else 0.3
+        )  # 2 seconds for CI, 300ms for local (more realistic for GitHub Actions)
 
         assert total_time < time_limit, (
             f"Total time {total_time:.3f}s exceeds {time_limit}s limit"

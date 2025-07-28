@@ -20,16 +20,14 @@ from __future__ import annotations
 import itertools
 import json
 import logging
-import multiprocessing as mp
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from omegaconf import DictConfig, OmegaConf
 
 from services.models import BacktestConfig, BacktestResult
 from services.runner import BacktestRunner

@@ -15,6 +15,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
+[project.scripts]
+quantbt = "services.cli.cli:app"
+
 [tool.setuptools.packages.find]
 include = ["core*", "infra*", "services*"]
 exclude = ["tests*", "data*", "results*", "configs*"]
@@ -77,7 +80,11 @@ module = [
     "certifi.*",
     "pydantic_settings.*",
     "matplotlib.*",
-    "yaml.*"
+    "yaml.*",
+    "plotly.*",
+    "pyarrow.*",
+    "mplfinance.*",
+    "python_user_visible.*"
 ]
 ignore_missing_imports = true
 

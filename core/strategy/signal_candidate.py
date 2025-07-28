@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Protocol
 
 from core.entities import Candle
 from core.indicators.regime import Regime
@@ -60,19 +59,18 @@ class FSMGuards:
     def ema_alignment_ok(
         bar: Candle, snapshot: IndicatorSnapshot, direction: SignalDirection
     ) -> bool:
-        """Check if EMA alignment supports the signal direction."""
+        """Check if EMA alignment supports the signal direction (simplified: just price vs EMA21)."""
         if snapshot.ema21 is None or snapshot.ema50 is None:
             return False
 
         ema21 = snapshot.ema21
-        ema50 = snapshot.ema50
 
         if direction == SignalDirection.LONG:
-            # For long: price above EMA21, EMA21 above EMA50
-            return bar.close > ema21 and ema21 > ema50
+            # For long: Simply require price above EMA21 (catches both trends and reversals)
+            return bar.close > ema21
         else:  # SHORT
-            # For short: price below EMA21, EMA21 below EMA50
-            return bar.close < ema21 and ema21 < ema50
+            # For short: Simply require price below EMA21 (catches both trends and reversals)
+            return bar.close < ema21
 
     @staticmethod
     def volume_ok(bar: Candle, snapshot: IndicatorSnapshot, multiple: float) -> bool:

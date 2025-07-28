@@ -21,10 +21,10 @@ python -m services.backtester --file sample_data/your_file.csv
 
 ## Features
 
-✅ **HTF Liquidity Strategy**: Complete implementation with FVG detection, pool registry, and zone monitoring  
-✅ **Signal Pipeline**: FSM-driven candidate processing with EMA alignment and regime filtering  
-✅ **Risk Management**: ATR-based position sizing with 2:1 R/R ratios  
-✅ **Real-time Processing**: Sub-millisecond latency with memory-efficient design  
+✅ **HTF Liquidity Strategy**: Complete implementation with FVG detection, pool registry, and zone monitoring
+✅ **Signal Pipeline**: FSM-driven candidate processing with EMA alignment and regime filtering
+✅ **Risk Management**: ATR-based position sizing with 2:1 R/R ratios
+✅ **Real-time Processing**: Sub-millisecond latency with memory-efficient design
 ✅ **Production Ready**: Comprehensive logging, metrics, and error handling
 
 Next steps:

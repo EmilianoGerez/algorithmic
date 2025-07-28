@@ -8,13 +8,10 @@ Usage:
 
 import argparse
 import csv
-import json
 import os
 import sys
 import time
 from datetime import datetime
-from typing import Optional
-from urllib.parse import urlencode
 
 import requests
 from dotenv import load_dotenv

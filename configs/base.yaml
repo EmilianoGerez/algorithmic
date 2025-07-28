@@ -5,7 +5,7 @@
 # ---------- Data ----------
 data:
   source: csv
-  path: "data/BTC_USD_5min_20250727_231139.csv"
+  path: "data/BTC_USD_5min_20250728_021825.csv"
   symbol: BTCUSD
   timeframe: "5m"
   date_format: "%Y-%m-%dT%H:%M:%SZ"
@@ -40,7 +40,7 @@ strategy:
   filters:
     ema_alignment: true
     volume_multiple: 1.5
-    killzone: ["12:00", "14:05"]
+    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
     regime_ok: ["bull", "neutral"]
 
 # ---------- Indicator periods ----------
@@ -77,10 +77,10 @@ detectors:
 # ---------- Pool registry ----------
 pools:
   H4:
-    ttl: 6h
+    ttl: 3d # 3 days for H4 pools
     hit_tolerance: 0.0
   D1:
-    ttl: 2d
+    ttl: 3w # 3 weeks for D1 pools
     hit_tolerance: 0.0
 
   strength_threshold: 0.05
@@ -112,14 +112,14 @@ candidate:
   filters:
     ema_alignment: true
     volume_multiple: 1.2
-    killzone: ["12:00", "14:05"]
+    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
     regime: ["bull", "neutral"]
 
 # ---------- Execution (Paper back-test) ----------
 execution:
   mode: backtest # live | backtest (live requires feeds.source = websocket)
   broker: paper
-  log_level: INFO
+  log_level: DEBUG # Enable debug logging to see signal rejection reasons
   enable_latency_profiling: true
   enable_memory_tracking: true
   realtime_simulation: false # batch back-test

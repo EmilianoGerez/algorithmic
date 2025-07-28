@@ -492,7 +492,6 @@ class BinanceFuturesBroker(HttpLiveBroker):
         self, response: dict[str, Any], original_order: Order, client_order_id: str
     ) -> OrderReceipt:
         """Map Binance order response to our OrderReceipt format."""
-        from uuid import uuid4
 
         status = self._map_order_status(response["status"])
 

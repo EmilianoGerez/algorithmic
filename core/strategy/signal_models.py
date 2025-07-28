@@ -9,7 +9,7 @@ and fast lookups in the ZoneWatcher.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Literal
 
@@ -101,46 +101,56 @@ class SignalCandidate:
             expires_at=self.expires_at,
             last_bar_timestamp=bar_timestamp,
         )
-    
+
     def is_ready(self) -> bool:
         """Check if candidate is ready for trading signal execution."""
         return self.state is CandidateState.READY
-    
-    def update(self, candle: Candle, indicators: IndicatorSnapshot, fsm: SignalCandidateFSM | None = None) -> SignalCandidate:
+
+    def update(
+        self,
+        candle: Candle,
+        indicators: IndicatorSnapshot,
+        fsm: SignalCandidateFSM | None = None,
+    ) -> SignalCandidate:
         """Update candidate state through FSM processing.
-        
+
         Args:
             candle: Current price bar
             indicators: Indicator snapshot
             fsm: Signal candidate FSM instance
-            
+
         Returns:
             Updated candidate with new state
         """
         if fsm is None:
             # Return self if no FSM provided (placeholder behavior)
             return self
-            
+
         # Process through FSM
         result = fsm.process(self, candle, indicators)
         return result.updated_candidate
-    
-    def to_signal(self) -> "TradingSignal":
+
+    def to_signal(self) -> TradingSignal:
         """Convert ready candidate to trading signal.
-        
+
         Returns:
             TradingSignal ready for broker submission
         """
         from datetime import datetime
-        
+
         if not self.is_ready():
-            raise ValueError(f"Candidate {self.candidate_id} not ready for signal conversion")
-        
+            raise ValueError(
+                f"Candidate {self.candidate_id} not ready for signal conversion"
+            )
+
         # Convert direction to side for broker compatibility
         side = "buy" if self.direction == SignalDirection.LONG else "sell"
-        
+
+        # Use UTC timezone to match candle data
+        now_utc = datetime.now(UTC)
+
         return TradingSignal(
-            signal_id=generate_signal_id(self.candidate_id, datetime.now()),
+            signal_id=generate_signal_id(self.candidate_id, now_utc),
             candidate_id=self.candidate_id,
             zone_id=self.zone_id,
             zone_type=self.zone_type,
@@ -150,11 +160,11 @@ class SignalCandidate:
             current_price=self.entry_price,  # TODO: Get from market data
             strength=self.strength,
             confidence=0.8,  # TODO: Calculate from filters
-            timestamp=datetime.now(),
+            timestamp=now_utc,
             timeframe="5m",  # TODO: Get from config
-            metadata={"side": side}  # Add side for broker compatibility
+            metadata={"side": side},  # Add side for broker compatibility
         )
-    
+
     def mark_submitted(self, order_id: str) -> None:
         """Mark candidate as submitted with order ID."""
         # For immutable design, this could update metadata or state
@@ -188,29 +198,29 @@ class TradingSignal:
     def is_short(self) -> bool:
         """Check if signal is for short position."""
         return self.direction == SignalDirection.SHORT
-    
+
     @property
     def side(self) -> str:
         """Get trading side as string for broker compatibility."""
         return "buy" if self.is_long else "sell"
-    
+
     @property
     def stop_loss(self) -> float:
         """Calculate stop loss based on entry price and ATR."""
         # Simple ATR-based stop loss (1.5x ATR)
         atr_multiple = 1.5
         estimated_atr = self.entry_price * 0.01  # 1% as rough ATR estimate
-        
+
         if self.is_long:
             return self.entry_price - (estimated_atr * atr_multiple)
         else:
             return self.entry_price + (estimated_atr * atr_multiple)
-    
-    @property 
+
+    @property
     def take_profit(self) -> float:
         """Calculate take profit based on 2:1 risk/reward ratio."""
         risk_distance = abs(self.entry_price - self.stop_loss)
-        
+
         if self.is_long:
             return self.entry_price + (risk_distance * 2.0)
         else:

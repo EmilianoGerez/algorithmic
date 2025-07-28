@@ -143,4 +143,3 @@ Inside ChatGPT the interactive Plotly appears; in CI a PNG is saved.
 ---
 
 *Guide version 0.1 – 30 Jul 2025*
-

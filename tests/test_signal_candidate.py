@@ -283,9 +283,10 @@ class TestSignalCandidateFSM:
         self, fsm, base_candidate, good_candle, good_snapshot
     ):
         """Test staying in WAIT_EMA with bad EMA alignment."""
-        # Make EMA alignment bad
-        good_snapshot.ema21 = 99.0  # Below close (103)
-        good_snapshot.ema50 = 101.0
+        # Make EMA alignment bad for LONG signal
+        # For LONG, bad alignment = price below EMA21
+        good_snapshot.ema21 = 105.0  # Above close (103)
+        good_snapshot.ema50 = 107.0
 
         result = fsm.process(base_candidate, good_candle, good_snapshot)
 

@@ -8,7 +8,6 @@ import csv
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 def validate_csv_format(filepath: str) -> bool:

@@ -8,7 +8,6 @@ are entered. Designed for stateless operation with fast lookups.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -28,7 +27,6 @@ from .signal_models import (
     SignalDirection,
     ZoneEnteredEvent,
     ZoneType,
-    generate_candidate_id,
 )
 
 __all__ = [
@@ -84,7 +82,7 @@ class ZoneWatcher:
 
         # Fast lookup for active zones (stateless design)
         self._active_zones: dict[str, ZoneMeta] = {}
-        
+
         # Track active signal candidates for FSM processing
         self.active_candidates: list[Any] = []  # List of SignalCandidate instances
 

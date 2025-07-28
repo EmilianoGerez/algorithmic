@@ -11,9 +11,9 @@ from __future__ import annotations
 import csv
 import logging
 from collections.abc import Iterator
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from core.entities import Candle
 

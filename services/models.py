@@ -7,7 +7,6 @@ and result serialization. Integrates with Hydra for flexible parameter managemen
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -43,8 +42,13 @@ class StrategyConfig(BaseModel):
 
     name: str = Field(description="Strategy name/identifier")
     symbol: str = Field(description="Trading symbol (e.g., EURUSD, BTCUSD)")
-    use_mock_strategy: bool = Field(default=False, description="Use simple mock strategy instead of full HTF system")
-    htf_list: list[str] = Field(default=["H4", "D1"], description="Higher timeframe list for liquidity detection")
+    use_mock_strategy: bool = Field(
+        default=False, description="Use simple mock strategy instead of full HTF system"
+    )
+    htf_list: list[str] = Field(
+        default=["H4", "D1"],
+        description="Higher timeframe list for liquidity detection",
+    )
     timeframes: list[str] = Field(
         default=["1m", "1h", "4h"], description="List of timeframes to use"
     )
@@ -161,7 +165,7 @@ class ExecutionConfig(BaseModel):
 
 class BacktestConfig(BaseModel):
     """Complete backtesting configuration."""
-    
+
     class Config:
         extra = "allow"  # Allow extra fields from YAML
 
@@ -174,17 +178,17 @@ class BacktestConfig(BaseModel):
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     walk_forward: WalkForwardConfig = Field(default_factory=WalkForwardConfig)
     sweep: SweepConfig = Field(default_factory=SweepConfig)
-    
+
     # HTF liquidity strategy configuration sections (optional)
-    pools: dict = Field(default_factory=dict)
-    hlz: dict = Field(default_factory=dict)
-    zone_watcher: dict = Field(default_factory=dict)
-    candidate: dict = Field(default_factory=dict)
-    indicators: dict = Field(default_factory=dict)
-    aggregation: dict = Field(default_factory=dict)
-    fvg: dict = Field(default_factory=dict)
-    pivot: dict = Field(default_factory=dict)
-    feeds: dict = Field(default_factory=dict)
+    pools: dict[str, Any] = Field(default_factory=dict)
+    hlz: dict[str, Any] = Field(default_factory=dict)
+    zone_watcher: dict[str, Any] = Field(default_factory=dict)
+    candidate: dict[str, Any] = Field(default_factory=dict)
+    indicators: dict[str, Any] = Field(default_factory=dict)
+    aggregation: dict[str, Any] = Field(default_factory=dict)
+    fvg: dict[str, Any] = Field(default_factory=dict)
+    pivot: dict[str, Any] = Field(default_factory=dict)
+    feeds: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
     def from_hydra_config(cls, cfg: DictConfig) -> BacktestConfig:

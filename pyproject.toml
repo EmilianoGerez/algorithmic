@@ -80,7 +80,11 @@ module = [
     "certifi.*",
     "pydantic_settings.*",
     "matplotlib.*",
-    "yaml.*"
+    "yaml.*",
+    "plotly.*",
+    "pyarrow.*",
+    "mplfinance.*",
+    "python_user_visible.*"
 ]
 ignore_missing_imports = true
 

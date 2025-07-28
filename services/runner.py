@@ -199,7 +199,10 @@ class BacktestRunner:
         return self.replay_engine
 
     def _export_visualization_data(
-        self, replay_engine: ReplayEngine, candle_stream: Any, audit_trail: dict[str, Any]
+        self,
+        replay_engine: ReplayEngine,
+        candle_stream: Any,
+        audit_trail: dict[str, Any],
     ) -> None:
         """Export data for visualization purposes.
 
@@ -214,22 +217,25 @@ class BacktestRunner:
                 from quant_algo.visual.data_exporter import BacktestDataExporter
             except ImportError:
                 # Try relative import from current directory
-                import sys
                 import os
+                import sys
+
                 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
                 from quant_algo.visual.data_exporter import BacktestDataExporter
-            
-            from datetime import datetime
+
             import os
+            from datetime import datetime
 
             # Create result directory based on current timestamp
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             result_dir = f"results/backtest_{timestamp}"
             os.makedirs(result_dir, exist_ok=True)
 
             # Initialize data exporter
-            exporter = BacktestDataExporter(result_dir)
-            
+            from pathlib import Path
+
+            exporter = BacktestDataExporter(Path(result_dir))
+
             self.logger.info(f"Exporting visualization data to {result_dir}")
 
             # Export market data
@@ -238,7 +244,7 @@ class BacktestRunner:
                 self.config.data.path,
                 use_csv_stream=self.config.execution.use_csv_streaming,
             )
-            
+
             for candle in fresh_candle_stream:
                 exporter.add_candle(
                     timestamp=candle.ts,
@@ -246,50 +252,64 @@ class BacktestRunner:
                     high=candle.high,
                     low=candle.low,
                     close=candle.close,
-                    volume=candle.volume
+                    volume=candle.volume,
                 )
 
             # Export trades from broker if available
-            if self.strategy and hasattr(self.strategy, 'broker') and self.strategy.broker:
+            if (
+                self.strategy
+                and hasattr(self.strategy, "broker")
+                and self.strategy.broker
+            ):
                 broker = self.strategy.broker
                 # Export completed trades if broker has trade history
                 try:
-                    if hasattr(broker, 'get_trade_history'):
+                    if hasattr(broker, "get_trade_history"):
                         trades = broker.get_trade_history()
                         for trade in trades:
                             # Extract trade details - exact format depends on trade object
-                            if hasattr(trade, 'id') and hasattr(trade, 'symbol'):
+                            if hasattr(trade, "id") and hasattr(trade, "symbol"):
                                 exporter.add_trade(
-                                    trade_id=str(getattr(trade, 'id', 'unknown')),
-                                    symbol=getattr(trade, 'symbol', 'UNKNOWN'),
-                                    side=str(getattr(trade, 'side', 'BUY')),
-                                    entry_ts=getattr(trade, 'entry_time', datetime.now()),
-                                    exit_ts=getattr(trade, 'exit_time', datetime.now()),
-                                    entry_price=float(getattr(trade, 'entry_price', 0.0)),
-                                    exit_price=float(getattr(trade, 'exit_price', 0.0)),
-                                    size=float(getattr(trade, 'size', 0.0)),
-                                    pnl=float(getattr(trade, 'pnl', 0.0)),
-                                    fees=float(getattr(trade, 'fees', 0.0)),
-                                    exit_reason=str(getattr(trade, 'exit_reason', ''))
+                                    trade_id=str(getattr(trade, "id", "unknown")),
+                                    symbol=getattr(trade, "symbol", "UNKNOWN"),
+                                    side=str(getattr(trade, "side", "BUY")),
+                                    entry_ts=getattr(
+                                        trade, "entry_time", datetime.now()
+                                    ),
+                                    exit_ts=getattr(trade, "exit_time", datetime.now()),
+                                    entry_price=float(
+                                        getattr(trade, "entry_price", 0.0)
+                                    ),
+                                    exit_price=float(getattr(trade, "exit_price", 0.0)),
+                                    size=float(getattr(trade, "size", 0.0)),
+                                    pnl=float(getattr(trade, "pnl", 0.0)),
+                                    fees=float(getattr(trade, "fees", 0.0)),
+                                    exit_reason=str(getattr(trade, "exit_reason", "")),
                                 )
-                    elif hasattr(broker, 'trades'):
-                        trades = getattr(broker, 'trades', [])
+                    elif hasattr(broker, "trades"):
+                        trades = getattr(broker, "trades", [])
                         for trade in trades:
                             # Similar processing for direct trades list
-                            if hasattr(trade, 'id') or hasattr(trade, 'trade_id'):
-                                trade_id = getattr(trade, 'id', getattr(trade, 'trade_id', 'unknown'))
+                            if hasattr(trade, "id") or hasattr(trade, "trade_id"):
+                                trade_id = getattr(
+                                    trade, "id", getattr(trade, "trade_id", "unknown")
+                                )
                                 exporter.add_trade(
                                     trade_id=str(trade_id),
-                                    symbol=getattr(trade, 'symbol', 'UNKNOWN'),
-                                    side=str(getattr(trade, 'side', 'BUY')),
-                                    entry_ts=getattr(trade, 'entry_time', datetime.now()),
-                                    exit_ts=getattr(trade, 'exit_time', datetime.now()),
-                                    entry_price=float(getattr(trade, 'entry_price', 0.0)),
-                                    exit_price=float(getattr(trade, 'exit_price', 0.0)),
-                                    size=float(getattr(trade, 'size', 0.0)),
-                                    pnl=float(getattr(trade, 'pnl', 0.0)),
-                                    fees=float(getattr(trade, 'fees', 0.0)),
-                                    exit_reason=str(getattr(trade, 'exit_reason', ''))
+                                    symbol=getattr(trade, "symbol", "UNKNOWN"),
+                                    side=str(getattr(trade, "side", "BUY")),
+                                    entry_ts=getattr(
+                                        trade, "entry_time", datetime.now()
+                                    ),
+                                    exit_ts=getattr(trade, "exit_time", datetime.now()),
+                                    entry_price=float(
+                                        getattr(trade, "entry_price", 0.0)
+                                    ),
+                                    exit_price=float(getattr(trade, "exit_price", 0.0)),
+                                    size=float(getattr(trade, "size", 0.0)),
+                                    pnl=float(getattr(trade, "pnl", 0.0)),
+                                    fees=float(getattr(trade, "fees", 0.0)),
+                                    exit_reason=str(getattr(trade, "exit_reason", "")),
                                 )
                 except Exception as e:
                     self.logger.warning(f"Could not export trades: {e}")
@@ -298,35 +318,81 @@ class BacktestRunner:
             if self.config.execution.dump_events:
                 try:
                     # Export detector events if available
-                    if self.strategy and hasattr(self.strategy, 'detectors'):
-                        detectors = getattr(self.strategy, 'detectors', {})
-                        
+                    if self.strategy and hasattr(self.strategy, "detectors"):
+                        detectors = getattr(self.strategy, "detectors", {})
+
                         # Export FVG events
-                        if 'fvg_detector' in detectors:
-                            fvg_detector = detectors['fvg_detector']
-                            if hasattr(fvg_detector, 'detected_fvgs'):
-                                for fvg in getattr(fvg_detector, 'detected_fvgs', []):
-                                    exporter.add_fvg_event(fvg)
-                        
-                        # Export pivot events  
-                        if 'pivot_detector' in detectors:
-                            pivot_detector = detectors['pivot_detector']
-                            if hasattr(pivot_detector, 'detected_pivots'):
-                                for pivot in getattr(pivot_detector, 'detected_pivots', []):
-                                    exporter.add_pivot_event(pivot)
+                        if "fvg_detector" in detectors:
+                            fvg_detector = detectors["fvg_detector"]
+                            if hasattr(fvg_detector, "detected_fvgs"):
+                                for fvg in getattr(fvg_detector, "detected_fvgs", []):
+                                    # Extract required fields from FVG object
+                                    fvg_timestamp: datetime = (
+                                        getattr(fvg, "timestamp", None)
+                                        or datetime.now()
+                                    )
+                                    top = getattr(
+                                        fvg, "top", getattr(fvg, "gap_top", 0.0)
+                                    )
+                                    bottom = getattr(
+                                        fvg, "bottom", getattr(fvg, "gap_bottom", 0.0)
+                                    )
+                                    timeframe = getattr(
+                                        fvg, "timeframe", getattr(fvg, "tf", "1m")
+                                    )
+                                    strength = getattr(fvg, "strength", 1.0)
+                                    exporter.add_fvg_event(
+                                        timestamp=fvg_timestamp,
+                                        top=top,
+                                        bottom=bottom,
+                                        timeframe=timeframe,
+                                        strength=strength,
+                                    )
+
+                        # Export pivot events
+                        if "pivot_detector" in detectors:
+                            pivot_detector = detectors["pivot_detector"]
+                            if hasattr(pivot_detector, "detected_pivots"):
+                                for pivot in getattr(
+                                    pivot_detector, "detected_pivots", []
+                                ):
+                                    # Extract required fields from pivot object
+                                    pivot_timestamp: datetime = (
+                                        getattr(pivot, "timestamp", None)
+                                        or datetime.now()
+                                    )
+                                    price = getattr(pivot, "price", 0.0)
+                                    side = getattr(
+                                        pivot,
+                                        "side",
+                                        getattr(pivot, "pivot_type", "high"),
+                                    )
+                                    strength = getattr(pivot, "strength", 1.0)
+                                    atr_distance = getattr(pivot, "atr_distance", 0.0)
+                                    exporter.add_pivot_event(
+                                        timestamp=pivot_timestamp,
+                                        price=price,
+                                        side=side,
+                                        strength=strength,
+                                        atr_distance=atr_distance,
+                                    )
                 except Exception as e:
                     self.logger.warning(f"Could not export events: {e}")
 
             # Finalize export
             exporter.finalize_events()
-            
-            self.logger.info(f"✅ Visualization data exported successfully to {result_dir}")
-            
+
+            self.logger.info(
+                f"✅ Visualization data exported successfully to {result_dir}"
+            )
+
             # Store result directory for later use
             self._result_dir = result_dir
 
         except ImportError as e:
-            self.logger.warning(f"Visualization export skipped - missing dependencies: {e}")
+            self.logger.warning(
+                f"Visualization export skipped - missing dependencies: {e}"
+            )
         except Exception as e:
             self.logger.error(f"Failed to export visualization data: {e}")
 
@@ -382,7 +448,7 @@ class BacktestRunner:
                 audit_trail=audit_trail,
                 success=True,
                 error_message=None,
-                result_dir=getattr(self, '_result_dir', None),
+                result_dir=getattr(self, "_result_dir", None),
             )
 
             self.logger.info(

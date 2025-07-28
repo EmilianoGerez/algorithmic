@@ -181,16 +181,17 @@ class PoolManager:
                     )
 
                 # Emit PoolCreatedEvent to ZoneWatcher if connected
-                if hasattr(self, 'zone_watcher') and self.zone_watcher:
+                if hasattr(self, "zone_watcher") and self.zone_watcher:
                     # Get the created pool from registry
-                    pool = self.registry.get_pool(pool_id)
-                    if pool:
-                        pool_created_event = PoolCreatedEvent(
-                            pool_id=pool_id,
-                            timestamp=event.ts,
-                            pool=pool
-                        )
-                        self.zone_watcher.on_pool_event(pool_created_event)
+                    pool = self.registry.get_pool(pool_id)  # type: ignore[unreachable]
+                    # Pool should exist since we just created it successfully
+                    assert pool is not None, (
+                        f"Pool {pool_id} should exist after creation"
+                    )
+                    pool_created_event = PoolCreatedEvent(
+                        pool_id=pool_id, timestamp=event.ts, pool=pool
+                    )
+                    self.zone_watcher.on_pool_event(pool_created_event)
 
                 return EventMappingResult(
                     success=True, pool_id=pool_id, pool_created=True

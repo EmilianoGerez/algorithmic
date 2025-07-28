@@ -137,7 +137,7 @@ class IndicatorPack:
 
     @property
     def volume_sma_value(self) -> float | None:
-        """Current volume SMA value for compatibility with factory.""" 
+        """Current volume SMA value for compatibility with factory."""
         return self.volume_sma.value
 
     @property

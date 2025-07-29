@@ -23,7 +23,7 @@ from .pool_models import (
 )
 from .ttl_wheel import TimerWheel, WheelConfig
 
-__all__ = ["PoolRegistry", "PoolRegistryConfig", "PoolRegistryMetrics"]
+__all__ = ["PoolRegistry", "PoolRegistryConfig", "PoolRegistryMetrics", "LiquidityPool"]
 
 
 logger = logging.getLogger(__name__)

@@ -25,6 +25,19 @@ strategy.zone_watcher.expiry_minutes:
   - 120 # 2 hours
   - 180 # 3 hours
 
+# EMA Alignment Improvements (NEW)
+candidate.filters.ema_tolerance_pct:
+  - 0.0 # No tolerance (current behavior)
+  - 0.001 # 0.1% tolerance
+  - 0.002 # 0.2% tolerance
+  - 0.003 # 0.3% tolerance
+
+candidate.filters.linger_minutes:
+  - 0 # No touch-&-reclaim (current behavior)
+  - 3 # 3-minute linger window
+  - 5 # 5-minute linger window
+  - 8 # 8-minute linger window
+
 # Risk management
 risk.risk_per_trade:
   - 0.01 # 1%

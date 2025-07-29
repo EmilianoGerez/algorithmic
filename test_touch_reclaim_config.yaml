@@ -1,0 +1,130 @@
+aggregation:
+  buffer_size: 1500
+  enable_strict_ordering: true
+  max_clock_skew_seconds: 300
+  out_of_order_policy: drop
+  roll_from: source
+  source_tf_minutes: 5
+  target_timeframes_minutes:
+  - 240
+  - 1440
+candidate:
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    ema_tolerance_pct: 0
+    killzone:
+    - 01:00
+    - '18:00'
+    linger_minutes: 0
+    reclaim_requires_ema: true
+    regime:
+    - bull
+    - neutral
+    volume_multiple: 1.2
+data:
+  columns:
+    close: close
+    high: high
+    low: low
+    open: open
+    timestamp: timestamp
+    volume: volume
+  date_format: '%Y-%m-%dT%H:%M:%SZ'
+  path: data/BTC_USD_5min_20250728_021825.csv
+  source: csv
+  symbol: BTCUSD
+  timeframe: 5m
+detectors:
+  enabled_timeframes:
+  - H4
+  - D1
+  fvg:
+    enabled: true
+    min_gap_atr: 0.3
+    min_gap_pct: 0.05
+    min_rel_vol: 1.2
+  pivot:
+    enabled: false
+execution:
+  broker: paper
+  broker_config:
+    commission_per_trade: 0.0
+    initial_balance: 10000.0
+  deterministic_seed: 42
+  dump_events: true
+  enable_latency_profiling: true
+  enable_memory_tracking: true
+  export_data_for_viz: true
+  log_level: DEBUG
+  mode: backtest
+  realtime_simulation: false
+  risk:
+    atr_period: 14
+    max_position_pct: 0.1
+    min_position: 0.01
+    model: atr
+    risk_per_trade: 0.005
+    sl_atr_multiple: 1.5
+    tp_rr: 2.0
+feeds:
+  base_tf: 5m
+  source: csv
+hlz:
+  max_active_hlzs: 1000
+  merge_tolerance: 0.5
+  min_members: 2
+  min_strength: 3.0
+  recompute_on_update: true
+  side_mixing: false
+  tf_weight:
+    D1: 3.0
+    H4: 2.0
+indicators:
+  atr_period: 14
+  ema21_period: 21
+  ema50_period: 50
+  regime_sensitivity: 0.001
+  volume_sma_period: 20
+pools:
+  D1:
+    hit_tolerance: 0.0
+    ttl: 3w
+  H4:
+    hit_tolerance: 0.0
+    ttl: 3d
+  auto_expire_interval: 30s
+  grace_period_minutes: 5
+  max_pools_per_tf: 10000
+  strength_threshold: 0.05
+strategy:
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    killzone:
+    - 01:00
+    - '18:00'
+    regime_ok:
+    - bull
+    - neutral
+    volume_multiple: 1.5
+  htf_list:
+  - H4
+  - D1
+  name: htf_liquidity_mtf
+  symbol: BTCUSD
+  use_mock_strategy: false
+sweep:
+  enabled: false
+  max_workers: 4
+  n_trials: 100
+  parameters: {}
+walk_forward:
+  folds: 3
+  overlap_fraction: 0.1
+  train_fraction: 0.5
+zone_watcher:
+  confirm_closure: false
+  max_active_zones: 1000
+  min_strength: 1.0
+  price_tolerance: 0.0

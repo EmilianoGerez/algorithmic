@@ -510,6 +510,13 @@ class IntegratedStrategy:
             candidate_config = CandidateConfig(
                 expiry_minutes=config.candidate["expiry_minutes"],
                 ema_alignment=config.candidate["filters"]["ema_alignment"],
+                ema_tolerance_pct=config.candidate["filters"].get(
+                    "ema_tolerance_pct", 0.0
+                ),
+                linger_minutes=config.candidate["filters"].get("linger_minutes", 0),
+                reclaim_requires_ema=config.candidate["filters"].get(
+                    "reclaim_requires_ema", True
+                ),
                 volume_multiple=config.candidate["filters"]["volume_multiple"],
                 killzone_start=config.candidate["filters"]["killzone"][0],
                 killzone_end=config.candidate["filters"]["killzone"][1],

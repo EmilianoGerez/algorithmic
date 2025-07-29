@@ -65,9 +65,9 @@ aggregation:
 detectors:
   fvg:
     enabled: true
-    min_gap_atr: 0.3
-    min_gap_pct: 0.05
-    min_rel_vol: 1.2
+    min_gap_atr: 0.1 # REDUCED from 0.3 - less strict ATR requirement
+    min_gap_pct: 0.03 # REDUCED from 0.05 - less strict percentage requirement
+    min_rel_vol: 1.0 # REDUCED from 1.2 due to poor volume data quality
 
   pivot:
     enabled: false # ← pivot detector OFF
@@ -107,11 +107,15 @@ zone_watcher:
   min_strength: 1.0
   max_active_zones: 1000
 
+# ---------- Signal candidate pipeline ----------
 candidate:
   expiry_minutes: 120
   filters:
     ema_alignment: true
-    volume_multiple: 1.2
+    ema_tolerance_pct: 0 # EMA tolerance buffer (0.2% flexibility)
+    linger_minutes: 90 # Touch-&-reclaim linger window (minutes) - INCREASED from 60
+    reclaim_requires_ema: true # Require EMA flip after zone touch
+    volume_multiple: 0 # DISABLED due to poor volume data quality (0 = no volume filter)
     killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
     regime: ["bull", "neutral"]
 

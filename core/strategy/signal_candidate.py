@@ -37,6 +37,9 @@ class CandidateConfig:
 
     expiry_minutes: int = 120  # Candidate lifetime in minutes
     ema_alignment: bool = True  # Require EMA alignment
+    ema_tolerance_pct: float = 0.0  # EMA tolerance buffer (0.002 = 0.2%)
+    linger_minutes: int = 0  # Keep zone 'hot' after touch for EMA reclaim
+    reclaim_requires_ema: bool = True  # Require EMA flip after zone touch
     volume_multiple: float = 1.2  # Minimum volume vs SMA
     killzone_start: str = "12:00"  # Killzone start time (UTC)
     killzone_end: str = "14:05"  # Killzone end time (UTC)
@@ -57,24 +60,45 @@ class FSMGuards:
 
     @staticmethod
     def ema_alignment_ok(
-        bar: Candle, snapshot: IndicatorSnapshot, direction: SignalDirection
+        bar: Candle,
+        snapshot: IndicatorSnapshot,
+        direction: SignalDirection,
+        tolerance_pct: float = 0.0,
     ) -> bool:
-        """Check if EMA alignment supports the signal direction (simplified: just price vs EMA21)."""
+        """
+        Check if EMA alignment supports the signal direction.
+
+        Args:
+            bar: Current price bar
+            snapshot: Indicator values
+            direction: Signal direction
+            tolerance_pct: Tolerance buffer as percentage (e.g., 0.002 for 0.2%)
+
+        Returns:
+            True if alignment is valid (within tolerance)
+        """
         if snapshot.ema21 is None or snapshot.ema50 is None:
             return False
 
         ema21 = snapshot.ema21
+        tolerance_amount = ema21 * tolerance_pct
 
         if direction == SignalDirection.LONG:
-            # For long: Simply require price above EMA21 (catches both trends and reversals)
-            return bar.close > ema21
+            # For long: price above EMA21 (with tolerance buffer below)
+            threshold = ema21 - tolerance_amount
+            return bar.close > threshold
         else:  # SHORT
-            # For short: Simply require price below EMA21 (catches both trends and reversals)
-            return bar.close < ema21
+            # For short: price below EMA21 (with tolerance buffer above)
+            threshold = ema21 + tolerance_amount
+            return bar.close < threshold
 
     @staticmethod
     def volume_ok(bar: Candle, snapshot: IndicatorSnapshot, multiple: float) -> bool:
         """Check if volume exceeds the required multiple of SMA."""
+        # If multiple is 0, volume filter is disabled
+        if multiple <= 0:
+            return True
+
         if snapshot.volume_sma is None or snapshot.volume_sma <= 0:
             return True  # Skip check if no volume data
 
@@ -154,6 +178,9 @@ class SignalCandidateFSM:
             case CandidateState.WAIT_EMA:
                 return self._process_wait_ema(candidate, bar, snapshot)
 
+            case CandidateState.TOUCH_CONF:
+                return self._process_touch_conf(candidate, bar, snapshot)
+
             case CandidateState.FILTERS:
                 return self._process_filters(candidate, bar, snapshot)
 
@@ -164,10 +191,19 @@ class SignalCandidateFSM:
     def _process_wait_ema(
         self, candidate: SignalCandidate, bar: Candle, snapshot: IndicatorSnapshot
     ) -> FSMResult:
-        """Process WAIT_EMA state."""
-        # Check EMA alignment if required
+        """Process WAIT_EMA state - check for EMA alignment or zone touch."""
+        # Check if zone is touched for touch-&-reclaim pattern
+        if self.config.linger_minutes > 0 and self._zone_touched(candidate, bar):
+            # Move to TOUCH_CONF state with linger window
+            return FSMResult(
+                updated_candidate=candidate.with_state(
+                    CandidateState.TOUCH_CONF, bar.ts
+                )
+            )
+
+        # Check EMA alignment with tolerance buffer
         if self.config.ema_alignment and not self.guards.ema_alignment_ok(
-            bar, snapshot, candidate.direction
+            bar, snapshot, candidate.direction, self.config.ema_tolerance_pct
         ):
             # Stay in WAIT_EMA
             return FSMResult(
@@ -177,6 +213,39 @@ class SignalCandidateFSM:
         # EMA alignment OK (or not required) - move to FILTERS
         return FSMResult(
             updated_candidate=candidate.with_state(CandidateState.FILTERS, bar.ts)
+        )
+
+    def _process_touch_conf(
+        self, candidate: SignalCandidate, bar: Candle, snapshot: IndicatorSnapshot
+    ) -> FSMResult:
+        """Process TOUCH_CONF state - waiting for EMA reclaim within linger window."""
+        # Check if linger window has expired
+        linger_window = timedelta(minutes=self.config.linger_minutes)
+        last_update = candidate.last_bar_timestamp or candidate.created_at
+        if bar.ts - last_update > linger_window:
+            # Linger window expired - move to EXPIRED
+            return FSMResult(
+                updated_candidate=candidate.with_state(CandidateState.EXPIRED, bar.ts),
+                expired=True,
+            )
+
+        # Check if EMA has been reclaimed
+        ema_reclaimed = True
+        if self.config.reclaim_requires_ema:
+            # Use stricter EMA alignment for reclaim (no tolerance)
+            ema_reclaimed = self.guards.ema_alignment_ok(
+                bar, snapshot, candidate.direction, tolerance_pct=0.0
+            )
+
+        if ema_reclaimed:
+            # EMA reclaimed - move to FILTERS
+            return FSMResult(
+                updated_candidate=candidate.with_state(CandidateState.FILTERS, bar.ts)
+            )
+
+        # Still waiting for reclaim - stay in TOUCH_CONF
+        return FSMResult(
+            updated_candidate=candidate.with_state(CandidateState.TOUCH_CONF, bar.ts)
         )
 
     def _process_filters(
@@ -263,3 +332,25 @@ class SignalCandidateFSM:
             created_at=timestamp,
             expires_at=expires_at,
         )
+
+    def _zone_touched(self, candidate: SignalCandidate, bar: Candle) -> bool:
+        """
+        Check if the liquidity zone has been touched by price action.
+
+        Args:
+            candidate: Signal candidate with zone information
+            bar: Current price bar
+
+        Returns:
+            True if zone has been touched
+        """
+        entry_price = candidate.entry_price
+
+        if candidate.direction == SignalDirection.LONG:
+            # For longs: zone touched when price reaches or goes below entry
+            # (spring/stop-hunt pattern before reclaim)
+            return bar.low <= entry_price
+        else:  # SHORT
+            # For shorts: zone touched when price reaches or goes above entry
+            # (spring/stop-hunt pattern before reclaim)
+            return bar.high >= entry_price

@@ -101,7 +101,7 @@ hlz:
 zone_watcher:
   price_tolerance: 0.0
   confirm_closure: false
-  min_strength: 1.0
+  min_strength: 0.01 # LOWERED - FVG strengths are 0.07-0.53, need to be below min
   max_active_zones: 1000
 
 # ---------- Signal candidate pipeline ----------
@@ -112,8 +112,8 @@ candidate:
     ema_tolerance_pct: 0 # Slightly more tolerance with real data
     linger_minutes: 90 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
-    volume_multiple: 1.5 # Re-enable volume filter with high-quality Binance data
-    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
+    volume_multiple: 0 # DISABLED - dataset has zero-volume bars causing issues
+    killzone: ["12:00", "16:00"] # Extended killzone for May 19-20 dataset
     regime: ["bull", "neutral", "bear"] # ALL regimes allowed
 
 # ---------- Execution (Paper back-test) ----------

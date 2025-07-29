@@ -699,11 +699,14 @@ class IntegratedStrategy:
         all_htf_candles = []
         for tf_name, aggregator in self.time_aggregators.items():
             htf_candles = aggregator.update(candle)
+            if htf_candles:
+                logger.info(f"HTF Strategy: Generated {len(htf_candles)} {tf_name}m candles")
             for htf_candle in htf_candles:
                 all_htf_candles.append((tf_name, htf_candle))
 
         # 2. Process each HTF candle through detectors
         for tf_name, htf_candle in all_htf_candles:
+            logger.info(f"HTF Strategy: Processing {tf_name}m candle at {htf_candle.ts}")
             atr_value = self.indicators.atr_value
             vol_sma_value = self.indicators.volume_sma_value
 
@@ -712,16 +715,16 @@ class IntegratedStrategy:
                 for detector in self.detectors:
                     if hasattr(detector, "tf") and detector.tf == tf_name:
                         events = detector.update(htf_candle, atr_value, vol_sma_value)
+                        if events:
+                            logger.info(f"HTF Strategy: FVG detector found {len(events)} events in {tf_name}m")
 
                         # Process events through pool manager
-                        if hasattr(detector, "pool_manager") and detector.pool_manager:
+                        if events and hasattr(self, "pool_manager") and self.pool_manager:
                             for event in events:
-                                result = detector.pool_manager.process_detector_event(
-                                    event
-                                )
+                                result = self.pool_manager.process_detector_event(event)
                                 if result.success and result.pool_created:
-                                    logger.debug(
-                                        f"Created pool {result.pool_id} from {tf_name} FVG"
+                                    logger.info(
+                                        f"HTF Strategy: Created pool {result.pool_id} from {tf_name} FVG"
                                     )
 
         # 3. Check zone watcher for price entries using current 5m candle

@@ -156,8 +156,8 @@ def debug_complete_pipeline():
                     print(f"   🎯 ZONE TOUCH: {candle.ts} price={current_price:.2f} in pool {pool_id} [{pool.bottom:.2f}, {pool.top:.2f}]")
 
                     # Check EMA alignment for signal generation
-                    ema21 = indicators.ema21_value
-                    ema50 = indicators.ema50_value
+                    ema21 = indicators.ema21.value
+                    ema50 = indicators.ema50.value
 
                     if ema21 is not None and ema50 is not None:
                         print(f"      EMA21={ema21:.2f}, EMA50={ema50:.2f}, Close={candle.close:.2f}")

@@ -136,11 +136,14 @@ class PoolManager:
             Result of the mapping operation
         """
         try:
+            logger.info(f"Pool Manager: Processing {type(event).__name__} event with strength {getattr(event, 'strength', 'N/A')} (threshold: {self.config.strength_threshold})")
+            
             # Validate event strength
             if (
                 hasattr(event, "strength")
                 and event.strength < self.config.strength_threshold
             ):
+                logger.warning(f"Pool Manager: Event strength {event.strength} below threshold {self.config.strength_threshold}, rejecting")
                 return EventMappingResult(
                     success=False,
                     reason=f"Event strength {event.strength} below threshold {self.config.strength_threshold}",
@@ -149,10 +152,13 @@ class PoolManager:
             # Extract zone coordinates from event
             top, bottom = self._extract_zone_coordinates(event)
             if top is None or bottom is None:
+                logger.warning(f"Pool Manager: Failed to extract zone coordinates from event")
                 return EventMappingResult(
                     success=False,
                     reason="Failed to extract valid zone coordinates from event",
                 )
+
+            logger.info(f"Pool Manager: Creating pool with coords [{bottom:.5f}, {top:.5f}] in TF {event.tf}")
 
             # Get configuration for this timeframe
             ttl = self.config.get_ttl_for_timeframe(event.tf)
@@ -173,6 +179,7 @@ class PoolManager:
             )
 
             if success:
+                logger.info(f"Pool Manager: Successfully created pool {pool_id} with strength {strength:.3f}")
                 if self.config.enable_event_logging:
                     logger.info(
                         f"Created pool {pool_id} from {type(event).__name__} "
@@ -188,12 +195,16 @@ class PoolManager:
                         pool_created_event = PoolCreatedEvent(
                             pool_id=pool_id, timestamp=event.ts, pool=pool
                         )
+                        logger.info(f"Pool Manager: Notifying zone watcher about pool {pool_id}")
                         self.zone_watcher.on_pool_event(pool_created_event)
+                    else:
+                        logger.warning(f"Pool Manager: Failed to retrieve created pool {pool_id} from registry")
 
                 return EventMappingResult(
                     success=True, pool_id=pool_id, pool_created=True
                 )
             else:
+                logger.warning(f"Pool Manager: Registry rejected pool creation (likely duplicate)")
                 return EventMappingResult(
                     success=False,
                     reason="Registry rejected pool creation (likely duplicate)",

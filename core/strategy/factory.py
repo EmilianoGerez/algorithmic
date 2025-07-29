@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from core.detectors.fvg import FVGDetector
@@ -498,8 +498,38 @@ class IntegratedStrategy:
 
             # Pool manager coordinates detector events → pools → HLZ
             from .pool_manager import PoolManagerConfig
+            
+            # Convert pool config from our YAML to PoolManagerConfig format
+            ttl_by_timeframe = {}
+            hit_tolerance_by_timeframe = {}
+            
+            # Parse pools config - convert from our timeframe keys to the expected format
+            pools_config = getattr(config, 'pools', {})
+            strength_threshold = pools_config.get('strength_threshold', 0.1)
+            
+            # Convert individual timeframe configs (e.g., "240": {ttl: "3d", hit_tolerance: 0.0})
+            for tf_str, tf_config in pools_config.items():
+                if isinstance(tf_config, dict) and 'ttl' in tf_config:
+                    # Parse TTL string to timedelta
+                    ttl_str = tf_config['ttl']
+                    if ttl_str.endswith('d'):
+                        ttl = timedelta(days=int(ttl_str[:-1]))
+                    elif ttl_str.endswith('h'):
+                        ttl = timedelta(hours=int(ttl_str[:-1]))
+                    elif ttl_str.endswith('m'):
+                        ttl = timedelta(minutes=int(ttl_str[:-1]))
+                    else:
+                        ttl = timedelta(minutes=120)  # default
+                    
+                    ttl_by_timeframe[tf_str] = ttl
+                    hit_tolerance_by_timeframe[tf_str] = tf_config.get('hit_tolerance', 0.0)
 
-            pool_mgr_config = PoolManagerConfig(enable_event_logging=True)
+            pool_mgr_config = PoolManagerConfig(
+                ttl_by_timeframe=ttl_by_timeframe,
+                hit_tolerance_by_timeframe=hit_tolerance_by_timeframe,
+                strength_threshold=strength_threshold,
+                enable_event_logging=True
+            )
             self.htf_stack.pool_manager = PoolManager(
                 self.htf_stack.pool_registry, pool_mgr_config
             )
@@ -593,13 +623,25 @@ class IntegratedStrategy:
         with measure_operation("strategy_on_candle"):
             self.candles_processed += 1
 
-            # Sync timer wheel with candle time for timezone consistency
+            # Sync timer wheel with candle time and process expiries
             if (
                 hasattr(self, "htf_stack")
                 and self.htf_stack
                 and self.htf_stack.pool_registry
             ):
-                self.htf_stack.pool_registry._ttl_wheel.current_time = candle.ts
+                ttl_wheel = self.htf_stack.pool_registry._ttl_wheel
+                
+                # For backtesting: reset TTL wheel time if this is historical data
+                if candle.ts < ttl_wheel.current_time:
+                    # This is historical data - reset TTL wheel to backtest time
+                    ttl_wheel.current_time = candle.ts
+                else:
+                    # Advance TTL wheel time and process any expiries
+                    try:
+                        self.htf_stack.pool_registry.expire_due(candle.ts)
+                    except ValueError:
+                        # Fallback for edge cases
+                        ttl_wheel.current_time = candle.ts
 
             # Update indicators
             with measure_operation("update_indicators"):

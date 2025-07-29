@@ -1,0 +1,145 @@
+# =========================
+#  Binance Historical Data Config
+# =========================
+
+# ---------- Data ----------
+data:
+  source: csv
+  path: "data/BTCUSDT_5m_may19-20_fvg_analysis.csv" # May 19-20 FVG analysis data
+  symbol: BTCUSDT
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# ---------- Walk-forward ----------
+walk_forward:
+  folds: 3
+  train_fraction: 0.5
+  overlap_fraction: 0.1
+
+# ---------- Sweep (disabled here) ----------
+sweep:
+  enabled: false
+  parameters: {}
+  n_trials: 100
+  max_workers: 4
+
+# ---------- Strategy core ----------
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSDT
+  use_mock_strategy: false # Set to true for simple EMA mock, false for full HTF system
+  htf_list: ["240"] # H4 only (240 min = 4 hours) - consistent with aggregation
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    volume_multiple: 1.5 # Re-enable volume filter with high-quality Binance data
+    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
+    regime_ok: ["bull", "neutral"]
+
+# ---------- Indicator periods ----------
+indicators:
+  ema21_period: 21
+  ema50_period: 50
+  atr_period: 14
+  volume_sma_period: 20
+  regime_sensitivity: 0.001
+
+# ---------- Aggregation ----------
+aggregation:
+  source_tf_minutes: 5 # feed resolution
+  target_timeframes_minutes: [240] # 4H in minutes (must be >= 5min source)
+  buffer_size: 1500
+  roll_from: "source"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
+  fill_missing: "ffill" # Forward-fill missing time slots (less needed with Binance data)
+
+# ---------- Detectors ----------
+detectors:
+  fvg:
+    enabled: true
+    min_gap_atr: 0.05 # MORE SENSITIVE - reduced from 0.2
+    min_gap_pct: 0.01 # MORE SENSITIVE - reduced from 0.04
+    min_rel_vol: 0.0 # COMPLETELY DISABLED - no volume filter
+
+  pivot:
+    enabled: false # ENABLE to see if any detection is working
+
+  enabled_timeframes: ["240"] # Only H4 detection to match strategy and aggregation
+
+# ---------- Pool registry ----------
+pools:
+  "240": # H4 pools (using minute key for consistency)
+    ttl: 3d # 3 days for H4 pools
+    hit_tolerance: 0.0
+
+  strength_threshold: 0.02 # LOWERED - capture more FVGs including the 0.031 strength one
+  grace_period_minutes: 5
+  max_pools_per_tf: 10000
+  auto_expire_interval: "30s"
+
+# ---------- HLZ overlap ----------
+hlz:
+  min_members: 2 # Only need 2 since we're focusing on H4 only
+  min_strength: 1.0 # Lower threshold since we have fewer pools
+  tf_weight:
+    "240": 2.0 # H4 weight (using minute key)
+  merge_tolerance: 0.5
+  side_mixing: false
+  max_active_hlzs: 1000
+  recompute_on_update: true
+
+# ---------- Zone watcher & FSM ----------
+zone_watcher:
+  price_tolerance: 0.0
+  confirm_closure: false
+  min_strength: 1.0
+  max_active_zones: 1000
+
+# ---------- Signal candidate pipeline ----------
+candidate:
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    ema_tolerance_pct: 0 # Slightly more tolerance with real data
+    linger_minutes: 90 # Touch-&-reclaim linger window (minutes)
+    reclaim_requires_ema: true # Require EMA flip after zone touch
+    volume_multiple: 1.5 # Re-enable volume filter with high-quality Binance data
+    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
+    regime: ["bull", "neutral", "bear"] # ALL regimes allowed
+
+# ---------- Execution (Paper back-test) ----------
+execution:
+  mode: backtest # live | backtest (live requires feeds.source = websocket)
+  broker: paper
+  log_level: DEBUG # Enable debug logging to see FVG detection details
+  enable_latency_profiling: true
+  enable_memory_tracking: true
+  realtime_simulation: false # batch back-test
+  deterministic_seed: 42
+  dump_events: true # ENABLE event export for debugging
+  export_data_for_viz: true # enable data.csv and trades.csv export
+  risk:
+    model: atr
+    risk_per_trade: 0.005
+    atr_period: 14
+    sl_atr_multiple: 1.5
+    tp_rr: 2.0
+    min_position: 0.01
+    max_position_pct: 0.1
+  broker_config:
+    initial_balance: 10000.0
+    commission_per_trade: 0.0
+
+# ---------- Feed layer ----------
+feeds:
+  base_tf: 5m
+  source: csv

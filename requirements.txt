@@ -21,6 +21,10 @@ hypothesis
 setuptools
 pandas
 
+# Data acquisition dependencies
+python-binance>=1.0.19  # Official Binance API client for historical data
+tqdm>=4.64.0  # Progress bars for data fetching
+
 # Development dependencies
 mypy>=1.0
 ruff>=0.1

@@ -127,6 +127,27 @@ class BacktestRunner:
         """Initialize strategy based on configuration."""
         self.logger.info(f"Initializing strategy: {self.config.strategy.symbol}")
 
+        # Set up simulation clock for backtesting
+        from core.clock import use_simulation_clock
+        
+        # Get data info to determine start time
+        data_info = self.data_loader.get_data_info(self.config.data.path)
+        start_time_str = data_info['date_range']['start']
+        
+        # Parse start time from ISO format
+        from datetime import datetime
+        if isinstance(start_time_str, str):
+            # Handle ISO format like "2025-05-19T03:00:00Z"
+            if start_time_str.endswith('Z'):
+                start_time_str = start_time_str[:-1] + '+00:00'
+            start_time = datetime.fromisoformat(start_time_str)
+        else:
+            start_time = start_time_str
+            
+        # Initialize simulation clock
+        sim_clock = use_simulation_clock(start_time)
+        self.logger.info(f"Simulation clock initialized at: {start_time}")
+
         # Use StrategyFactory to build complete strategy
         self.strategy = StrategyFactory.build(
             config=self.config, metrics_collector=self.metrics_collector

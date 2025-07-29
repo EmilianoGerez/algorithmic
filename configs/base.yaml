@@ -60,6 +60,7 @@ aggregation:
   out_of_order_policy: "drop"
   max_clock_skew_seconds: 300
   enable_strict_ordering: true
+  fill_missing: "ffill" # Forward-fill missing time slots to regularize EMA/ATR computation
 
 # ---------- Detectors ----------
 detectors:
@@ -128,7 +129,7 @@ execution:
   enable_memory_tracking: true
   realtime_simulation: false # batch back-test
   deterministic_seed: 42
-  dump_events: true # enable events.parquet export for visualization
+  dump_events: false # disable events.parquet export for production runs (was creating 6k events)
   export_data_for_viz: true # enable data.csv and trades.csv export
   risk:
     model: atr

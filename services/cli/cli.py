@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import subprocess
 import sys
 import time
@@ -218,7 +219,11 @@ def load_configuration(config_path: str) -> dict[str, Any]:
     Raises:
         Exception: If configuration cannot be loaded
     """
+    import logging
+
     import yaml
+
+    logger = logging.getLogger(__name__)
 
     config_file = Path(config_path)
     if not config_file.exists():
@@ -227,7 +232,71 @@ def load_configuration(config_path: str) -> dict[str, Any]:
     with open(config_file) as f:
         config_dict = yaml.safe_load(f)
 
-    return config_dict if config_dict is not None else {}
+    if config_dict is None:
+        return {}
+
+    # Ensure config_dict is a dictionary
+    if not isinstance(config_dict, dict):
+        raise ValueError(
+            f"Configuration file must contain a dictionary, got {type(config_dict)}"
+        )
+
+    # Configuration validation and warnings
+    _validate_config(config_dict, logger)
+
+    return config_dict
+
+
+def _validate_config(config: dict[str, Any], logger: logging.Logger) -> None:
+    """Validate configuration and emit warnings for potential issues."""
+
+    # Check volume filter setting
+    candidate_config = config.get("candidate", {})
+    filters_config = candidate_config.get("filters", {})
+    volume_multiple = filters_config.get("volume_multiple", 1.2)
+
+    if volume_multiple == 0:
+        logger.warning(
+            "Volume filter disabled (volume_multiple=0). This is recommended for data with poor volume quality."
+        )
+
+    # Check aggregation vs data timeframe consistency
+    data_config = config.get("data", {})
+    data_timeframe = data_config.get("timeframe", "5m")
+
+    agg_config = config.get("aggregation", {})
+    source_tf_minutes = agg_config.get("source_tf_minutes", 5)
+
+    # Convert data timeframe to minutes for comparison
+    data_tf_minutes = _timeframe_to_minutes(data_timeframe)
+
+    if data_tf_minutes != source_tf_minutes:
+        logger.warning(
+            f"Data timeframe ({data_timeframe} = {data_tf_minutes}min) doesn't match "
+            f"aggregation source_tf_minutes ({source_tf_minutes}min). "
+            f"This may cause aggregation issues."
+        )
+
+    # Check for event dumping configuration
+    execution_config = config.get("execution", {})
+    dump_events = execution_config.get("dump_events", False)
+
+    if dump_events:
+        logger.info(
+            "Event dumping enabled - parquet files will be created for visualization"
+        )
+
+
+def _timeframe_to_minutes(timeframe: str) -> int:
+    """Convert timeframe string to minutes."""
+    if timeframe.endswith("m"):
+        return int(timeframe[:-1])
+    elif timeframe.endswith("h") or timeframe.endswith("H"):
+        return int(timeframe[:-1]) * 60
+    elif timeframe.endswith("d") or timeframe.endswith("D"):
+        return int(timeframe[:-1]) * 1440
+    else:
+        return 5  # Default fallback
 
 
 def execute_backtest(

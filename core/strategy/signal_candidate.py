@@ -95,7 +95,11 @@ class FSMGuards:
     @staticmethod
     def volume_ok(bar: Candle, snapshot: IndicatorSnapshot, multiple: float) -> bool:
         """Check if volume exceeds the required multiple of SMA."""
-        # If multiple is 0, volume filter is disabled
+        # Explicit check: if multiple is 0, volume filter is disabled
+        if multiple == 0:
+            return True
+
+        # If multiple is negative or None, fall back to disabled
         if multiple <= 0:
             return True
 

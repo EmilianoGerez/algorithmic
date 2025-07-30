@@ -5,7 +5,7 @@
 # ---------- Data ----------
 data:
   source: csv
-  path: "data/BTCUSDT_5m_may19-20_fvg_analysis.csv" # May 19-20 FVG analysis data
+  path: "data/BTCUSDT_5m_2025-05-18_futures.csv" # Actual available data file
   symbol: BTCUSDT
   timeframe: "5m"
   date_format: "%Y-%m-%dT%H:%M:%SZ"
@@ -35,12 +35,11 @@ strategy:
   name: htf_liquidity_mtf
   symbol: BTCUSDT
   use_mock_strategy: false # Set to true for simple EMA mock, false for full HTF system
-  htf_list: ["240"] # H4 only (240 min = 4 hours) - consistent with aggregation
-  expiry_minutes: 120
+  htf_list: ["H4"] # H4 timeframe (4 hours) - use proper timeframe names
   filters:
     ema_alignment: true
     volume_multiple: 0 # Set to 0 when data has >30% zero-vol bars; re-enable (1.5+) with quality feed
-    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions) - UTC times
+    killzone: ["08:00", "23:00"] # Asia start to NY end (covers all major sessions) - UTC times
     regime_ok: ["bull", "neutral"]
 
 # ---------- Indicator periods ----------
@@ -56,7 +55,7 @@ aggregation:
   source_tf_minutes: 5 # feed resolution
   target_timeframes_minutes: [240] # 4H in minutes (must be >= 5min source)
   buffer_size: 1500
-  roll_from: "source"
+  roll_from: "calendar" # FIXED: Align to proper 4H boundaries (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)
   out_of_order_policy: "drop"
   max_clock_skew_seconds: 300
   enable_strict_ordering: true
@@ -77,7 +76,7 @@ detectors:
 
 # ---------- Pool registry ----------
 pools:
-  "240": # H4 pools (using minute key for consistency)
+  "H4": # H4 pools (using proper timeframe name to match strategy)
     ttl: 3d # 3 days for H4 pools
     hit_tolerance: 0.0
 
@@ -91,7 +90,7 @@ hlz:
   min_members: 2 # Only need 2 since we're focusing on H4 only
   min_strength: 1.0 # Lower threshold since we have fewer pools
   tf_weight:
-    "240": 2.0 # H4 weight (using minute key)
+    "H4": 2.0 # H4 weight (using proper timeframe name)
   merge_tolerance: 0.5
   side_mixing: false
   max_active_hlzs: 1000
@@ -106,14 +105,14 @@ zone_watcher:
 
 # ---------- Signal candidate pipeline ----------
 candidate:
-  expiry_minutes: 120
+  expiry_minutes: 120 # 2 hours - appropriate for signal candidate lifetime
   filters:
     ema_alignment: true
     ema_tolerance_pct: 0 # Slightly more tolerance with real data
     linger_minutes: 90 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
     volume_multiple: 0 # DISABLED - dataset has zero-volume bars causing issues
-    killzone: ["12:00", "16:00"] # Extended killzone for May 19-20 dataset
+    killzone: ["01:00", "18:00"] # Extended killzone to ensure May 20 14:00-18:00 window is included
     regime: ["bull", "neutral", "bear"] # ALL regimes allowed
 
 # ---------- Execution (Paper back-test) ----------

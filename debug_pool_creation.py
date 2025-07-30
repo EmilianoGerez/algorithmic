@@ -58,7 +58,7 @@ def debug_pool_creation():
         top=105519.80,
         bottom=103359.50,
         strength=strength,
-        created_at=may19_time
+        created_at=may19_time,
     )
 
     print(f"Pool creation result: success={success}, pool_id={pool_id}")
@@ -79,13 +79,18 @@ def debug_pool_creation():
 
         # Check TTL scheduling manually
         expires_at = may19_time + ttl
-        manual_schedule = ttl_wheel.schedule(f"manual_test_{may19_time.timestamp()}", expires_at, may19_time)
+        manual_schedule = ttl_wheel.schedule(
+            f"manual_test_{may19_time.timestamp()}", expires_at, may19_time
+        )
         print(f"  - Manual TTL schedule test: {manual_schedule}")
 
         if not manual_schedule:
-            print(f"    - expires_at <= current_time? {expires_at <= ttl_wheel.current_time}")
+            print(
+                f"    - expires_at <= current_time? {expires_at <= ttl_wheel.current_time}"
+            )
             print(f"    - expires_at: {expires_at}")
             print(f"    - current_time: {ttl_wheel.current_time}")
+
 
 if __name__ == "__main__":
     debug_pool_creation()

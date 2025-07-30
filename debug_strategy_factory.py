@@ -21,7 +21,7 @@ def debug_strategy_factory():
     print(f"Config loaded: {config.strategy.name}")
     print(f"HTF list: {config.strategy.htf_list}")
     print(f"Aggregation config: {config.aggregation}")
-    print(f"Detectors config: {config.detectors}")
+    print(f"Detectors config: {getattr(config, 'detectors', 'NOT_FOUND')}")
     print(f"Pools config: {config.pools}")
 
     # Build strategy using factory
@@ -32,7 +32,7 @@ def debug_strategy_factory():
         print("✅ Strategy created successfully")
 
         # Check HTF stack components
-        if hasattr(strategy, 'htf_stack') and strategy.htf_stack:
+        if hasattr(strategy, "htf_stack") and strategy.htf_stack:
             htf = strategy.htf_stack
             print("✅ HTF Stack exists")
 
@@ -46,14 +46,20 @@ def debug_strategy_factory():
             if htf.detectors:
                 print(f"✅ Detectors: {len(htf.detectors)} detectors")
                 for i, detector in enumerate(htf.detectors):
-                    print(f"   {i}: {type(detector).__name__} tf={getattr(detector, 'tf', 'unknown')}")
+                    print(
+                        f"   {i}: {type(detector).__name__} tf={getattr(detector, 'tf', 'unknown')}"
+                    )
             else:
                 print("❌ No detectors")
 
             # Check pool manager
             if htf.pool_manager:
                 print("✅ Pool manager exists")
-                ttls = htf.pool_manager.config.ttl_by_timeframe if hasattr(htf.pool_manager, 'config') else {}
+                ttls = (
+                    htf.pool_manager.config.ttl_by_timeframe
+                    if hasattr(htf.pool_manager, "config")
+                    else {}
+                )
                 print(f"   TTL config: {ttls}")
             else:
                 print("❌ No pool manager")
@@ -70,7 +76,9 @@ def debug_strategy_factory():
     except Exception as e:
         print(f"❌ Strategy creation failed: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     debug_strategy_factory()

@@ -225,7 +225,7 @@ class MetricsCollector:
         self.custom_metrics: dict[str, Any] = {}
         self.start_time: datetime | None = None
         self.end_time: datetime | None = None
-        
+
         # New metric counters for real-time dashboards
         self.liquidity_pools_created_total: int = 0
         self.signals_emitted_total: int = 0
@@ -318,7 +318,7 @@ class MetricsCollector:
 
     def get_realtime_metrics(self) -> dict[str, int]:
         """Get real-time metrics for dashboards.
-        
+
         Returns:
             Dictionary of real-time metrics
         """
@@ -422,6 +422,15 @@ class MetricsCollector:
         logger.info(f"Total PnL: ${trade_stats['total_pnl']:.2f}")
         logger.info(f"Total fees: ${trade_stats['total_fees']:.2f}")
         logger.info(f"Max drawdown: {trade_stats['max_drawdown']:.2%}")
+
+        # Open positions info (if available)
+        if hasattr(self, "_open_positions_info"):
+            logger.info(f"Open positions: {self._open_positions_info['count']}")
+            logger.info(
+                f"Open positions PnL: ${self._open_positions_info['unrealized_pnl']:.2f}"
+            )
+        else:
+            logger.info("Open positions: 0")
 
         # Latency stats
         if "latency_stats" in summary:

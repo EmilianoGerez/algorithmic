@@ -134,8 +134,11 @@ class TimerWheel:
         # Handle out-of-order events (expiry in the past or at current time)
         if expires_at <= self.current_time:
             import logging
+
             logger = logging.getLogger(__name__)
-            logger.debug(f"Expiry in past - skip pool {pool_id}: {expires_at} <= {self.current_time}")
+            logger.debug(
+                f"Expiry in past - skip pool {pool_id}: {expires_at} <= {self.current_time}"
+            )
             return False
 
         # Only validate expiry vs creation if created_at is in the past
@@ -161,9 +164,12 @@ class TimerWheel:
 
         # Debug logging
         import logging
+
         logger = logging.getLogger(__name__)
         ttl_delta = expires_at - created_at
-        logger.debug(f"Pool {pool_id} TTL {ttl_delta} scheduled in bucket level={wheel_level} slot={slot_index}")
+        logger.debug(
+            f"Pool {pool_id} TTL {ttl_delta} scheduled in bucket level={wheel_level} slot={slot_index}"
+        )
 
         # Warning for slot size
         if slot_size > self.config.max_items_per_slot:

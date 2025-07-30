@@ -27,6 +27,46 @@ python -m services.backtester --file sample_data/your_file.csv
 ✅ **Real-time Processing**: Sub-millisecond latency with memory-efficient design
 ✅ **Production Ready**: Comprehensive logging, metrics, and error handling
 
+## Configuration
+
+### Killzone Times
+
+Killzone times in configuration are specified in **UTC format**:
+
+```yaml
+strategy:
+  filters:
+    killzone: ["01:00", "18:00"] # UTC times
+```
+
+**Market Session Mapping (UTC)**:
+
+- **Asia Session**: 01:00-10:00 UTC (Tokyo: 10:00-19:00 JST)
+- **London Session**: 08:00-17:00 UTC (London: 08:00-17:00 GMT/BST)
+- **New York Session**: 13:00-22:00 UTC (New York: 08:00-17:00 EST/EDT)
+
+**Common Killzone Configurations**:
+
+- `["01:00", "18:00"]` - Asia start to NY end (covers all major sessions)
+- `["08:00", "17:00"]` - London session only
+- `["13:00", "22:00"]` - New York session only
+- `["01:00", "10:00"]` - Asia session only
+
+### Volume Filtering
+
+The strategy automatically detects poor data quality and adjusts volume filtering:
+
+```yaml
+strategy:
+  filters:
+    volume_multiple: 0 # Auto-disabled when >30% zero-volume bars detected
+```
+
+**Volume Multiple Guidelines**:
+
+- `0` - Disable volume filtering (recommended for synthetic/low-quality data)
+- `1.5+` - Enable volume filtering (recommended for high-quality exchange data)
+
 Next steps:
 
 1. ✅ ~~Implement TimeAggregator inside `core/strategy`.~~

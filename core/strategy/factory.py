@@ -298,7 +298,10 @@ class MockPaperBroker:
         self.trades.append(trade)
         self.positions[trade_id] = trade
 
-        logger.info(f"Order submitted: {signal} size={size:.2f}")
+        # Calculate risk-reward ratio
+        rr = (signal.take_profit - signal.entry_price) / (signal.entry_price - signal.stop_loss) if signal.side == "buy" else (signal.entry_price - signal.take_profit) / (signal.stop_loss - signal.entry_price)
+        
+        logger.info(f"TRADE_OPENED trade_id={trade_id} side={signal.side} entry={signal.entry_price:.2f} stop={signal.stop_loss:.2f} tp={signal.take_profit:.2f} rr={rr:.2f} size={size:.2f}")
         return trade_id
 
     def update_market_data(self, candle: Candle) -> None:
@@ -402,7 +405,9 @@ class MockPaperBroker:
                 position_size=abs(trade["size"]),
             )
 
-        logger.info(f"Trade closed: {trade['id']} PnL=${pnl:.2f} reason={reason}")
+        # Log trade closure with structured format for analysis
+        win_or_loss = "WIN" if pnl > 0 else "LOSS"
+        logger.info(f"TRADE_CLOSED trade_id={trade['id']} side={trade['side']} entry={trade['entry_price']:.2f} exit={exit_price:.2f} pnl=${pnl:.2f} reason={reason} result={win_or_loss}")
 
     def get_balance(self) -> float:
         """Get current account balance."""
@@ -417,7 +422,8 @@ class IntegratedStrategy:
     """Integrated strategy that coordinates all Phase 1-7 components."""
 
     def __init__(
-        self, config: Any, broker: MockPaperBroker, risk_manager: MockRiskManager
+        self, config: Any, broker: MockPaperBroker, risk_manager: MockRiskManager,
+        metrics_collector: MetricsCollector | None = None
     ) -> None:
         """Initialize integrated strategy.
 
@@ -425,10 +431,12 @@ class IntegratedStrategy:
             config: Strategy configuration
             broker: Paper broker instance
             risk_manager: Risk manager instance
+            metrics_collector: Optional metrics collector for counters
         """
         self.config = config
         self.broker = broker
         self.risk_manager = risk_manager
+        self.metrics_collector = metrics_collector
 
         # Initialize indicators
         self.indicators = IndicatorPack()
@@ -533,7 +541,7 @@ class IntegratedStrategy:
                 enable_event_logging=True
             )
             self.htf_stack.pool_manager = PoolManager(
-                self.htf_stack.pool_registry, pool_mgr_config
+                self.htf_stack.pool_registry, pool_mgr_config, self.metrics_collector
             )
 
             # Zone watcher monitors pool/HLZ touches → signal candidates
@@ -566,6 +574,10 @@ class IntegratedStrategy:
 
             # Wire PoolManager to notify ZoneWatcher of pool events
             self.htf_stack.pool_manager.zone_watcher = self.htf_stack.zone_watcher
+            
+            # Wire metrics collector to pool manager for counters
+            if hasattr(self, 'metrics_collector'):
+                self.htf_stack.pool_manager.metrics_collector = self.metrics_collector
 
             # Detectors create liquidity pool events (with aggregator injection)
             self.htf_stack.detectors = []
@@ -763,7 +775,7 @@ class IntegratedStrategy:
 
                     # Record signal emission metrics
                     if hasattr(self, "metrics_collector") and self.metrics_collector:
-                        self.metrics_collector.record_signal_emitted()
+                        self.metrics_collector.increment_signals_emitted()
 
                     # Size position with risk manager
                     size = self.risk_manager.size_position(
@@ -953,7 +965,7 @@ class StrategyFactory:
             risk_manager = MockRiskManager(config)
 
         # Create integrated strategy
-        strategy = IntegratedStrategy(config, broker, risk_manager)
+        strategy = IntegratedStrategy(config, broker, risk_manager, metrics_collector)
 
         logger.info("Strategy factory build complete")
         return strategy

@@ -119,7 +119,8 @@ def validate_market_data(df: Any, config: Any) -> bool:
     if zero_volume_ratio > 0.3:  # 30% threshold
         logger.warning(
             f"High zero-volume ratio detected: {zero_volume_ratio:.1%} of {total_rows} rows. "
-            f"This may indicate poor data quality from synthetic/heartbeat bars."
+            f"This may indicate poor data quality from synthetic/heartbeat bars. "
+            f"Consider setting 'volume_multiple: 0' in config to disable volume filtering."
         )
 
     # Check for missing time slots (gaps)

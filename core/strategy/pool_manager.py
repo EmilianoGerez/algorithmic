@@ -108,16 +108,18 @@ class PoolManager:
     - Event lifecycle coordination
     """
 
-    def __init__(self, registry: PoolRegistry, config: PoolManagerConfig | None = None):
+    def __init__(self, registry: PoolRegistry, config: PoolManagerConfig | None = None, metrics_collector=None):
         """
         Initialize pool manager.
 
         Args:
             registry: Pool registry for storage operations
             config: Manager configuration
+            metrics_collector: Optional metrics collector for counters
         """
         self.registry = registry
         self.config = config or PoolManagerConfig()
+        self.metrics_collector = metrics_collector
         self._last_expiry_check = datetime.now()
         self.zone_watcher = None  # Will be set by factory during wiring
 
@@ -179,7 +181,17 @@ class PoolManager:
             )
 
             if success:
-                logger.info(f"Pool Manager: Successfully created pool {pool_id} with strength {strength:.3f}")
+                # Calculate expiry timestamp
+                from core.clock import get_clock
+                clock = get_clock()
+                expiry_ts = clock.now() + ttl
+                
+                logger.info(f"POOL_CREATED tf={event.tf} top={top:.2f} bottom={bottom:.2f} strength={strength:.3f} expiry_ts={expiry_ts} pool_id={pool_id}")
+                
+                # Increment metrics counter if metrics collector is available
+                if hasattr(self, 'metrics_collector') and self.metrics_collector:
+                    self.metrics_collector.increment_liquidity_pools_created()
+                    
                 if self.config.enable_event_logging:
                     logger.info(
                         f"Created pool {pool_id} from {type(event).__name__} "

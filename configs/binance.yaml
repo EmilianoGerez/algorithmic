@@ -39,8 +39,8 @@ strategy:
   expiry_minutes: 120
   filters:
     ema_alignment: true
-    volume_multiple: 1.5 # Re-enable volume filter with high-quality Binance data
-    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
+    volume_multiple: 0 # Set to 0 when data has >30% zero-vol bars; re-enable (1.5+) with quality feed
+    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions) - UTC times
     regime_ok: ["bull", "neutral"]
 
 # ---------- Indicator periods ----------

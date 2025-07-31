@@ -44,6 +44,8 @@ def test_binance_config_timeouts():
     print("🧪 Testing Binance timeout configuration...")
 
     config = BinanceConfig(
+        binance_api_key="test_key",  # Required field
+        binance_api_secret="test_secret",  # Required field
         ws_timeout=45,
         rest_timeout=15,
         max_retries=5,

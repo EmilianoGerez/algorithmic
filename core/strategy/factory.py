@@ -530,6 +530,20 @@ class IntegratedStrategy:
             pools_config = getattr(config, "pools", {})
             strength_threshold = pools_config.get("strength_threshold", 0.1)
 
+            # Parse auto expire interval string to timedelta
+            auto_expire_str = pools_config.get("auto_expire_interval", "30s")
+            if isinstance(auto_expire_str, str):
+                if auto_expire_str.endswith("s"):
+                    auto_expire_interval = timedelta(seconds=int(auto_expire_str[:-1]))
+                elif auto_expire_str.endswith("m"):
+                    auto_expire_interval = timedelta(minutes=int(auto_expire_str[:-1]))
+                elif auto_expire_str.endswith("h"):
+                    auto_expire_interval = timedelta(hours=int(auto_expire_str[:-1]))
+                else:
+                    auto_expire_interval = timedelta(seconds=30)  # default
+            else:
+                auto_expire_interval = timedelta(seconds=30)  # default
+
             # Convert individual timeframe configs (e.g., "240": {ttl: "3d", hit_tolerance: 0.0})
             for tf_str, tf_config in pools_config.items():
                 if isinstance(tf_config, dict) and "ttl" in tf_config:
@@ -553,6 +567,7 @@ class IntegratedStrategy:
                 ttl_by_timeframe=ttl_by_timeframe,
                 hit_tolerance_by_timeframe=hit_tolerance_by_timeframe,
                 strength_threshold=strength_threshold,
+                auto_expire_check_interval=auto_expire_interval,
                 enable_event_logging=True,
             )
             self.htf_stack.pool_manager = PoolManager(
@@ -583,6 +598,16 @@ class IntegratedStrategy:
                 confirm_closure=config.zone_watcher["confirm_closure"],
                 min_strength=config.zone_watcher["min_strength"],
                 max_active_zones=config.zone_watcher["max_active_zones"],
+                # Entry spacing configuration from candidate section
+                min_entry_spacing_minutes=config.candidate.get(
+                    "min_entry_spacing_minutes", 30
+                ),
+                global_min_entry_spacing=config.candidate.get(
+                    "global_min_entry_spacing", 10
+                ),
+                enable_spacing_throttle=config.candidate.get(
+                    "enable_spacing_throttle", True
+                ),
             )
 
             self.htf_stack.zone_watcher = ZoneWatcher(zone_config, candidate_config)
@@ -841,10 +866,41 @@ class IntegratedStrategy:
                     candle, snapshot, self.zone_watcher.candidate_fsm
                 )
 
+                # Skip if update returned None (should not happen but defensive coding)
+                if updated_candidate is None:
+                    logger.warning(
+                        f"Candidate update returned None for {candidate.candidate_id}"
+                    )
+                    continue
+
                 # Check if candidate is ready for trading
                 if updated_candidate.is_ready():
-                    # Convert candidate to trading signal
-                    signal = updated_candidate.to_signal()
+                    # Check entry spacing at READY time to prevent duplicate orders
+                    candle_ts_ms = int(candle.ts.timestamp() * 1000)
+
+                    if self.zone_watcher.within_spacing(
+                        updated_candidate.zone_id, candle_ts_ms
+                    ):
+                        # Throttle this candidate - mark as spaced out
+                        spaced_candidate = updated_candidate.mark_spaced()
+                        updated_candidates.append(spaced_candidate)
+
+                        logger.debug(
+                            f"Throttle READY on pool {updated_candidate.zone_id} - entry spacing active"
+                        )
+
+                        # Track throttling metrics
+                        if (
+                            hasattr(self, "metrics_collector")
+                            and self.metrics_collector
+                        ):
+                            self.metrics_collector.increment_counter("trades_throttled")
+
+                        continue
+
+                    # All spacing checks passed - proceed with order submission
+                    # Convert candidate to trading signal with proper timestamp
+                    signal = updated_candidate.to_signal(entry_timestamp=candle.ts)
                     logger.info(
                         f"Generated trading signal from candidate {updated_candidate.candidate_id}"
                     )
@@ -867,6 +923,12 @@ class IntegratedStrategy:
                     if size > 0:
                         # Submit order to broker
                         trade_id = self.broker.submit_order(signal, size)
+
+                        # Register trade execution immediately for spacing tracking
+                        self.zone_watcher.register_trade(
+                            updated_candidate.zone_id, candle_ts_ms
+                        )
+
                         logger.info(
                             f"Submitted order {trade_id} from candidate {updated_candidate.candidate_id}"
                         )

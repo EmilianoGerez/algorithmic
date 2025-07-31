@@ -1,5 +1,5 @@
 """
-Data models and events for liquidity pool lifecycle management.
+Data models and events for liquidity pool management.
 
 This module defines the core data structures for representing liquidity pools,
 their lifecycle states, and related events. Optimized for memory efficiency
@@ -60,6 +60,7 @@ class LiquidityPool:
     last_touched_at: datetime | None
     expires_at: datetime
     hit_tolerance: float = 0.0
+    side: str = "neutral"  # FVG direction: "bullish", "bearish", or "neutral"
 
     @property
     def mid_price(self) -> float:

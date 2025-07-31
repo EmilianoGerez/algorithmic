@@ -238,6 +238,7 @@ class TestOverlapDetector:
             created_at=timestamp,
             last_touched_at=None,
             expires_at=timestamp + timedelta(hours=2),
+            side="bullish",
         )
 
         # Handle pool creation (should not create HLZ yet - need 2+ pools)
@@ -262,6 +263,7 @@ class TestOverlapDetector:
             created_at=timestamp,
             last_touched_at=None,
             expires_at=timestamp + timedelta(hours=2),
+            side="bullish",
         )
 
         detector.on_pool_created(pool, timestamp)
@@ -354,6 +356,7 @@ def test_three_pool_overlap_acceptance():
         strength=2.5,
         ttl=timedelta(hours=2),
         created_at=base_time,
+        side="bullish",
     )
     assert success1
 
@@ -364,6 +367,7 @@ def test_three_pool_overlap_acceptance():
         strength=1.8,
         ttl=timedelta(hours=8),
         created_at=base_time,
+        side="bullish",
     )
     assert success2
 
@@ -374,6 +378,7 @@ def test_three_pool_overlap_acceptance():
         strength=1.2,
         ttl=timedelta(hours=2),
         created_at=base_time,
+        side="bullish",
     )
     assert success3
 

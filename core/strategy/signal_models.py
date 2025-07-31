@@ -36,6 +36,7 @@ class CandidateState(Enum):
     TOUCH_CONF = "touch_conf"  # Zone touched, waiting for EMA reclaim (linger)
     FILTERS = "filters"  # Checking volume/killzone/regime filters
     READY = "ready"  # Signal validated, ready for execution
+    SPACED_OUT = "spaced_out"  # Throttled due to entry spacing rules
     EXPIRED = "expired"  # Candidate expired or invalidated
 
 
@@ -131,8 +132,11 @@ class SignalCandidate:
         result = fsm.process(self, candle, indicators)
         return result.updated_candidate
 
-    def to_signal(self) -> TradingSignal:
+    def to_signal(self, entry_timestamp: datetime | None = None) -> TradingSignal:
         """Convert ready candidate to trading signal.
+
+        Args:
+            entry_timestamp: Optional timestamp for entry time (defaults to now)
 
         Returns:
             TradingSignal ready for broker submission
@@ -147,11 +151,11 @@ class SignalCandidate:
         # Convert direction to side for broker compatibility
         side = "buy" if self.direction == SignalDirection.LONG else "sell"
 
-        # Use UTC timezone to match candle data
-        now_utc = datetime.now(UTC)
+        # Use provided entry timestamp or current UTC time
+        signal_timestamp = entry_timestamp or datetime.now(UTC)
 
         return TradingSignal(
-            signal_id=generate_signal_id(self.candidate_id, now_utc),
+            signal_id=generate_signal_id(self.candidate_id, signal_timestamp),
             candidate_id=self.candidate_id,
             zone_id=self.zone_id,
             zone_type=self.zone_type,
@@ -161,9 +165,31 @@ class SignalCandidate:
             current_price=self.entry_price,  # TODO: Get from market data
             strength=self.strength,
             confidence=0.8,  # TODO: Calculate from filters
-            timestamp=now_utc,
+            timestamp=signal_timestamp,
             timeframe="5m",  # TODO: Get from config
-            metadata={"side": side},  # Add side for broker compatibility
+            metadata={
+                "side": side,
+                "entry_ts": signal_timestamp.isoformat(),
+            },  # Add entry timestamp
+        )
+
+    def mark_spaced(self) -> SignalCandidate:
+        """Mark candidate as spaced out due to throttling rules.
+
+        Returns:
+            New candidate instance with SPACED_OUT state
+        """
+        return SignalCandidate(
+            candidate_id=self.candidate_id,
+            zone_id=self.zone_id,
+            zone_type=self.zone_type,
+            direction=self.direction,
+            entry_price=self.entry_price,
+            strength=self.strength,
+            state=CandidateState.SPACED_OUT,
+            created_at=self.created_at,
+            expires_at=self.expires_at,
+            last_bar_timestamp=self.last_bar_timestamp,
         )
 
     def mark_submitted(self, order_id: str) -> None:

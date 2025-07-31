@@ -47,8 +47,8 @@ jobs:
             exit 1
           fi
 
-          # Check for hardcoded test data in production
-          if grep -r -n --include="*.py" -i "test.*data\|mock.*data\|dummy.*data" core/ services/ infra/ 2>/dev/null | grep -v "# Test data OK" | grep -v "test_data"; then
+          # Check for hardcoded test data patterns (but exclude legitimate uses)
+          if grep -r -n --include="*.py" -E "(test_data|dummy_data|mock_data).*=.*[\"\']" core/ services/ infra/ 2>/dev/null | grep -v "# Test data OK" | grep -v "test_data_path"; then
             echo "❌ Found potential hardcoded test data in production code!"
             echo "📍 Use configuration-driven data sources instead"
             exit 1

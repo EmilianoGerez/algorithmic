@@ -44,6 +44,12 @@ strategy:
     killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
     regime_ok: ["bull", "neutral"]
 
+  # Entry spacing controls to prevent rapid-fire trades
+  candidate:
+    min_entry_spacing_minutes: 30 # No second trade from same pool < 30 min
+    global_min_entry_spacing: 10 # Optional global guard between any trades
+    enable_spacing_throttle: true # Enable/disable throttling mechanism
+
 # ---------- Indicator periods ----------
 indicators:
   ema21_period: 21

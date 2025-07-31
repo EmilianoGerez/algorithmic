@@ -46,6 +46,11 @@ class ZoneWatcherConfig:
     min_strength: float = 1.0  # Minimum zone strength to track
     max_active_zones: int = 1000  # Maximum zones to track simultaneously
 
+    # Entry spacing controls
+    min_entry_spacing_minutes: int = 30  # Per-pool minimum spacing in minutes
+    global_min_entry_spacing: int = 10  # Global minimum spacing in minutes
+    enable_spacing_throttle: bool = True  # Enable throttling mechanism
+
 
 @dataclass(slots=True, frozen=False)  # Changed to mutable for state tracking
 class ZoneMeta:
@@ -82,7 +87,12 @@ class ZoneWatcher:
     ):
         """Initialize zone watcher."""
         self.config = config or ZoneWatcherConfig()
-        self.candidate_fsm = SignalCandidateFSM(candidate_config or CandidateConfig())
+
+        # Create FSM with callback for entry spacing tracking
+        self.candidate_fsm = SignalCandidateFSM(
+            candidate_config or CandidateConfig(),
+            ready_callback=self.record_candidate_ready,
+        )
 
         # Fast lookup for active zones (stateless design)
         self._active_zones: dict[str, ZoneMeta] = {}
@@ -90,12 +100,22 @@ class ZoneWatcher:
         # Track active signal candidates for FSM processing
         self.active_candidates: list[Any] = []  # List of SignalCandidate instances
 
+        # Entry spacing tracking
+        self.last_entry_ts_per_pool: dict[
+            str, int
+        ] = {}  # pool_id -> last entry timestamp (ms)
+        self.last_global_entry_ts: int = 0  # Global last entry timestamp (ms)
+        self.last_trade_ts: dict[str, int] = {}  # pool_id -> last trade timestamp (ms)
+
         # Statistics
         self._stats = {
             "zones_tracked": 0,
             "zone_entries": 0,
             "candidates_spawned": 0,
             "zones_expired": 0,
+            "entries_throttled_per_pool": 0,
+            "entries_throttled_global": 0,
+            "trades_registered": 0,
         }
 
     def on_price_update(self, candle: Candle) -> list[ZoneEnteredEvent]:
@@ -165,15 +185,61 @@ class ZoneWatcher:
         self, zone_entry: ZoneEnteredEvent, timestamp: datetime
     ) -> Any:  # Returns SignalCandidate but avoiding circular import
         """
-        Spawn signal candidate from zone entry event.
+        Spawn signal candidate from zone entry event with throttling controls.
 
         Args:
             zone_entry: Zone entry event
             timestamp: Current timestamp
 
         Returns:
-            New SignalCandidate instance
+            New SignalCandidate instance or None if throttled
         """
+        # Convert timestamp to milliseconds for precise timing
+        ts_ms = int(timestamp.timestamp() * 1000)
+
+        # Check if throttling is enabled
+        if not self.config.enable_spacing_throttle:
+            return self._create_candidate(zone_entry, timestamp, ts_ms)
+
+        # Extract pool ID from zone entry (handle both pools and HLZs)
+        zone_id = zone_entry.zone_id
+
+        # Per-pool spacing check
+        if self._is_pool_throttled(zone_id, ts_ms):
+            logger.debug(
+                f"Throttle: pool {zone_id} entry spacing active "
+                f"(min: {self.config.min_entry_spacing_minutes}m)"
+            )
+            self._stats["entries_throttled_per_pool"] += 1
+            return None
+
+        # Global spacing check (optional)
+        if self._is_global_throttled(ts_ms):
+            logger.debug(
+                f"Throttle: global entry spacing active "
+                f"(min: {self.config.global_min_entry_spacing}m)"
+            )
+            self._stats["entries_throttled_global"] += 1
+            return None
+
+        # All checks passed - create candidate
+        return self._create_candidate(zone_entry, timestamp, ts_ms)
+
+    def _is_pool_throttled(self, zone_id: str, ts_ms: int) -> bool:
+        """Check if pool entry is throttled by per-pool spacing."""
+        spacing_ms = self.config.min_entry_spacing_minutes * 60_000
+        last_ts = self.last_entry_ts_per_pool.get(zone_id, 0)
+        return ts_ms - last_ts < spacing_ms
+
+    def _is_global_throttled(self, ts_ms: int) -> bool:
+        """Check if entry is throttled by global spacing."""
+        spacing_ms = self.config.global_min_entry_spacing * 60_000
+        return ts_ms - self.last_global_entry_ts < spacing_ms
+
+    def _create_candidate(
+        self, zone_entry: ZoneEnteredEvent, timestamp: datetime, ts_ms: int
+    ) -> Any:
+        """Create signal candidate and update tracking."""
         # Determine signal direction based on zone side
         direction = self._infer_direction(zone_entry.side)
 
@@ -189,7 +255,37 @@ class ZoneWatcher:
         # Track active candidate for FSM processing
         self.active_candidates.append(candidate)
         self._stats["candidates_spawned"] += 1
+
         return candidate
+
+    def record_candidate_ready(self, zone_id: str, timestamp: datetime) -> None:
+        """
+        Record when a candidate becomes READY for precise entry timing.
+
+        This should be called by the SignalCandidate FSM when a candidate
+        transitions to READY state to ensure accurate throttling timing.
+
+        Args:
+            zone_id: Zone identifier
+            timestamp: Timestamp when candidate became READY
+        """
+        if not self.config.enable_spacing_throttle:
+            return
+
+        ts_ms = int(timestamp.timestamp() * 1000)
+        self._record_entry_timing(zone_id, ts_ms)
+
+        logger.info(
+            f"Candidate READY: zone {zone_id} at {timestamp} "
+            f"(throttling active for {self.config.min_entry_spacing_minutes}m)"
+        )
+
+    def _record_entry_timing(self, zone_id: str, ts_ms: int) -> None:
+        """Record entry timing for throttling purposes."""
+        self.last_entry_ts_per_pool[zone_id] = ts_ms
+        self.last_global_entry_ts = ts_ms
+
+        logger.debug(f"Recorded entry timing for zone {zone_id} at {ts_ms}")
 
     def get_active_zones(self) -> dict[str, ZoneMeta]:
         """Get currently tracked zones."""
@@ -301,17 +397,65 @@ class ZoneWatcher:
         return zone_min <= price <= zone_max
 
     def _infer_pool_side(self, pool: Any) -> str:  # LiquidityPool type
-        """Infer pool side from pool properties."""
-        # This is a heuristic - in production this should come from the detector
-        # that created the pool or be stored as a pool attribute
-        return "bullish"  # Default for now
+        """Get pool side from pool properties."""
+        # Use the stored side information from the pool
+        if hasattr(pool, "side") and pool.side:
+            return str(pool.side)
+
+        # Fallback for legacy pools without side information
+        return "neutral"
 
     def _infer_direction(self, side: str) -> SignalDirection:
-        """Convert zone side to signal direction."""
+        """Convert zone side to signal direction.
+
+        FVG Trading Logic:
+        - Bearish FVG (gap down): Expect continuation DOWN → SHORT entry when price retraces into gap
+        - Bullish FVG (gap up): Expect continuation UP → LONG entry when price retraces into gap
+        """
         match side.lower():
             case "bullish":
-                return SignalDirection.LONG
+                return (
+                    SignalDirection.LONG
+                )  # Bullish FVG → LONG (price expected to go up)
             case "bearish":
-                return SignalDirection.SHORT
+                return (
+                    SignalDirection.SHORT
+                )  # Bearish FVG → SHORT (price expected to go down)
             case _:
                 return SignalDirection.LONG  # Default to long for neutral zones
+
+    def within_spacing(self, pool_id: str, ts_ms: int) -> bool:
+        """Check if pool entry is within spacing restriction.
+
+        Args:
+            pool_id: Pool identifier
+            ts_ms: Timestamp in milliseconds
+
+        Returns:
+            True if within spacing (should be throttled), False if spacing allows entry
+        """
+        spacing_ms = self.config.min_entry_spacing_minutes * 60_000
+        last_ts = self.last_trade_ts.get(pool_id, 0)
+        time_diff_ms = ts_ms - last_ts
+        is_within_spacing = time_diff_ms <= spacing_ms
+
+        logger.debug(
+            f"Spacing check for pool {pool_id}: "
+            f"current_ts={ts_ms}, last_ts={last_ts}, "
+            f"diff={time_diff_ms}ms ({time_diff_ms / 60000:.1f}min), "
+            f"spacing_required={spacing_ms}ms ({spacing_ms / 60000:.1f}min), "
+            f"within_spacing={is_within_spacing}"
+        )
+
+        return is_within_spacing
+
+    def register_trade(self, pool_id: str, ts_ms: int) -> None:
+        """Register a trade execution for spacing tracking.
+
+        Args:
+            pool_id: Pool identifier
+            ts_ms: Trade execution timestamp in milliseconds
+        """
+        self.last_trade_ts[pool_id] = ts_ms
+        logger.debug(f"Registered trade for pool {pool_id} at {ts_ms}")
+        self._stats["trades_registered"] += 1

@@ -80,7 +80,7 @@ pools:
     ttl: 3d # 3 days for H4 pools
     hit_tolerance: 0.0
 
-  strength_threshold: 0.02 # LOWERED - capture more FVGs including the 0.031 strength one
+  strength_threshold: 0.35 # BALANCED - filters weak signals while capturing quality FVGs (0.5+ range)
   grace_period_minutes: 5
   max_pools_per_tf: 10000
   auto_expire_interval: "30s"
@@ -106,10 +106,16 @@ zone_watcher:
 # ---------- Signal candidate pipeline ----------
 candidate:
   expiry_minutes: 120 # 2 hours - appropriate for signal candidate lifetime
+
+  # Entry spacing to prevent rapid-fire trades
+  min_entry_spacing_minutes: 60 # Per-pool minimum spacing (60 minutes)
+  global_min_entry_spacing: 10 # Global minimum spacing between any trades
+  enable_spacing_throttle: true # Enable throttling mechanism
+
   filters:
     ema_alignment: true
     ema_tolerance_pct: 0 # Slightly more tolerance with real data
-    linger_minutes: 90 # Touch-&-reclaim linger window (minutes)
+    linger_minutes: 15 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
     volume_multiple: 0 # DISABLED - dataset has zero-volume bars causing issues
     killzone: ["01:00", "18:00"] # Extended killzone to ensure May 20 14:00-18:00 window is included

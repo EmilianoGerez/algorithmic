@@ -8,6 +8,7 @@ Designed for fast execution with pure guard functions for easy testing.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -148,10 +149,22 @@ class SignalCandidateFSM:
     when all conditions are met. Designed for high-frequency execution.
     """
 
-    def __init__(self, config: CandidateConfig):
-        """Initialize FSM with configuration."""
+    def __init__(
+        self,
+        config: CandidateConfig,
+        ready_callback: Callable[[str, datetime], None] | None = None,
+    ) -> None:
+        """
+        Initialize FSM with configuration.
+
+        Args:
+            config: FSM configuration
+            ready_callback: Optional callback function called when candidate becomes READY.
+                           Should accept (zone_id: str, timestamp: datetime)
+        """
         self.config = config
         self.guards = FSMGuards()
+        self.ready_callback = ready_callback
 
     def process(
         self,
@@ -190,6 +203,10 @@ class SignalCandidateFSM:
 
             case CandidateState.READY | CandidateState.EXPIRED:
                 # Terminal states - no further processing
+                return FSMResult(updated_candidate=candidate)
+
+            case _:
+                # Default case - no state change
                 return FSMResult(updated_candidate=candidate)
 
     def _process_wait_ema(
@@ -268,6 +285,11 @@ class SignalCandidateFSM:
         if volume_ok and killzone_ok and regime_ok:
             # All filters passed - generate signal and move to READY
             signal = self._create_trading_signal(candidate, bar, snapshot)
+
+            # Notify ZoneWatcher for entry spacing tracking
+            if self.ready_callback:
+                self.ready_callback(candidate.zone_id, bar.ts)
+
             return FSMResult(
                 updated_candidate=candidate.with_state(CandidateState.READY, bar.ts),
                 signal=signal,

@@ -182,6 +182,9 @@ class PoolManager:
             # Extract strength (default to 1.0 if not available)
             strength = getattr(event, "strength", 1.0)
 
+            # Extract FVG side (default to "neutral" if not available)
+            side = getattr(event, "side", "neutral")
+
             # Create pool in registry
             success, pool_id = self.registry.add(
                 timeframe=event.tf,
@@ -190,6 +193,7 @@ class PoolManager:
                 strength=strength,
                 ttl=ttl,
                 hit_tolerance=hit_tolerance,
+                side=side,
                 created_at=event.ts,
             )
 

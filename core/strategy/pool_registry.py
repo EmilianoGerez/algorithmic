@@ -234,6 +234,7 @@ class PoolRegistry:
         strength: float,
         ttl: timedelta,
         hit_tolerance: float = 0.0,
+        side: str = "neutral",
         created_at: datetime | None = None,
     ) -> tuple[bool, str]:
         """
@@ -246,6 +247,7 @@ class PoolRegistry:
             strength: Detector strength for overlap weighting
             ttl: Time-to-live for the pool
             hit_tolerance: Price tolerance for zone hits
+            side: FVG direction ("bullish", "bearish", or "neutral")
             created_at: Creation timestamp (defaults to current time)
 
         Returns:
@@ -287,6 +289,7 @@ class PoolRegistry:
                 last_touched_at=None,
                 expires_at=expires_at,
                 hit_tolerance=hit_tolerance,
+                side=side,
             )
 
             # Schedule TTL expiry

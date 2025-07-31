@@ -185,9 +185,12 @@ class BacktestAnalyzer:
         Returns:
             List of trade dictionaries or None
         """
-        trades_path = self.results_dir / "trades.json"
+        trades_path = self.results_dir / "all_trades.json"
         if not trades_path.exists():
-            print("   → No trades.json found")
+            # Try alternative filename
+            trades_path = self.results_dir / "trades.json"
+            if not trades_path.exists():
+                print("   → No trades.json or all_trades.json found")
             return None
 
         try:

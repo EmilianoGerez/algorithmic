@@ -8,6 +8,7 @@ data:
   path: "data/BTC_USD_5min_20250728_021825.csv"
   symbol: BTCUSD
   timeframe: "5m"
+  tick_size: 0.1 # Asset-specific price precision (0.1 for BTCUSD, 0.00001 for EURUSD)
   date_format: "%Y-%m-%dT%H:%M:%SZ"
   columns:
     timestamp: timestamp

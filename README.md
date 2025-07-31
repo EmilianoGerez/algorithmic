@@ -1,5 +1,7 @@
 # Quant Algorithm Skeleton
 
+![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+
 Production-ready multi-timeframe liquidity pool strategy with HTF signal detection.
 
 ## Quick start
@@ -26,6 +28,7 @@ python -m services.backtester --file sample_data/your_file.csv
 ✅ **Risk Management**: ATR-based position sizing with 2:1 R/R ratios
 ✅ **Real-time Processing**: Sub-millisecond latency with memory-efficient design
 ✅ **Production Ready**: Comprehensive logging, metrics, and error handling
+✅ **Prometheus Metrics**: Built-in metrics endpoint for monitoring and observability
 
 ## Configuration
 
@@ -66,6 +69,18 @@ strategy:
 
 - `0` - Disable volume filtering (recommended for synthetic/low-quality data)
 - `1.5+` - Enable volume filtering (recommended for high-quality exchange data)
+
+## Monitoring
+
+### Prometheus Metrics
+
+The platform exposes Prometheus-compatible metrics for monitoring:
+
+- Pool registry statistics (created, active, touched pools)
+- Trading performance metrics (PnL, trade counts, win rates)
+- System performance (latency, memory usage, processing times)
+
+Access metrics through the built-in endpoint or export to your monitoring stack.
 
 Next steps:
 

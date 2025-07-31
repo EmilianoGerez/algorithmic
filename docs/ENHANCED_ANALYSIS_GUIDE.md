@@ -9,7 +9,7 @@ The enhanced trading analysis provides comprehensive visualization and detailed 
 ### 1. **Basic Usage (Latest Results)**
 
 ```bash
-python3 complete_enhanced_demo.py
+python3 scripts/demos/complete_enhanced_demo.py
 ```
 
 This automatically uses the most recent backtest results.
@@ -18,27 +18,27 @@ This automatically uses the most recent backtest results.
 
 ```bash
 # Use specific backtest folder
-python3 complete_enhanced_demo.py results/backtest_20250730_162303
+python3 scripts/demos/complete_enhanced_demo.py results/backtest_20250730_162303
 
 # Use any custom folder containing data.csv
-python3 complete_enhanced_demo.py /path/to/your/results
+python3 scripts/demos/complete_enhanced_demo.py /path/to/your/results
 ```
 
 ### 3. **List Available Results**
 
 ```bash
 # See all available backtest directories
-python3 complete_enhanced_demo.py --list
+python3 scripts/demos/complete_enhanced_demo.py --list
 
 # Or use the helper script
-python3 run_enhanced_analysis.py --list
+python3 scripts/demos/run_enhanced_analysis.py --list
 ```
 
 ### 4. **Interactive Helper**
 
 ```bash
 # Run interactive helper for guided selection
-python3 run_enhanced_analysis.py
+python3 scripts/demos/run_enhanced_analysis.py
 ```
 
 ## 📊 What You Get
@@ -128,6 +128,6 @@ If real trade data isn't available, the script will generate mock data for demon
 For more options:
 
 ```bash
-python3 complete_enhanced_demo.py --help
-python3 run_enhanced_analysis.py --help
+python3 scripts/demos/complete_enhanced_demo.py --help
+python3 scripts/demos/run_enhanced_analysis.py --help
 ```

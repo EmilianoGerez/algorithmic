@@ -36,7 +36,7 @@ Phase 2 successfully implemented multi-timeframe candle aggregation with profess
    - Edge cases and error conditions (DST, out-of-order bars, stream termination)
    - All tests passing ✅
 
-5. **`demo_phase2.py`** - Validation demo
+5. **`scripts/demos/demo_phase2.py`** - Validation demo
    - Acceptance criteria validation (121 bars → 2 H1 candles)
    - Performance testing (500k candles < 1 second)
    - Memory efficiency demonstration
@@ -211,7 +211,7 @@ for minute_candle in data_stream:
 
 ### Live Demo Output
 
-Run `python demo_phase2.py` to see the full validation suite:
+Run `python scripts/demos/demo_phase2.py` to see the full validation suite:
 
 ```bash
 🚀 Phase 2: TimeAggregator Validation Suite

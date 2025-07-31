@@ -43,6 +43,7 @@ class LiveBrokerConfig:
     rest_timeout: int = 10
     max_retries: int = 3
     retry_backoff: float = 1.0
+    min_request_interval: float = 0.1  # Rate limiting interval
 
 
 class HttpLiveBroker(Broker, ABC):
@@ -68,7 +69,7 @@ class HttpLiveBroker(Broker, ABC):
 
         # Rate limiting
         self._last_request_time = 0.0
-        self._min_request_interval = 0.1  # 100ms between requests
+        self._min_request_interval = config.min_request_interval
 
         # Latency tracking
         self._request_latencies: list[float] = []

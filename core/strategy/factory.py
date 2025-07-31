@@ -451,8 +451,18 @@ class IntegratedStrategy:
         self.risk_manager = risk_manager
         self.metrics_collector = metrics_collector
 
-        # Initialize indicators
-        self.indicators = IndicatorPack()
+        # Initialize indicators with config values
+        indicator_config = getattr(config, "indicators", {})
+        data_config = getattr(config, "data", {})
+
+        self.indicators = IndicatorPack(
+            ema21_period=getattr(indicator_config, "ema21_period", 21),
+            ema50_period=getattr(indicator_config, "ema50_period", 50),
+            atr_period=getattr(indicator_config, "atr_period", 14),
+            volume_sma_period=getattr(indicator_config, "volume_sma_period", 20),
+            regime_sensitivity=getattr(indicator_config, "regime_sensitivity", 0.001),
+            tick_size=getattr(data_config, "tick_size", 0.00001),
+        )
 
         # Initialize strategy components based on strategy configuration
         logger.info(f"Config type: {type(config)}")

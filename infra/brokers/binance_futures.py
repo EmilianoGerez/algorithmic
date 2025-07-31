@@ -42,6 +42,7 @@ class BinanceConfig(BaseSettings):
     Configuration options:
     - position_side_mode: "ONEWAY" (default) or "HEDGE" for position management
     - recv_window_ms: API receive window in milliseconds (default 5000)
+    - Connection timeouts and rate limiting settings
     """
 
     binance_api_key: str = ""
@@ -55,6 +56,13 @@ class BinanceConfig(BaseSettings):
 
     # Clock skew handling - receive window for API requests
     recv_window_ms: int = 5000  # Default 5 second receive window
+
+    # Connection and rate limiting settings (exposed from YAML config)
+    ws_timeout: int = 30  # WebSocket timeout in seconds
+    rest_timeout: int = 10  # REST API timeout in seconds
+    max_retries: int = 3  # Maximum retry attempts for failed requests
+    retry_backoff: float = 1.0  # Backoff multiplier for retries
+    min_request_interval: float = 0.1  # Minimum interval between requests
 
     model_config = {"env_file": ".env", "case_sensitive": False, "extra": "ignore"}
 
@@ -100,6 +108,11 @@ class BinanceFuturesBroker(HttpLiveBroker):
             api_secret=config.binance_api_secret,
             base_url=base_url,
             testnet=config.binance_testnet,
+            ws_timeout=config.ws_timeout,
+            rest_timeout=config.rest_timeout,
+            max_retries=config.max_retries,
+            retry_backoff=config.retry_backoff,
+            min_request_interval=config.min_request_interval,
         )
 
         super().__init__(live_config)

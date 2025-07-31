@@ -146,6 +146,12 @@ execution:
     testnet: true # explicit testnet flag
     initial_balance: 10000.0
     commission_per_trade: 0.0
+    # Connection and rate limiting settings
+    ws_timeout: 30 # WebSocket timeout in seconds
+    rest_timeout: 10 # REST API timeout in seconds
+    max_retries: 3 # Maximum retry attempts for failed requests
+    retry_backoff: 1.0 # Backoff multiplier for retries
+    min_request_interval: 0.1 # Minimum interval between requests (rate limiting)
 
 # ---------- Runtime ----------
 runtime:

@@ -21,18 +21,21 @@ class ATR:
 
     Args:
         period: Number of periods to use for ATR calculation. Typically 14.
+        tick_size: Asset-specific minimum price movement (e.g., 0.01 for BTCUSDT)
 
     Attributes:
         period: The period length for ATR calculation.
+        tick_size: Minimum price movement for ATR floor calculation.
 
     Example:
-        >>> atr = ATR(period=14)
+        >>> atr = ATR(period=14, tick_size=0.01)
         >>> atr.update(candle)
         >>> if atr.is_ready:
         ...     volatility = atr.value
     """
 
     period: int
+    tick_size: float = 0.00001  # Default for backwards compatibility
 
     def __post_init__(self) -> None:
         self._true_ranges: deque[float] = deque(maxlen=self.period)
@@ -71,9 +74,8 @@ class ATR:
         if len(self._true_ranges) == self.period:
             raw_atr = sum(self._true_ranges) / self.period
             # Apply ATR floor to prevent micro-ATR issues with identical OHLC bars
-            # Use a minimal tick size (0.00001 for crypto, 0.0001 for forex)
-            atr_floor = 0.00001  # Configurable tick size
-            self._atr_value = max(raw_atr, atr_floor)
+            # Use configurable tick size from YAML config
+            self._atr_value = max(raw_atr, self.tick_size)
         else:
             # Not enough data yet
             self._atr_value = None

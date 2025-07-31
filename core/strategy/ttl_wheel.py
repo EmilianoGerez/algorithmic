@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from core.clock import get_clock
+
 # TTL Wheel bucket size constants - tweak these for performance/memory trade-offs
 SEC_BUCKETS = 60  # 0-59 seconds wheel
 MIN_BUCKETS = 60  # 0-59 minutes wheel
@@ -88,8 +90,8 @@ class TimerWheel:
     def __init__(self, config: WheelConfig | None = None):
         """Initialize the timing wheel with configuration."""
         self.config = config or WheelConfig()
-        # Use UTC timezone-aware datetime for consistency with market data
-        self.current_time = datetime.now(UTC)
+        # Use global clock for consistent time management
+        self.current_time = get_clock().now()
 
         # Initialize wheel levels
         self._wheels: list[list[list[ScheduledExpiry]]] = [
@@ -127,11 +129,16 @@ class TimerWheel:
         if pool_id in self._pool_to_expiry:
             return False  # Already scheduled
 
-        created_at = created_at or self.current_time
+        created_at = created_at or get_clock().now()
 
         # Handle out-of-order events (expiry in the past or at current time)
         if expires_at <= self.current_time:
-            # Immediately expired - don't schedule
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.debug(
+                f"Expiry in past - skip pool {pool_id}: {expires_at} <= {self.current_time}"
+            )
             return False
 
         # Only validate expiry vs creation if created_at is in the past
@@ -155,9 +162,18 @@ class TimerWheel:
         slot_size = len(self._wheels[wheel_level][slot_index])
         self._metrics["max_slot_size"] = max(self._metrics["max_slot_size"], slot_size)
 
+        # Debug logging
+        import logging
+
+        logger = logging.getLogger(__name__)
+        ttl_delta = expires_at - created_at
+        logger.debug(
+            f"Pool {pool_id} TTL {ttl_delta} scheduled in bucket level={wheel_level} slot={slot_index}"
+        )
+
         # Warning for slot size
         if slot_size > self.config.max_items_per_slot:
-            print(f"Warning: Slot {wheel_level}:{slot_index} has {slot_size} items")
+            logger.warning(f"Slot {wheel_level}:{slot_index} has {slot_size} items")
 
         return True
 

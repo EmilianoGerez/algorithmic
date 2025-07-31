@@ -127,6 +127,28 @@ class BacktestRunner:
         """Initialize strategy based on configuration."""
         self.logger.info(f"Initializing strategy: {self.config.strategy.symbol}")
 
+        # Set up simulation clock for backtesting
+        from core.clock import use_simulation_clock
+
+        # Get data info to determine start time
+        data_info = self.data_loader.get_data_info(self.config.data.path)
+        start_time_str = data_info["date_range"]["start"]
+
+        # Parse start time from ISO format
+        from datetime import datetime
+
+        if isinstance(start_time_str, str):
+            # Handle ISO format like "2025-05-19T03:00:00Z"
+            if start_time_str.endswith("Z"):
+                start_time_str = start_time_str[:-1] + "+00:00"
+            start_time = datetime.fromisoformat(start_time_str)
+        else:
+            start_time = start_time_str
+
+        # Initialize simulation clock
+        use_simulation_clock(start_time)
+        self.logger.info(f"Simulation clock initialized at: {start_time}")
+
         # Use StrategyFactory to build complete strategy
         self.strategy = StrategyFactory.build(
             config=self.config, metrics_collector=self.metrics_collector
@@ -314,6 +336,58 @@ class BacktestRunner:
                 except Exception as e:
                     self.logger.warning(f"Could not export trades: {e}")
 
+            # Export open positions if available
+            try:
+                if self.strategy and hasattr(self.strategy, "broker"):
+                    broker = self.strategy.broker
+                    if hasattr(broker, "positions"):
+                        open_positions = [
+                            pos
+                            for pos in broker.positions.values()
+                            if pos.get("status") == "open"
+                        ]
+
+                        if open_positions:
+                            # Export open positions to JSON for enhanced analysis
+                            import json
+
+                            positions_path = Path(result_dir) / "open_positions.json"
+                            with open(positions_path, "w") as f:
+                                json.dump(open_positions, f, indent=2, default=str)
+                            self.logger.info(
+                                f"Exported {len(open_positions)} open positions to {positions_path}"
+                            )
+
+                            # Also export as CSV for easier analysis
+                            import pandas as pd
+
+                            positions_df = pd.DataFrame(open_positions)
+                            positions_csv = Path(result_dir) / "open_positions.csv"
+                            positions_df.to_csv(positions_csv, index=False)
+                            self.logger.info(
+                                f"Exported open positions CSV to {positions_csv}"
+                            )
+
+                    # Also export all trades (including open ones) for comprehensive analysis
+                    if hasattr(broker, "trades"):
+                        all_trades = (
+                            broker.get_trades()
+                            if hasattr(broker, "get_trades")
+                            else broker.trades
+                        )
+                        if all_trades:
+                            import json
+
+                            trades_path = Path(result_dir) / "all_trades.json"
+                            with open(trades_path, "w") as f:
+                                json.dump(all_trades, f, indent=2, default=str)
+                            self.logger.info(
+                                f"Exported {len(all_trades)} trades to {trades_path}"
+                            )
+
+            except Exception as e:
+                self.logger.warning(f"Could not export positions data: {e}")
+
             # Export events if dump_events is enabled
             if self.config.execution.dump_events:
                 try:
@@ -433,6 +507,13 @@ class BacktestRunner:
             # Collect results
             end_time = datetime.now()
             execution_time = (end_time - start_time).total_seconds()
+
+            # Get strategy performance stats to set open positions info
+            if self.strategy and hasattr(self.strategy, "get_performance_stats"):
+                strategy_stats = self.strategy.get_performance_stats()
+                self.logger.info(
+                    f"Strategy stats collected: {len(strategy_stats)} metrics"
+                )
 
             # Get comprehensive metrics
             metrics_summary = self.metrics_collector.get_summary()

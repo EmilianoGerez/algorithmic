@@ -72,7 +72,9 @@ class PaperBroker:
         self._logger = logger.getChild(self.__class__.__name__)
         self._logger.info(f"Paper broker initialized with ${initial_balance:,.2f}")
 
-    async def submit(self, order: Order) -> OrderReceipt:
+    async def submit(
+        self, order: Order, timestamp: datetime | None = None
+    ) -> OrderReceipt:
         """Submit an order for execution.
 
         For market orders, executes immediately at current price.
@@ -80,6 +82,7 @@ class PaperBroker:
 
         Args:
             order: Order specification to execute.
+            timestamp: Order timestamp (uses current time if None).
 
         Returns:
             OrderReceipt with execution details.
@@ -88,7 +91,7 @@ class PaperBroker:
             BrokerError: If order validation fails.
         """
         order_id = str(uuid4())
-        timestamp = datetime.utcnow()
+        execution_timestamp = timestamp or datetime.utcnow()
 
         try:
             # Validate order
@@ -96,7 +99,9 @@ class PaperBroker:
 
             if order.order_type == OrderType.MARKET:
                 # Execute market order immediately
-                return await self._execute_market_order(order, order_id, timestamp)
+                return await self._execute_market_order(
+                    order, order_id, execution_timestamp
+                )
             else:
                 # Store limit order for future execution
                 self._pending_orders[order_id] = order
@@ -104,7 +109,7 @@ class PaperBroker:
                     order_id=order_id,
                     client_id=order.client_id,
                     status=OrderStatus.PENDING,
-                    timestamp=timestamp,
+                    timestamp=execution_timestamp,
                     message="Order accepted and pending execution",
                 )
 
@@ -114,7 +119,7 @@ class PaperBroker:
                 order_id=order_id,
                 client_id=order.client_id,
                 status=OrderStatus.REJECTED,
-                timestamp=timestamp,
+                timestamp=execution_timestamp,
                 message=str(e),
             )
 
@@ -191,7 +196,9 @@ class PaperBroker:
 
         return await self.submit(close_order)
 
-    def update_prices(self, symbol: str, current_price: float) -> None:
+    def update_prices(
+        self, symbol: str, current_price: float, timestamp: datetime | None = None
+    ) -> None:
         """Update current market prices and check for stop/TP execution.
 
         This method should be called with each new price update to:
@@ -202,13 +209,16 @@ class PaperBroker:
         Args:
             symbol: Symbol being updated.
             current_price: New market price.
+            timestamp: Market timestamp (uses current time if None).
         """
+        current_time = timestamp or datetime.utcnow()
+
         # Update position marks
         if symbol in self._positions:
             self._update_position_mark(symbol, current_price)
 
         # Check stop loss and take profit triggers
-        self._check_stop_tp_triggers(symbol, current_price)
+        self._check_stop_tp_triggers(symbol, current_price, current_time)
 
         # Check pending limit orders
         self._check_pending_orders(symbol, current_price)
@@ -404,7 +414,9 @@ class PaperBroker:
                 entry_timestamp=position.entry_timestamp,
             )
 
-    def _check_stop_tp_triggers(self, symbol: str, current_price: float) -> None:
+    def _check_stop_tp_triggers(
+        self, symbol: str, current_price: float, current_time: datetime
+    ) -> None:
         """Check if current price triggers any stop loss or take profit orders.
 
         In gap scenarios where both stop and TP are triggered, priority is given to:
@@ -414,6 +426,7 @@ class PaperBroker:
         Args:
             symbol: Symbol being checked.
             current_price: Current market price.
+            current_time: Current market time for accurate trade timestamps.
         """
         position = self._positions.get(symbol)
         if not position:
@@ -453,11 +466,15 @@ class PaperBroker:
 
                 if current_price >= max(tp_price, stop_price):
                     # Upward gap - TP priority for long
-                    self._execute_tp_orders(triggered_tps, symbol, current_price)
+                    self._execute_tp_orders(
+                        triggered_tps, symbol, current_price, current_time
+                    )
                     self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
                 else:
                     # Downward gap - stop priority for long
-                    self._execute_stop_orders(triggered_stops, symbol, current_price)
+                    self._execute_stop_orders(
+                        triggered_stops, symbol, current_price, current_time
+                    )
                     self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
             else:
                 # Short position: if price gapped down through both, TP has priority
@@ -467,26 +484,42 @@ class PaperBroker:
 
                 if current_price <= min(tp_price, stop_price):
                     # Downward gap - TP priority for short
-                    self._execute_tp_orders(triggered_tps, symbol, current_price)
+                    self._execute_tp_orders(
+                        triggered_tps, symbol, current_price, current_time
+                    )
                     self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
                 else:
                     # Upward gap - stop priority for short
-                    self._execute_stop_orders(triggered_stops, symbol, current_price)
+                    self._execute_stop_orders(
+                        triggered_stops, symbol, current_price, current_time
+                    )
                     self._clear_remaining_orders(triggered_stops, triggered_tps, symbol)
         else:
             # Normal scenario - execute whatever is triggered
             if triggered_stops:
-                self._execute_stop_orders(triggered_stops, symbol, current_price)
+                self._execute_stop_orders(
+                    triggered_stops, symbol, current_price, current_time
+                )
             if triggered_tps:
-                self._execute_tp_orders(triggered_tps, symbol, current_price)
+                self._execute_tp_orders(
+                    triggered_tps, symbol, current_price, current_time
+                )
 
     def _execute_stop_orders(
         self,
         triggered_stops: list[tuple[str, float]],
         symbol: str,
         current_price: float,
+        current_time: datetime,
     ) -> None:
-        """Execute triggered stop loss orders."""
+        """Execute triggered stop loss orders.
+
+        Args:
+            triggered_stops: List of (position_key, stop_price) tuples
+            symbol: Symbol being processed
+            current_price: Current market price
+            current_time: Current market time for accurate trade timestamps
+        """
         for pos_key, stop_price in triggered_stops:
             del self._stop_orders[pos_key]
             self._logger.info(
@@ -495,20 +528,30 @@ class PaperBroker:
             # Close the position by updating with opposing quantity
             if symbol in self._positions:
                 position = self._positions[symbol]
-                from datetime import datetime
 
                 # Update position with opposing quantity to close it
                 self._update_position(
                     symbol,
                     -position.quantity,  # Opposite quantity closes position
                     current_price,
-                    datetime.utcnow(),
+                    current_time,  # Use market time instead of utcnow
                 )
 
     def _execute_tp_orders(
-        self, triggered_tps: list[tuple[str, float]], symbol: str, current_price: float
+        self,
+        triggered_tps: list[tuple[str, float]],
+        symbol: str,
+        current_price: float,
+        current_time: datetime,
     ) -> None:
-        """Execute triggered take profit orders."""
+        """Execute triggered take profit orders.
+
+        Args:
+            triggered_tps: List of (position_key, tp_price) tuples
+            symbol: Symbol being processed
+            current_price: Current market price
+            current_time: Current market time for accurate trade timestamps
+        """
         for pos_key, tp_price in triggered_tps:
             del self._tp_orders[pos_key]
             self._logger.info(
@@ -517,14 +560,13 @@ class PaperBroker:
             # Close the position by updating with opposing quantity
             if symbol in self._positions:
                 position = self._positions[symbol]
-                from datetime import datetime
 
                 # Update position with opposing quantity to close it
                 self._update_position(
                     symbol,
                     -position.quantity,  # Opposite quantity closes position
                     current_price,
-                    datetime.utcnow(),
+                    current_time,  # Use market time instead of utcnow
                 )
 
     def _clear_remaining_orders(

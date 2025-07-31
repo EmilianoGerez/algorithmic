@@ -8,6 +8,7 @@ are entered. Designed for stateless operation with fast lookups.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -60,6 +61,9 @@ class ZoneMeta:
     created_at: datetime
     last_price_check: float | None = None  # Last price that was checked
     entry_triggered: bool = False  # Track if zone entry has been triggered
+
+
+logger = logging.getLogger(__name__)
 
 
 class ZoneWatcher:
@@ -202,12 +206,22 @@ class ZoneWatcher:
         """Add pool to zone tracking."""
         pool = event.pool
 
+        logger.info(
+            f"Zone watcher: Adding pool {pool.pool_id} with strength {pool.strength} (min_threshold: {self.config.min_strength})"
+        )
+
         # Skip if strength below threshold
         if pool.strength < self.config.min_strength:
+            logger.warning(
+                f"Zone watcher: Pool {pool.pool_id} strength {pool.strength} below threshold {self.config.min_strength}, skipping"
+            )
             return
 
         # Skip if already tracking max zones
         if len(self._active_zones) >= self.config.max_active_zones:
+            logger.warning(
+                f"Zone watcher: Already tracking max zones ({self.config.max_active_zones}), skipping pool {pool.pool_id}"
+            )
             return
 
         zone_meta = ZoneMeta(
@@ -223,6 +237,9 @@ class ZoneWatcher:
 
         self._active_zones[pool.pool_id] = zone_meta
         self._stats["zones_tracked"] += 1
+        logger.info(
+            f"Zone watcher: Successfully added pool {pool.pool_id} to tracking. Total zones: {len(self._active_zones)}"
+        )
 
     def _add_hlz_zone(self, event: HLZCreatedEvent) -> None:
         """Add HLZ to zone tracking."""

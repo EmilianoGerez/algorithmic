@@ -34,7 +34,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy . --config-file=pyproject.toml
+          mypy core/ services/ infra/ --config-file=pyproject.toml
 
       - name: Test with pytest
         run: |

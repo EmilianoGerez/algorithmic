@@ -33,6 +33,7 @@ class CandidateState(Enum):
     """FSM states for signal candidates."""
 
     WAIT_EMA = "wait_ema"  # Waiting for EMA alignment
+    TOUCH_CONF = "touch_conf"  # Zone touched, waiting for EMA reclaim (linger)
     FILTERS = "filters"  # Checking volume/killzone/regime filters
     READY = "ready"  # Signal validated, ready for execution
     EXPIRED = "expired"  # Candidate expired or invalidated

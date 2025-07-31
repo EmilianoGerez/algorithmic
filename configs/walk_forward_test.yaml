@@ -18,3 +18,4 @@ account:
 data:
   path: "data/EURUSD_1m_sample.csv"
   format: "csv"
+  tick_size: 0.00001 # EURUSD precision (5 decimal places)

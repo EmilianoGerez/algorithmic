@@ -226,6 +226,12 @@ class MetricsCollector:
         self.start_time: datetime | None = None
         self.end_time: datetime | None = None
 
+        # New metric counters for real-time dashboards
+        self.liquidity_pools_created_total: int = 0
+        self.signals_emitted_total: int = 0
+        self.trades_win_total: int = 0
+        self.trades_loss_total: int = 0
+
     def start_collection(self) -> None:
         """Start metrics collection."""
         self.start_time = datetime.now()
@@ -269,8 +275,10 @@ class MetricsCollector:
 
         if pnl > 0:
             self.trade_metrics.winning_trades += 1
+            self.trades_win_total += 1
         else:
             self.trade_metrics.losing_trades += 1
+            self.trades_loss_total += 1
 
         # Update averages
         self.trade_metrics.avg_trade_duration_minutes = (
@@ -299,6 +307,27 @@ class MetricsCollector:
             value: Metric value
         """
         self.custom_metrics[name] = value
+
+    def increment_liquidity_pools_created(self) -> None:
+        """Increment liquidity pools created counter."""
+        self.liquidity_pools_created_total += 1
+
+    def increment_signals_emitted(self) -> None:
+        """Increment signals emitted counter."""
+        self.signals_emitted_total += 1
+
+    def get_realtime_metrics(self) -> dict[str, int]:
+        """Get real-time metrics for dashboards.
+
+        Returns:
+            Dictionary of real-time metrics
+        """
+        return {
+            "liquidity_pools_created_total": self.liquidity_pools_created_total,
+            "signals_emitted_total": self.signals_emitted_total,
+            "trades_win_total": self.trades_win_total,
+            "trades_loss_total": self.trades_loss_total,
+        }
 
     def increment_counter(self, name: str, increment: int = 1) -> None:
         """Increment a counter metric.
@@ -393,6 +422,15 @@ class MetricsCollector:
         logger.info(f"Total PnL: ${trade_stats['total_pnl']:.2f}")
         logger.info(f"Total fees: ${trade_stats['total_fees']:.2f}")
         logger.info(f"Max drawdown: {trade_stats['max_drawdown']:.2%}")
+
+        # Open positions info (if available)
+        if hasattr(self, "_open_positions_info"):
+            logger.info(f"Open positions: {self._open_positions_info['count']}")
+            logger.info(
+                f"Open positions PnL: ${self._open_positions_info['unrealized_pnl']:.2f}"
+            )
+        else:
+            logger.info("Open positions: 0")
 
         # Latency stats
         if "latency_stats" in summary:

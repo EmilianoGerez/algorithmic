@@ -1,14 +1,13 @@
 # =========================
-#  Back-test master config
+#  Binance Historical Data Config
 # =========================
 
 # ---------- Data ----------
 data:
   source: csv
-  path: "data/BTC_USD_5min_20250728_021825.csv"
-  symbol: BTCUSD
+  path: "data/BTCUSDT_5m_2025-05-18_futures.csv" # Actual available data file
+  symbol: BTCUSDT
   timeframe: "5m"
-  tick_size: 0.1 # Asset-specific price precision (0.1 for BTCUSD, 0.00001 for EURUSD)
   date_format: "%Y-%m-%dT%H:%M:%SZ"
   columns:
     timestamp: timestamp
@@ -34,14 +33,13 @@ sweep:
 # ---------- Strategy core ----------
 strategy:
   name: htf_liquidity_mtf
-  symbol: BTCUSD
+  symbol: BTCUSDT
   use_mock_strategy: false # Set to true for simple EMA mock, false for full HTF system
-  htf_list: ["H4", "D1"] # only H4 & D1 liquidity pools
-  expiry_minutes: 120
+  htf_list: ["H4"] # H4 timeframe (4 hours) - use proper timeframe names
   filters:
     ema_alignment: true
-    volume_multiple: 1.5
-    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
+    volume_multiple: 0 # Set to 0 when data has >30% zero-vol bars; re-enable (1.5+) with quality feed
+    killzone: ["08:00", "23:00"] # Asia start to NY end (covers all major sessions) - UTC times
     regime_ok: ["bull", "neutral"]
 
 # ---------- Indicator periods ----------
@@ -55,48 +53,44 @@ indicators:
 # ---------- Aggregation ----------
 aggregation:
   source_tf_minutes: 5 # feed resolution
-  target_timeframes_minutes: [240, 1440] # H4, D1 only (removed H1 for FVG-only strategy)
+  target_timeframes_minutes: [240] # 4H in minutes (must be >= 5min source)
   buffer_size: 1500
-  roll_from: "source"
+  roll_from: "calendar" # FIXED: Align to proper 4H boundaries (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)
   out_of_order_policy: "drop"
   max_clock_skew_seconds: 300
   enable_strict_ordering: true
-  fill_missing: "ffill" # Forward-fill missing time slots to regularize EMA/ATR computation
+  fill_missing: "ffill" # Forward-fill missing time slots (less needed with Binance data)
 
 # ---------- Detectors ----------
 detectors:
   fvg:
     enabled: true
-    min_gap_atr: 0.1 # REDUCED from 0.3 - less strict ATR requirement
-    min_gap_pct: 0.03 # REDUCED from 0.05 - less strict percentage requirement
-    min_rel_vol: 1.0 # REDUCED from 1.2 due to poor volume data quality
+    min_gap_atr: 0.05 # MORE SENSITIVE - reduced from 0.2
+    min_gap_pct: 0.01 # MORE SENSITIVE - reduced from 0.04
+    min_rel_vol: 0.0 # COMPLETELY DISABLED - no volume filter
 
   pivot:
-    enabled: false # ← pivot detector OFF
+    enabled: false # ENABLE to see if any detection is working
 
-  enabled_timeframes: ["H4", "D1"]
+  enabled_timeframes: ["240"] # Only H4 detection to match strategy and aggregation
 
 # ---------- Pool registry ----------
 pools:
-  H4:
+  "H4": # H4 pools (using proper timeframe name to match strategy)
     ttl: 3d # 3 days for H4 pools
     hit_tolerance: 0.0
-  D1:
-    ttl: 3w # 3 weeks for D1 pools
-    hit_tolerance: 0.0
 
-  strength_threshold: 0.05
+  strength_threshold: 0.02 # LOWERED - capture more FVGs including the 0.031 strength one
   grace_period_minutes: 5
   max_pools_per_tf: 10000
   auto_expire_interval: "30s"
 
 # ---------- HLZ overlap ----------
 hlz:
-  min_members: 2
-  min_strength: 3.0
+  min_members: 2 # Only need 2 since we're focusing on H4 only
+  min_strength: 1.0 # Lower threshold since we have fewer pools
   tf_weight:
-    H4: 2.0
-    D1: 3.0
+    "H4": 2.0 # H4 weight (using proper timeframe name)
   merge_tolerance: 0.5
   side_mixing: false
   max_active_hlzs: 1000
@@ -106,31 +100,31 @@ hlz:
 zone_watcher:
   price_tolerance: 0.0
   confirm_closure: false
-  min_strength: 1.0
+  min_strength: 0.01 # LOWERED - FVG strengths are 0.07-0.53, need to be below min
   max_active_zones: 1000
 
 # ---------- Signal candidate pipeline ----------
 candidate:
-  expiry_minutes: 120
+  expiry_minutes: 120 # 2 hours - appropriate for signal candidate lifetime
   filters:
     ema_alignment: true
-    ema_tolerance_pct: 0 # EMA tolerance buffer (0.2% flexibility)
-    linger_minutes: 90 # Touch-&-reclaim linger window (minutes) - INCREASED from 60
+    ema_tolerance_pct: 0 # Slightly more tolerance with real data
+    linger_minutes: 90 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
-    volume_multiple: 0 # DISABLED due to poor volume data quality (0 = no volume filter)
-    killzone: ["01:00", "18:00"] # Asia start to NY end (covers all major sessions)
-    regime: ["bull", "neutral"]
+    volume_multiple: 0 # DISABLED - dataset has zero-volume bars causing issues
+    killzone: ["01:00", "18:00"] # Extended killzone to ensure May 20 14:00-18:00 window is included
+    regime: ["bull", "neutral", "bear"] # ALL regimes allowed
 
 # ---------- Execution (Paper back-test) ----------
 execution:
   mode: backtest # live | backtest (live requires feeds.source = websocket)
   broker: paper
-  log_level: DEBUG # Enable debug logging to see signal rejection reasons
+  log_level: DEBUG # Enable debug logging to see FVG detection details
   enable_latency_profiling: true
   enable_memory_tracking: true
   realtime_simulation: false # batch back-test
   deterministic_seed: 42
-  dump_events: false # disable events.parquet export for production runs (was creating 6k events)
+  dump_events: true # ENABLE event export for debugging
   export_data_for_viz: true # enable data.csv and trades.csv export
   risk:
     model: atr

@@ -104,6 +104,72 @@ def validate_market_data(df: Any, config: Any) -> bool:
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
 
+    # Data quality checks
+    total_rows = len(df)
+
+    # Check zero volume ratio
+    volume_col = config.ohlcv_columns[4]  # volume column
+    zero_volume_count = (
+        df.filter(df[volume_col] == 0).height
+        if hasattr(df, "filter")
+        else (df[volume_col] == 0).sum()
+    )
+    zero_volume_ratio = zero_volume_count / total_rows
+
+    if zero_volume_ratio > 0.3:  # 30% threshold
+        logger.warning(
+            f"High zero-volume ratio detected: {zero_volume_ratio:.1%} of {total_rows} rows. "
+            f"This may indicate poor data quality from synthetic/heartbeat bars. "
+            f"Consider setting 'volume_multiple: 0' in config to disable volume filtering."
+        )
+
+    # Check for missing time slots (gaps)
+    timestamp_col = config.date_column
+    if hasattr(df, "sort"):  # Polars
+        df_sorted = df.sort(timestamp_col)
+        timestamps = df_sorted[timestamp_col].to_list()
+    else:  # Pandas fallback
+        df_sorted = df.sort_values(timestamp_col)
+        timestamps = df_sorted[timestamp_col].tolist()
+
+    # Calculate time deltas for gap detection
+    gaps_detected = 0
+    expected_delta_minutes = 5  # Assuming 5-minute data
+
+    for i in range(1, min(100, len(timestamps))):  # Check first 100 for performance
+        current_ts = timestamps[i]
+        prev_ts = timestamps[i - 1]
+
+        # Handle different timestamp formats
+        try:
+            # Convert to datetime if string
+            if isinstance(current_ts, str):
+                current_dt = datetime.fromisoformat(current_ts.replace("Z", "+00:00"))
+            else:
+                current_dt = current_ts
+
+            if isinstance(prev_ts, str):
+                prev_dt = datetime.fromisoformat(prev_ts.replace("Z", "+00:00"))
+            else:
+                prev_dt = prev_ts
+
+            # Calculate delta in minutes
+            delta_seconds = (current_dt - prev_dt).total_seconds()
+            delta_minutes = delta_seconds / 60
+
+            if delta_minutes > expected_delta_minutes * 1.5:  # Allow 50% tolerance
+                gaps_detected += 1
+        except (ValueError, TypeError) as e:
+            # Skip timestamp parsing errors for gap detection
+            logger.debug(f"Skipping gap detection for timestamps at row {i}: {e}")
+            continue
+
+    if gaps_detected > 0:
+        logger.warning(
+            f"Detected {gaps_detected} time gaps in first 100 rows. "
+            f"Missing slots may affect EMA/ATR warm-up and touch detection accuracy."
+        )
+
     # Check data types and ranges
     ohlc_cols = config.ohlcv_columns[:4]  # open, high, low, close
 

@@ -30,3 +30,15 @@ ignore = [
     "F811",   # redefined names in tests
     "S101",   # assert statements are expected in tests
 ]
+
+"debug_*.py" = [
+    "B007",   # unused loop variables
+    "F841",   # unused variables
+    "SIM105", # simplify try-except-pass
+]
+
+"test_*.py" = [
+    "F401",   # unused imports in test files
+    "F841",   # unused variables in tests
+    "B007",   # unused loop variables
+]

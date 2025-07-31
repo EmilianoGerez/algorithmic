@@ -68,7 +68,7 @@ def test_may_20_scenario():
         expiry_minutes=120,
     )
 
-    fsm = SignalCandidateFSM(config)
+    fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     # Simulate 19 May H4 FVG creation - but create it closer to the test time
     may_19_late = datetime(2024, 5, 19, 22, 0)  # 10 PM on May 19 (closer to May 20)
@@ -209,7 +209,7 @@ def test_legacy_behavior_comparison():
         expiry_minutes=120,
     )
 
-    fsm = SignalCandidateFSM(legacy_config)
+    fsm = SignalCandidateFSM(legacy_config, symbol="BTCUSDT", timeframe="5m")
 
     # Same scenario setup but with longer expiry
     may_19_late = datetime(2024, 5, 19, 22, 0)  # Same timing as main test

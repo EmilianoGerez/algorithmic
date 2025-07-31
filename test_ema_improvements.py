@@ -72,7 +72,7 @@ def test_tolerance_buffer():
         expiry_minutes=60,
     )
 
-    fsm = SignalCandidateFSM(config)
+    fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     # Create a LONG candidate
     timestamp = datetime(2024, 5, 19, 10, 0)
@@ -143,7 +143,7 @@ def test_touch_and_reclaim():
         expiry_minutes=60,
     )
 
-    fsm = SignalCandidateFSM(config)
+    fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     # Create a LONG candidate
     timestamp = datetime(2024, 5, 20, 10, 0)
@@ -242,7 +242,7 @@ def test_combined_functionality():
         expiry_minutes=60,
     )
 
-    fsm = SignalCandidateFSM(config)
+    fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     # Create a SHORT candidate
     timestamp = datetime(2024, 5, 21, 10, 0)

@@ -7,6 +7,7 @@ data:
   source: csv
   path: "data/BTCUSDT_5m_2025-05-18_futures.csv" # Actual available data file
   symbol: BTCUSDT
+  tick_size: 0.01 # Price precision for BTCUSDT
   timeframe: "5m"
   date_format: "%Y-%m-%dT%H:%M:%SZ"
   columns:
@@ -108,14 +109,14 @@ candidate:
   expiry_minutes: 120 # 2 hours - appropriate for signal candidate lifetime
 
   # Entry spacing to prevent rapid-fire trades
-  min_entry_spacing_minutes: 60 # Per-pool minimum spacing (60 minutes)
+  min_entry_spacing_minutes: 30 # Per-pool minimum spacing (30 minutes)
   global_min_entry_spacing: 10 # Global minimum spacing between any trades
   enable_spacing_throttle: true # Enable throttling mechanism
 
   filters:
     ema_alignment: true
     ema_tolerance_pct: 0 # Slightly more tolerance with real data
-    linger_minutes: 15 # Touch-&-reclaim linger window (minutes)
+    linger_minutes: 30 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
     volume_multiple: 0 # DISABLED - dataset has zero-volume bars causing issues
     killzone: ["01:00", "18:00"] # Extended killzone to ensure May 20 14:00-18:00 window is included
@@ -141,8 +142,14 @@ execution:
     min_position: 0.01
     max_position_pct: 0.1
   broker_config:
+    name: binance
+    testnet: true # explicit testnet flag
     initial_balance: 10000.0
     commission_per_trade: 0.0
+
+# ---------- Runtime ----------
+runtime:
+  use_mock_components: true # Enable mocks for backtesting (disable for live trading)
 
 # ---------- Feed layer ----------
 feeds:

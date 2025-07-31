@@ -62,7 +62,7 @@ def test_touch_reclaim_simple():
         expiry_minutes=1440,  # 24-hour expiry
     )
 
-    fsm = SignalCandidateFSM(config)
+    fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     # Create candidate at 10:00
     base_time = datetime(2024, 5, 20, 10, 0)

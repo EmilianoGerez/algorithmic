@@ -26,7 +26,32 @@ __all__ = [
     "SignalCandidate",
     "TradingSignal",
     "SignalDirection",
+    "calc_confidence",
 ]
+
+
+def calc_confidence(filters_passed: int, total_filters: int) -> float:
+    """Calculate signal confidence based on filter pass rate.
+
+    Args:
+        filters_passed: Number of filters that passed
+        total_filters: Total number of filters evaluated
+
+    Returns:
+        Confidence score between 0.0 and 1.0
+    """
+    if total_filters == 0:
+        return 0.5  # Default confidence when no filters
+
+    base_confidence = filters_passed / total_filters
+
+    # Apply scaling to give bonus for high pass rates
+    if base_confidence >= 0.8:
+        return min(1.0, base_confidence * 1.1)  # Boost high-confidence signals
+    elif base_confidence <= 0.3:
+        return max(0.1, base_confidence * 0.8)  # Penalize low-confidence signals
+    else:
+        return base_confidence
 
 
 class CandidateState(Enum):
@@ -132,10 +157,23 @@ class SignalCandidate:
         result = fsm.process(self, candle, indicators)
         return result.updated_candidate
 
-    def to_signal(self, entry_timestamp: datetime | None = None) -> TradingSignal:
+    def to_signal(
+        self,
+        symbol: str,
+        timeframe: str,
+        current_price: float,
+        filters_passed: int,
+        total_filters: int,
+        entry_timestamp: datetime | None = None,
+    ) -> TradingSignal:
         """Convert ready candidate to trading signal.
 
         Args:
+            symbol: Trading symbol from config
+            timeframe: Originating timeframe from config
+            current_price: Current market price from IndicatorSnapshot
+            filters_passed: Number of filters that passed validation
+            total_filters: Total number of filters evaluated
             entry_timestamp: Optional timestamp for entry time (defaults to now)
 
         Returns:
@@ -154,19 +192,22 @@ class SignalCandidate:
         # Use provided entry timestamp or current UTC time
         signal_timestamp = entry_timestamp or datetime.now(UTC)
 
+        # Calculate confidence based on filter performance
+        confidence = calc_confidence(filters_passed, total_filters)
+
         return TradingSignal(
             signal_id=generate_signal_id(self.candidate_id, signal_timestamp),
             candidate_id=self.candidate_id,
             zone_id=self.zone_id,
             zone_type=self.zone_type,
             direction=self.direction,
-            symbol="BTCUSD",  # TODO: Get from config
+            symbol=symbol,
             entry_price=self.entry_price,
-            current_price=self.entry_price,  # TODO: Get from market data
+            current_price=current_price,
             strength=self.strength,
-            confidence=0.8,  # TODO: Calculate from filters
+            confidence=confidence,
             timestamp=signal_timestamp,
-            timeframe="5m",  # TODO: Get from config
+            timeframe=timeframe,
             metadata={
                 "side": side,
                 "entry_ts": signal_timestamp.isoformat(),

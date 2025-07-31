@@ -152,6 +152,8 @@ class SignalCandidateFSM:
     def __init__(
         self,
         config: CandidateConfig,
+        symbol: str,
+        timeframe: str,
         ready_callback: Callable[[str, datetime], None] | None = None,
     ) -> None:
         """
@@ -159,10 +161,14 @@ class SignalCandidateFSM:
 
         Args:
             config: FSM configuration
+            symbol: Trading symbol from config
+            timeframe: Data timeframe from config
             ready_callback: Optional callback function called when candidate becomes READY.
                            Should accept (zone_id: str, timestamp: datetime)
         """
         self.config = config
+        self.symbol = symbol
+        self.timeframe = timeframe
         self.guards = FSMGuards()
         self.ready_callback = ready_callback
 
@@ -307,24 +313,19 @@ class SignalCandidateFSM:
         # Calculate confidence based on strength and EMA distance
         confidence = min(1.0, candidate.strength / 10.0)  # Normalize strength to 0-1
 
-        # Extract timeframe from zone_id if possible (pools have tf prefix)
-        timeframe = "M1"  # Default
-        if candidate.zone_id.startswith(("H1_", "H4_", "D1_")):
-            timeframe = candidate.zone_id.split("_")[0]
-
         return TradingSignal(
             signal_id=generate_signal_id(candidate.candidate_id, bar.ts),
             candidate_id=candidate.candidate_id,
             zone_id=candidate.zone_id,
             zone_type=candidate.zone_type,
             direction=candidate.direction,
-            symbol="EURUSD",  # TODO: Extract from config or zone context
+            symbol=self.symbol,
             entry_price=candidate.entry_price,
             current_price=bar.close,
             strength=candidate.strength,
             confidence=confidence,
             timestamp=bar.ts,
-            timeframe=timeframe,
+            timeframe=self.timeframe,
             metadata={
                 "ema21": snapshot.ema21 or 0.0,
                 "ema50": snapshot.ema50 or 0.0,

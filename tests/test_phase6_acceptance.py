@@ -45,7 +45,7 @@ def test_phase6_acceptance_complete_flow() -> None:
     )
 
     zone_watcher = ZoneWatcher(zone_config, candidate_config)
-    fsm = SignalCandidateFSM(candidate_config)
+    fsm = SignalCandidateFSM(candidate_config, symbol="BTCUSDT", timeframe="H1")
 
     print("✅ ZoneWatcher and FSM initialized")
 

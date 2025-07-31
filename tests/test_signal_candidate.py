@@ -229,7 +229,7 @@ class TestSignalCandidateFSM:
             killzone_end="14:05",
             regime_allowed=["bull", "neutral"],
         )
-        return SignalCandidateFSM(config)
+        return SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
     @pytest.fixture
     def base_candidate(self):
@@ -399,7 +399,7 @@ class TestFSMPropertyInvariants:
         # For now, manual test with multiple scenarios
 
         config = CandidateConfig(ema_alignment=True)
-        fsm = SignalCandidateFSM(config)
+        fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
         base_time = datetime.now()
         candidate = SignalCandidate(
@@ -440,7 +440,7 @@ class TestFSMPropertyInvariants:
     def test_signal_only_emitted_from_filters_to_ready(self):
         """Property: signals should only be emitted on FILTERS → READY transition."""
         config = CandidateConfig()
-        fsm = SignalCandidateFSM(config)
+        fsm = SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="5m")
 
         base_time = datetime.now()
         candle = Candle(

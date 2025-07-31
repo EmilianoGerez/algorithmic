@@ -236,14 +236,14 @@ class BacktestRunner:
         try:
             # Try different import approaches
             try:
-                from quant_algo.visual.data_exporter import BacktestDataExporter
+                from scripts.visualization.data_exporter import BacktestDataExporter
             except ImportError:
-                # Try relative import from current directory
+                # Try relative import from scripts directory
                 import os
                 import sys
 
                 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-                from quant_algo.visual.data_exporter import BacktestDataExporter
+                from scripts.visualization.data_exporter import BacktestDataExporter
 
             import os
             from datetime import datetime

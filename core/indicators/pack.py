@@ -47,12 +47,13 @@ class IndicatorPack:
     atr_period: int = 14
     volume_sma_period: int = 20
     regime_sensitivity: float = 0.001
+    tick_size: float = 0.00001  # Default tick size for ATR floor
 
     def __post_init__(self) -> None:
         # Initialize all indicators
         self.ema21 = EMA(self.ema21_period)
         self.ema50 = EMA(self.ema50_period)
-        self.atr = ATR(self.atr_period)
+        self.atr = ATR(self.atr_period, self.tick_size)
         self.volume_sma = VolumeSMA(self.volume_sma_period)
         self.regime_detector = RegimeDetector(self.regime_sensitivity)
 

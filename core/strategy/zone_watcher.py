@@ -84,6 +84,8 @@ class ZoneWatcher:
         self,
         config: ZoneWatcherConfig | None = None,
         candidate_config: CandidateConfig | None = None,
+        symbol: str = "EURUSD",  # Default for backward compatibility
+        timeframe: str = "5m",  # Default for backward compatibility
     ):
         """Initialize zone watcher."""
         self.config = config or ZoneWatcherConfig()
@@ -91,6 +93,8 @@ class ZoneWatcher:
         # Create FSM with callback for entry spacing tracking
         self.candidate_fsm = SignalCandidateFSM(
             candidate_config or CandidateConfig(),
+            symbol=symbol,
+            timeframe=timeframe,
             ready_callback=self.record_candidate_ready,
         )
 

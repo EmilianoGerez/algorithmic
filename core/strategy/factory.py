@@ -173,7 +173,7 @@ class MockZoneWatcher:
                     take_profit = entry + (risk_distance * 2.0)
 
                 return TradingSignal(
-                    symbol=str(getattr(self.config, "symbol", "EURUSD")),
+                    symbol=self.config.strategy.symbol,
                     side="buy",
                     entry_price=entry,
                     stop_loss=stop_loss,
@@ -451,14 +451,34 @@ class IntegratedStrategy:
         self.risk_manager = risk_manager
         self.metrics_collector = metrics_collector
 
-        # Initialize indicators
-        self.indicators = IndicatorPack()
+        # Initialize indicators with config values
+        indicator_config = getattr(config, "indicators", {})
+        data_config = getattr(config, "data", {})
+
+        self.indicators = IndicatorPack(
+            ema21_period=getattr(indicator_config, "ema21_period", 21),
+            ema50_period=getattr(indicator_config, "ema50_period", 50),
+            atr_period=getattr(indicator_config, "atr_period", 14),
+            volume_sma_period=getattr(indicator_config, "volume_sma_period", 20),
+            regime_sensitivity=getattr(indicator_config, "regime_sensitivity", 0.001),
+            tick_size=getattr(data_config, "tick_size", 0.00001),
+        )
 
         # Initialize strategy components based on strategy configuration
         logger.info(f"Config type: {type(config)}")
         logger.info(f"Strategy name: {getattr(config.strategy, 'name', 'NO_NAME')}")
 
         use_mock = getattr(config.strategy, "use_mock_strategy", False)
+
+        # Validate mock component usage
+        use_mock_components = getattr(config, "runtime", {}).get(
+            "use_mock_components", True
+        )
+        if not use_mock_components and use_mock:
+            raise ValueError(
+                "Configuration error: runtime.use_mock_components is False but strategy.use_mock_strategy is True. "
+                "Either enable mock components or disable mock strategy."
+            )
 
         # Config validation
         if not use_mock:
@@ -610,7 +630,19 @@ class IntegratedStrategy:
                 ),
             )
 
-            self.htf_stack.zone_watcher = ZoneWatcher(zone_config, candidate_config)
+            # Get timeframe - try data.timeframe first, fallback to deriving from aggregation
+            timeframe = getattr(config.data, "timeframe", None)
+            if timeframe is None:
+                # Derive from aggregation.source_tf_minutes (5 minutes -> "5m")
+                source_tf_minutes = config.aggregation.get("source_tf_minutes", 5)
+                timeframe = f"{source_tf_minutes}m"
+
+            self.htf_stack.zone_watcher = ZoneWatcher(
+                zone_config,
+                candidate_config,
+                symbol=config.strategy.symbol,
+                timeframe=str(timeframe),
+            )
 
             # Wire PoolManager to notify ZoneWatcher of pool events
             self.htf_stack.pool_manager.zone_watcher = self.htf_stack.zone_watcher
@@ -652,6 +684,12 @@ class IntegratedStrategy:
 
         else:
             # Fallback to mock for legacy/demo strategies
+            if not use_mock_components:
+                raise ValueError(
+                    "Configuration error: Mock strategy requested but runtime.use_mock_components is False. "
+                    "Either set runtime.use_mock_components to True or use a non-mock strategy."
+                )
+
             logger.info("Using mock zone watcher (legacy mode)")
             # Create a simple FVG detector for 5-minute timeframe
             self.fvg_detector = FVGDetector(
@@ -900,7 +938,22 @@ class IntegratedStrategy:
 
                     # All spacing checks passed - proceed with order submission
                     # Convert candidate to trading signal with proper timestamp
-                    signal = updated_candidate.to_signal(entry_timestamp=candle.ts)
+                    # Get timeframe safely
+                    timeframe = getattr(self.config.data, "timeframe", None)
+                    if timeframe is None:
+                        source_tf_minutes = self.config.aggregation.get(
+                            "source_tf_minutes", 5
+                        )
+                        timeframe = f"{source_tf_minutes}m"
+
+                    signal = updated_candidate.to_signal(
+                        symbol=self.config.strategy.symbol,
+                        timeframe=str(timeframe),
+                        current_price=snapshot.current_close,
+                        filters_passed=4,  # TODO: Track actual filter results in FSM
+                        total_filters=5,  # TODO: Get from FSM configuration
+                        entry_timestamp=candle.ts,
+                    )
                     logger.info(
                         f"Generated trading signal from candidate {updated_candidate.candidate_id}"
                     )
@@ -1094,6 +1147,17 @@ class StrategyFactory:
             Configured IntegratedStrategy instance
         """
         logger.info(f"Building strategy for symbol: {config.strategy.symbol}")
+
+        # Validate mock component usage
+        use_mock_components = getattr(config, "runtime", {}).get(
+            "use_mock_components", True
+        )
+
+        if not use_mock_components:
+            raise ValueError(
+                "Configuration error: runtime.use_mock_components is False but StrategyFactory.build() "
+                "only supports mock components. Use a production factory for live trading."
+            )
 
         # Create broker with metrics collector
         broker = MockPaperBroker(config, metrics_collector)

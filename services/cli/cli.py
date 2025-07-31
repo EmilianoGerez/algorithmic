@@ -666,7 +666,7 @@ def run(
                     try:
                         import os
 
-                        from quant_algo.visual.plot_builder import (
+                        from scripts.visualization.plot_builder import (
                             build_plotly,
                             display_chart_in_chatgpt,
                         )

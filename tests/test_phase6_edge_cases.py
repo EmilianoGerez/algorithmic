@@ -142,7 +142,7 @@ class TestPhase6EdgeCases:
 
         Why: Ensures regime guard prevents signals during unfavorable market conditions.
         """
-        fsm = SignalCandidateFSM(candidate_config)
+        fsm = SignalCandidateFSM(candidate_config, symbol="BTCUSDT", timeframe="5m")
 
         # Create candidate in WAIT_EMA state
         candidate = fsm.create_candidate(
@@ -254,7 +254,9 @@ class TestPhase6EdgeCases:
 
         Why: Prevents stale signals from old zone entries.
         """
-        fsm = SignalCandidateFSM(short_expiry_config)  # 30-minute expiry
+        fsm = SignalCandidateFSM(
+            short_expiry_config, symbol="BTCUSDT", timeframe="5m"
+        )  # 30-minute expiry
 
         # Create candidate
         candidate = fsm.create_candidate(

@@ -207,7 +207,7 @@ class TestFullSignalGenerationFlow:
             killzone_end="14:05",
             regime_allowed=["bull", "neutral"],
         )
-        return SignalCandidateFSM(config)
+        return SignalCandidateFSM(config, symbol="BTCUSDT", timeframe="H1")
 
     @pytest.fixture
     def good_snapshot(self):

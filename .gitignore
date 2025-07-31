@@ -263,3 +263,22 @@ mlruns/
 
 # Quality assurance
 .ruff_cache
+
+# Project cleanup - files that should not be in root
+debug_*.py
+debug_*.log
+test_*.log
+*.png
+analysis_*.py
+demo_*.py
+investigate_*.py
+
+# Test result directories
+test_*/
+sweep_results_*/
+backtest_*/
+
+# Temporary and analysis files
+quick_*.py
+temp_*.py
+scratch_*.py

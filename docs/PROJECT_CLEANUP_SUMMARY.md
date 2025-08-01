@@ -2,6 +2,8 @@
 
 ## ✅ Completed Cleanup (July 31, 2025)
 
+The project has been comprehensively reorganized from a scattered structure with 80+ files in the root to a clean, maintainable hierarchy. See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for the complete structure guide.
+
 ### Files Organized
 
 #### 🗂️ **Scripts Directory Structure**

@@ -93,6 +93,26 @@ Refer to the `Quant Algorithm Platform – Technical Blueprint` notebook for ful
 
 ## Development
 
+### Project Structure
+
+The project is organized for maintainability and clarity:
+
+```
+algorithmic/
+├── core/              # Core strategy components
+├── services/          # CLI, metrics, runner services
+├── infra/            # Brokers, data providers
+├── tests/            # All test files
+├── scripts/          # Utility scripts (organized by purpose)
+│   ├── analysis/     # Data analysis and backtest tools
+│   ├── debug/        # Debugging utilities
+│   ├── demos/        # Demo and example scripts
+│   └── visualization/ # Plotting and charting
+├── docs/             # Documentation
+├── configs/          # Configuration files
+└── data/             # Data storage
+```
+
 ### Code Quality
 
 This project uses automated code quality checks:

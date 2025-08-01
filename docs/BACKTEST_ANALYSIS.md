@@ -4,7 +4,7 @@ Professional analysis tools for HTF Liquidity Strategy backtesting results.
 
 ## 🎯 Main Analysis Tool
 
-### `analyze_backtest.py` - Professional Analysis Tool
+### `scripts/analysis/analyze_backtest.py` - Professional Analysis Tool
 
 The primary tool for comprehensive backtest analysis with enhanced visualizations.
 
@@ -12,22 +12,22 @@ The primary tool for comprehensive backtest analysis with enhanced visualization
 
 ```bash
 # Analyze latest backtest results automatically
-python3 analyze_backtest.py
+python3 scripts/analysis/analyze_backtest.py
 
 # Analyze specific results folder
-python3 analyze_backtest.py results/backtest_20250730_162303
+python3 scripts/analysis/analyze_backtest.py results/backtest_20250730_162303
 
 # List all available backtest results
-python3 analyze_backtest.py --list
+python3 scripts/analysis/analyze_backtest.py --list
 
 # Analyze with specific export formats only
-python3 analyze_backtest.py --formats csv json
+python3 scripts/analysis/analyze_backtest.py --formats csv json
 
 # Run analysis without showing interactive plot
-python3 analyze_backtest.py --no-plot
+python3 scripts/analysis/analyze_backtest.py --no-plot
 
 # Get full help
-python3 analyze_backtest.py --help
+python3 scripts/analysis/analyze_backtest.py --help
 ```
 
 #### Generated Outputs:
@@ -103,17 +103,17 @@ results/
 **Old confusing demo scripts** (deprecated):
 
 - ~~`complete_enhanced_demo.py`~~
-- ~~`demo_enhanced.py`~~
+- ~~`scripts/demos/demo_enhanced.py`~~
 - ~~`run_enhanced_analysis.py`~~
 
 **New professional tools**:
 
-- `analyze_backtest.py` - Main analysis tool
+- `scripts/analysis/analyze_backtest.py` - Main analysis tool
 - `quick_analysis.py` - Interactive helper
 
 ## 💡 Tips
 
-1. **Latest Results**: Run `python3 analyze_backtest.py` without arguments to automatically use the most recent backtest
+1. **Latest Results**: Run `python3 scripts/analysis/analyze_backtest.py` without arguments to automatically use the most recent backtest
 2. **List Results**: Use `--list` to see all available backtest folders with validation status
 3. **Batch Analysis**: The tool validates directories and provides clear error messages for missing files
 4. **Interactive Charts**: Open the generated HTML file in any browser for interactive analysis

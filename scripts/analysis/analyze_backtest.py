@@ -20,7 +20,7 @@ from typing import Any
 import pandas as pd
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 try:
     from scripts.visualization.enhanced_analysis import (

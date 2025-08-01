@@ -42,9 +42,18 @@ class CandidateConfig:
     linger_minutes: int = 0  # Keep zone 'hot' after touch for EMA reclaim
     reclaim_requires_ema: bool = True  # Require EMA flip after zone touch
     volume_multiple: float = 1.2  # Minimum volume vs SMA
-    killzone_start: str = "12:00"  # Killzone start time (UTC)
-    killzone_end: str = "14:05"  # Killzone end time (UTC)
+    killzone_start: str = "12:00"  # Killzone start time (UTC) - legacy format
+    killzone_end: str = "14:05"  # Killzone end time (UTC) - legacy format
     regime_allowed: list[str] | None = None  # Allowed regime states
+
+    # Enhanced killzone settings (optional)
+    use_enhanced_killzone: bool = (
+        False  # Whether to use enhanced multi-session killzone
+    )
+    killzone_sessions: list[str] | None = (
+        None  # ['asia', 'london', 'ny'] or None for all
+    )
+    exclude_low_volume: bool = True  # Whether to exclude low-volume periods
 
 
 @dataclass(slots=True, frozen=True)
@@ -117,6 +126,32 @@ class FSMGuards:
             return start_time <= bar_time <= end_time
         except (AttributeError, ValueError):
             return True  # Default to allowing if time parsing fails
+
+    @staticmethod
+    def enhanced_killzone_ok(
+        bar: Candle, sessions: list[str] | None = None, exclude_low_volume: bool = True
+    ) -> bool:
+        """
+        Enhanced killzone check supporting multiple trading sessions.
+
+        Args:
+            bar: Current candle
+            sessions: List of session names ['asia', 'london', 'ny']. If None, allows all sessions
+            exclude_low_volume: Whether to exclude low-volume periods (00:00-02:00, 05:00-07:00 UTC)
+
+        Returns:
+            True if time is within allowed killzone, False otherwise
+        """
+        try:
+            from .enhanced_killzone import enhanced_killzone_ok
+
+            result = enhanced_killzone_ok(
+                bar.ts, sessions=sessions, exclude_low_volume=exclude_low_volume
+            )
+            return result
+        except ImportError:
+            # Fallback to simple killzone if enhanced module not available
+            return True
 
     @staticmethod
     def regime_ok(
@@ -281,9 +316,19 @@ class SignalCandidateFSM:
         """Process FILTERS state."""
         # Check all filter conditions
         volume_ok = self.guards.volume_ok(bar, snapshot, self.config.volume_multiple)
-        killzone_ok = self.guards.killzone_ok(
-            bar, self.config.killzone_start, self.config.killzone_end
-        )
+
+        # Use enhanced killzone if configured, otherwise fall back to legacy
+        if self.config.use_enhanced_killzone:
+            killzone_ok = self.guards.enhanced_killzone_ok(
+                bar,
+                sessions=self.config.killzone_sessions,
+                exclude_low_volume=self.config.exclude_low_volume,
+            )
+        else:
+            killzone_ok = self.guards.killzone_ok(
+                bar, self.config.killzone_start, self.config.killzone_end
+            )
+
         regime_ok = self.guards.regime_ok(
             snapshot, self.config.regime_allowed or ["bull", "neutral"]
         )

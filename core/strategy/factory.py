@@ -519,6 +519,8 @@ class IntegratedStrategy:
                 self.htf_stack.time_aggregators[tf_name] = aggregator
 
             # Core registry and overlap detection
+            from core.clock import get_clock
+
             from .overlap import OverlapConfig
             from .pool_registry import PoolRegistryConfig
 
@@ -526,7 +528,15 @@ class IntegratedStrategy:
                 grace_period_minutes=config.pools["grace_period_minutes"],
                 max_pools_per_tf=config.pools["max_pools_per_tf"],
             )
-            self.htf_stack.pool_registry = PoolRegistry(registry_config)
+
+            # Initialize with simulation time for backtesting
+            simulation_time = get_clock().now()
+            logger.info(
+                f"Factory creating PoolRegistry with simulation_time: {simulation_time}"
+            )
+            self.htf_stack.pool_registry = PoolRegistry(
+                registry_config, current_time=simulation_time
+            )
 
             overlap_config = OverlapConfig(
                 min_members=config.hlz["min_members"],
@@ -611,6 +621,16 @@ class IntegratedStrategy:
                 killzone_start=config.candidate["filters"]["killzone"][0],
                 killzone_end=config.candidate["filters"]["killzone"][1],
                 regime_allowed=config.candidate["filters"]["regime"],
+                # Enhanced killzone settings
+                use_enhanced_killzone=config.candidate["filters"].get(
+                    "use_enhanced_killzone", False
+                ),
+                killzone_sessions=config.candidate["filters"].get(
+                    "killzone_sessions", None
+                ),
+                exclude_low_volume=config.candidate["filters"].get(
+                    "exclude_low_volume", True
+                ),
             )
 
             zone_config = ZoneWatcherConfig(

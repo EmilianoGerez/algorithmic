@@ -493,8 +493,11 @@ def load_backtest_results(results_dir: Path) -> dict[str, Any]:
     if data_path.exists():
         results["data_df"] = pd.read_csv(data_path)
 
-    # Load trades
-    trades_path = results_dir / "trades.json"
+    # Load trades (try multiple filenames)
+    trades_path = results_dir / "all_trades.json"
+    if not trades_path.exists():
+        trades_path = results_dir / "trades.json"
+
     if trades_path.exists():
         with open(trades_path) as f:
             results["trades_data"] = json.load(f)

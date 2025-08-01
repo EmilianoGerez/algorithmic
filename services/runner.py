@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -581,9 +581,31 @@ class BacktestRunner:
                 # Create fold-specific configuration
                 fold_config = self.config.model_copy(deep=True)
 
+                # Set up simulation clock for this fold
+                from datetime import datetime as dt
+
+                from core.clock import use_simulation_clock
+
+                # Get start time from test data
+                first_candle = test_data.row(0, named=True)
+                start_time_raw = first_candle["timestamp"]
+                if isinstance(start_time_raw, str):
+                    # Handle ISO format
+                    if start_time_raw.endswith("Z"):
+                        start_time_raw = start_time_raw[:-1] + "+00:00"
+                    start_time = dt.fromisoformat(start_time_raw)
+                else:
+                    start_time = start_time_raw
+
+                # Initialize simulation clock for this fold
+                use_simulation_clock(start_time)
+                self.logger.info(
+                    f"Fold {fold_idx}: Simulation clock set to {start_time}"
+                )
+
                 # Initialize strategy for this fold
                 fold_strategy = StrategyFactory.build(
-                    config=fold_config.strategy,
+                    config=fold_config,
                     metrics_collector=self.metrics_collector,
                 )
 
@@ -605,6 +627,17 @@ class BacktestRunner:
                 fold_end_time = datetime.now()
 
                 # Collect fold results
+                # Ensure timezone-naive for calculation
+                if (
+                    hasattr(fold_start_time, "tzinfo")
+                    and fold_start_time.tzinfo is not None
+                ):
+                    fold_start_time = fold_start_time.replace(tzinfo=None)
+                if (
+                    hasattr(fold_end_time, "tzinfo")
+                    and fold_end_time.tzinfo is not None
+                ):
+                    fold_end_time = fold_end_time.replace(tzinfo=None)
                 fold_execution_time = (fold_end_time - fold_start_time).total_seconds()
                 fold_metrics = fold_strategy.get_performance_stats()
 
@@ -625,27 +658,66 @@ class BacktestRunner:
                 results.append(fold_result)
 
                 self.logger.info(
-                    f"Fold {fold_idx} completed - Sharpe: {fold_metrics.get('sharpe_ratio', 0):.3f}"
+                    f"Fold {fold_idx} completed - Trades: {fold_metrics.get('total_trades', 0)}, "
+                    f"Closed: {fold_metrics.get('closed_trades', 0)}, "
+                    f"PnL: {fold_metrics.get('total_pnl', 0):.2f}, "
+                    f"Sharpe: {fold_metrics.get('sharpe_ratio', 0):.3f}"
                 )
 
             # Log aggregate statistics
             end_time = datetime.now()
+            # Ensure both times are timezone-naive for subtraction
+            if hasattr(start_time, "tzinfo") and start_time.tzinfo is not None:
+                start_time = start_time.replace(tzinfo=None)
+            if hasattr(end_time, "tzinfo") and end_time.tzinfo is not None:
+                end_time = end_time.replace(tzinfo=None)
             total_execution_time = (end_time - start_time).total_seconds()
 
             if results:
-                avg_sharpe = sum(
-                    r.metrics.get("sharpe_ratio", 0) for r in results
-                ) / len(results)
-                avg_win_rate = sum(r.metrics.get("win_rate", 0) for r in results) / len(
-                    results
-                )
+                # Calculate comprehensive aggregate metrics
+                successful_results = [r for r in results if r.success]
 
-                self.logger.info(
-                    f"Walk-forward analysis completed in {total_execution_time:.2f} seconds"
-                )
-                self.logger.info(
-                    f"Average Sharpe: {avg_sharpe:.3f}, Average Win Rate: {avg_win_rate:.2%}"
-                )
+                if successful_results:
+                    avg_sharpe = sum(
+                        r.metrics.get("sharpe_ratio", 0) for r in successful_results
+                    ) / len(successful_results)
+                    avg_win_rate = sum(
+                        r.metrics.get("win_rate", 0) for r in successful_results
+                    ) / len(successful_results)
+                    avg_total_trades = sum(
+                        r.metrics.get("total_trades", 0) for r in successful_results
+                    ) / len(successful_results)
+                    avg_total_pnl = sum(
+                        r.metrics.get("total_pnl", 0) for r in successful_results
+                    ) / len(successful_results)
+                    avg_max_drawdown = sum(
+                        r.metrics.get("max_drawdown", 0) for r in successful_results
+                    ) / len(successful_results)
+                    total_trades_all_folds = sum(
+                        r.metrics.get("total_trades", 0) for r in successful_results
+                    )
+                    total_pnl_all_folds = sum(
+                        r.metrics.get("total_pnl", 0) for r in successful_results
+                    )
+
+                    self.logger.info(
+                        f"Walk-forward analysis completed in {total_execution_time:.2f} seconds"
+                    )
+                    self.logger.info(
+                        f"Average Sharpe: {avg_sharpe:.3f}, Average Win Rate: {avg_win_rate:.2%}"
+                    )
+                    self.logger.info(
+                        f"Average Trades per Fold: {avg_total_trades:.1f}, Total Trades: {total_trades_all_folds}"
+                    )
+                    self.logger.info(
+                        f"Average PnL per Fold: ${avg_total_pnl:.2f}, Total PnL: ${total_pnl_all_folds:.2f}"
+                    )
+                    self.logger.info(f"Average Max Drawdown: ${avg_max_drawdown:.2f}")
+                else:
+                    self.logger.info(
+                        f"Walk-forward analysis completed in {total_execution_time:.2f} seconds"
+                    )
+                    self.logger.warning("No successful folds - all folds failed")
 
             return results
 

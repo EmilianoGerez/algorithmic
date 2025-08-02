@@ -186,6 +186,15 @@ execution:
   deterministic_seed: 42
   dump_events: true # ENABLED for enhanced analysis - exports event data
   export_data_for_viz: true # ENABLED for enhanced analysis - exports market data and trade data
+
+  # Slippage configuration for realistic execution simulation
+  slippage:
+    entry_pct: 0.0002 # 0.02% worse than market price on entry (2 bps)
+    exit_pct: 0.0002 # 0.02% worse than market price on exit (2 bps)
+    # Alternative models (for future implementation):
+    # model: "fixed_pct"  # Options: "fixed_pct", "fixed_ticks", "atr_based"
+    # atr_multiplier: 0.1  # For ATR-based slippage: slippage = ATR * 0.1
+
   broker_config:
     name: binance
     testnet: true # explicit testnet flag

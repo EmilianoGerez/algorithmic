@@ -288,6 +288,42 @@ class MockPaperBroker:
         self.max_exposure_pct = 0.8  # Maximum 80% of balance in positions
         self.allow_symbol_duplicates = False  # One position per symbol
 
+        # Slippage configuration
+        if hasattr(config, "execution") and hasattr(config.execution, "slippage"):
+            self.slippage_entry = getattr(config.execution.slippage, "entry_pct", 0.0)
+            self.slippage_exit = getattr(config.execution.slippage, "exit_pct", 0.0)
+        else:
+            self.slippage_entry = 0.0
+            self.slippage_exit = 0.0
+
+        logger.info(
+            f"MockPaperBroker initialized with slippage: entry={self.slippage_entry:.4f}%, exit={self.slippage_exit:.4f}%"
+        )
+
+    def _apply_slippage(self, price: float, side: str, is_entry: bool) -> float:
+        """Apply slippage to execution price.
+
+        Args:
+            price: Original price
+            side: "buy" or "sell"
+            is_entry: True for entry, False for exit
+
+        Returns:
+            Price adjusted for slippage
+        """
+        slippage_pct = self.slippage_entry if is_entry else self.slippage_exit
+
+        if slippage_pct == 0.0:
+            return price
+
+        # Slippage always makes execution worse:
+        # For buys: pay more (positive slippage)
+        # For sells: receive less (negative slippage)
+        if side == "buy":
+            return price * (1 + slippage_pct)
+        else:  # sell
+            return price * (1 - slippage_pct)
+
     def submit_order(self, signal: TradingSignal, size: float) -> str | None:
         """Submit order to paper broker.
 
@@ -306,6 +342,11 @@ class MockPaperBroker:
         self.trade_id += 1
         trade_id = f"trade_{self.trade_id}"
 
+        # Apply entry slippage to execution price
+        execution_price = self._apply_slippage(
+            signal.entry_price, signal.side, is_entry=True
+        )
+
         # Apply commission
         if hasattr(self.config, "account") and hasattr(
             self.config.account, "commission"
@@ -315,16 +356,17 @@ class MockPaperBroker:
             commission_rate = (
                 0.0001  # Default 0.01% - more realistic for crypto futures
             )
-        commission = size * signal.entry_price * commission_rate
+        commission = size * execution_price * commission_rate
         self.balance -= commission
 
-        # Record trade
+        # Record trade with slipped execution price
         trade = {
             "id": trade_id,
             "symbol": signal.symbol,
             "side": signal.side,
             "size": size,
-            "entry_price": signal.entry_price,
+            "entry_price": execution_price,  # Use slipped price for PnL calculation
+            "original_entry_price": signal.entry_price,  # Keep original for analysis
             "stop_loss": signal.stop_loss,
             "take_profit": signal.take_profit,
             "entry_time": signal.timestamp,
@@ -333,22 +375,27 @@ class MockPaperBroker:
             "exit_price": None,
             "exit_time": None,
             "pnl": 0.0,
+            "entry_slippage": execution_price
+            - signal.entry_price,  # Track slippage cost
         }
 
         self.trades.append(trade)
         self.positions[trade_id] = trade
 
-        # Calculate risk-reward ratio
+        # Calculate risk-reward ratio using slipped entry price
         rr = (
-            (signal.take_profit - signal.entry_price)
-            / (signal.entry_price - signal.stop_loss)
+            (signal.take_profit - execution_price)
+            / (execution_price - signal.stop_loss)
             if signal.side == "buy"
-            else (signal.entry_price - signal.take_profit)
-            / (signal.stop_loss - signal.entry_price)
+            else (execution_price - signal.take_profit)
+            / (signal.stop_loss - execution_price)
         )
 
         logger.info(
-            f"TRADE_OPENED trade_id={trade_id} side={signal.side} entry={signal.entry_price:.2f} stop={signal.stop_loss:.2f} tp={signal.take_profit:.2f} rr={rr:.2f} size={size:.2f}"
+            f"TRADE_OPENED trade_id={trade_id} side={signal.side} "
+            f"original_entry={signal.entry_price:.2f} slipped_entry={execution_price:.2f} "
+            f"slippage={execution_price - signal.entry_price:.4f} "
+            f"stop={signal.stop_loss:.2f} tp={signal.take_profit:.2f} rr={rr:.2f} size={size:.2f}"
         )
         return trade_id
 
@@ -406,17 +453,24 @@ class MockPaperBroker:
 
         Args:
             trade: Trade dictionary
-            exit_price: Exit price
+            exit_price: Exit price (market price)
             exit_time: Exit timestamp
             reason: Closure reason
         """
-        # Calculate PnL
-        if trade["side"] == "buy":
-            pnl = (exit_price - trade["entry_price"]) * trade["size"]
-        else:
-            pnl = (trade["entry_price"] - exit_price) * trade["size"]
+        # Apply exit slippage to the actual execution price
+        # When closing a position, we do the opposite operation:
+        # - Closing a BUY position = SELL order (should get worse price, i.e., lower)
+        # - Closing a SELL position = BUY order (should get worse price, i.e., higher)
+        exit_side = "sell" if trade["side"] == "buy" else "buy"
+        slipped_exit_price = self._apply_slippage(exit_price, exit_side, is_entry=False)
 
-        # Apply commission on exit
+        # Calculate PnL using slipped exit price
+        if trade["side"] == "buy":
+            pnl = (slipped_exit_price - trade["entry_price"]) * trade["size"]
+        else:
+            pnl = (trade["entry_price"] - slipped_exit_price) * trade["size"]
+
+        # Apply commission on exit using slipped price
         if hasattr(self.config, "account") and hasattr(
             self.config.account, "commission"
         ):
@@ -425,15 +479,17 @@ class MockPaperBroker:
             commission_rate = (
                 0.0001  # Default 0.01% - more realistic for crypto futures
             )
-        exit_commission = trade["size"] * exit_price * commission_rate
+        exit_commission = trade["size"] * slipped_exit_price * commission_rate
         pnl -= exit_commission
 
         # Update trade record
-        trade["exit_price"] = exit_price
+        trade["exit_price"] = slipped_exit_price  # Use slipped price for PnL
+        trade["original_exit_price"] = exit_price  # Keep original for analysis
         trade["exit_time"] = exit_time
         trade["pnl"] = pnl
         trade["status"] = reason
         trade["exit_commission"] = exit_commission
+        trade["exit_slippage"] = slipped_exit_price - exit_price  # Track exit slippage
 
         # Update balance
         self.balance += pnl
@@ -448,6 +504,9 @@ class MockPaperBroker:
         if self.metrics_collector:
             duration_minutes = (exit_time - trade["entry_time"]).total_seconds() / 60.0
             total_fees = trade["commission"] + trade.get("exit_commission", 0)
+            total_slippage = trade.get("entry_slippage", 0) + trade.get(
+                "exit_slippage", 0
+            )
             self.metrics_collector.record_trade(
                 pnl=pnl,
                 fees=total_fees,
@@ -457,8 +516,12 @@ class MockPaperBroker:
 
         # Log trade closure with structured format for analysis
         win_or_loss = "WIN" if pnl > 0 else "LOSS"
+        total_slippage = trade.get("entry_slippage", 0) + trade.get("exit_slippage", 0)
         logger.info(
-            f"TRADE_CLOSED trade_id={trade['id']} side={trade['side']} entry={trade['entry_price']:.2f} exit={exit_price:.2f} pnl=${pnl:.2f} reason={reason} result={win_or_loss}"
+            f"TRADE_CLOSED trade_id={trade['id']} side={trade['side']} "
+            f"entry={trade['entry_price']:.2f} exit={slipped_exit_price:.2f} "
+            f"original_exit={exit_price:.2f} exit_slippage={trade.get('exit_slippage', 0):.4f} "
+            f"total_slippage=${total_slippage:.4f} pnl=${pnl:.2f} reason={reason} result={win_or_loss}"
         )
 
     def get_balance(self) -> float:

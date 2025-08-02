@@ -40,6 +40,16 @@ strategy:
   use_mock_strategy: false # Set to true for simple EMA mock, false for full HTF system
   htf_list: ["60", "240", "1440"] # Multi-timeframe: 60min (H1) + 240min (H4) + 1440min (D1) for maximum confluence
 
+# ---------- Risk Management ----------
+risk:
+  model: atr
+  risk_per_trade: 0.005
+  atr_period: 14
+  sl_atr_multiple: 1.5
+  tp_rr: 3
+  min_position: 0.01
+  max_position_pct: 0.1
+
 # ---------- Indicator periods ----------
 indicators:
   ema21_period: 21
@@ -137,8 +147,8 @@ candidate:
   expiry_minutes: 120 # 2 hours - appropriate for signal candidate lifetime
 
   # Entry spacing to prevent rapid-fire trades
-  min_entry_spacing_minutes: 30 # Per-pool minimum spacing (30 minutes)
-  global_min_entry_spacing: 15 # Increased global spacing for better quality (was 10)
+  min_entry_spacing_minutes: 45 # Per-pool minimum spacing (45 minutes)
+  global_min_entry_spacing: 30 # Increased global spacing for better quality (was 15)
   enable_spacing_throttle: true # Enable throttling mechanism
 
   filters:
@@ -146,7 +156,7 @@ candidate:
     ema_tolerance_pct: 0 # Slightly more tolerance with real data
     linger_minutes: 60 # Touch-&-reclaim linger window (minutes)
     reclaim_requires_ema: true # Require EMA flip after zone touch
-    volume_multiple: 2.5 # ENABLED - re-enabled with quality data
+    volume_multiple: 3 # ENABLED - re-enabled with quality data
 
     # Enhanced killzone settings (replaces legacy killzone: ["01:00", "18:00"])
     use_enhanced_killzone: true # Enable multi-session killzone system
@@ -176,19 +186,12 @@ execution:
   deterministic_seed: 42
   dump_events: true # ENABLED for enhanced analysis - exports event data
   export_data_for_viz: true # ENABLED for enhanced analysis - exports market data and trade data
-  risk:
-    model: atr
-    risk_per_trade: 0.005
-    atr_period: 14
-    sl_atr_multiple: 1.5
-    tp_rr: 3
-    min_position: 0.01
-    max_position_pct: 0.1
   broker_config:
     name: binance
     testnet: true # explicit testnet flag
     initial_balance: 10000.0
-    commission_per_trade: 0.0
+    commission_per_trade: 0.0004 # Binance Futures taker fee: 0.04% (realistic for market orders)
+    # commission_per_trade: 0.0002 # Binance Futures maker fee: 0.02% (if using limit orders)
     # Connection and rate limiting settings
     ws_timeout: 30 # WebSocket timeout in seconds
     rest_timeout: 10 # REST API timeout in seconds

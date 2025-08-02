@@ -1,7 +1,10 @@
 """
-Enhanced killzone management system for algorithmic trading.
+Enhanced killzone implementation supporting multiple trading sessions and exclusion periods.
 
-This module provides flexible time window filtering for algorithmic trading strategies,
+This module provides flexible time window filtering for algorithdef enhanced_killzone_ok(bar_time: datetime,
+                        sessions: list[str] | None = None,
+                        exclude_low_volume: bool = True,
+                        killzone_manager: KillzoneManager | None = None) -> bool:trading strategies,
 allowing multiple active windows (Asia, London, NY sessions) with configurable
 exclusion periods to avoid low-volume periods.
 """
@@ -24,13 +27,13 @@ def convert_ny_time_to_utc(ny_hour: int, ny_minute: int = 0) -> tuple[int, int]:
         Tuple of (utc_hour, utc_minute)
     """
     # EST is UTC-5, EDT is UTC-4
-    # For simplicity, using EST (UTC-5) - adjust as needed
+    # For simplicity, assuming EST (UTC-5) - adjust as needed for your data
     utc_hour = (ny_hour + 5) % 24
     return utc_hour, ny_minute
 
 
 class TradingSession:
-    """Represents a trading session with start and end times."""
+    """Represents a trading session with start/end times in UTC."""
 
     def __init__(
         self,
@@ -45,12 +48,14 @@ class TradingSession:
         self.end_time = time(end_hour, end_minute)
 
     def is_active(self, current_time: time) -> bool:
-        """Check if the given time falls within this session."""
+        """Check if the current time falls within this session."""
         if self.start_time <= self.end_time:
-            # Session doesn't cross midnight
+            # Same day (e.g., 08:00 to 17:00)
             return self.start_time <= current_time <= self.end_time
         else:
-            # Session crosses midnight
+            # Crosses midnight (e.g., 20:00 to 08:00)
+            # This handles Asia session: 01:00 to 05:00 is same day, not crossing midnight
+            # Let's fix the Asia session definition
             return current_time >= self.start_time or current_time <= self.end_time
 
 
@@ -60,25 +65,27 @@ class KillzoneManager:
 
     Supports:
     - Multiple trading sessions (Asia, London, NY)
-    - Configurable exclusion periods (low volume times)
-    - Flexible session selection
+    - Exclusion periods (low volume times)
+    - UTC time handling
+    - Configurable session definitions
     """
 
     def __init__(self) -> None:
-        # Convert NY times to UTC for the sessions
-        # Asia: 20:00-02:00 NY = 01:00-07:00 UTC (EST)
-        asia_start_utc = convert_ny_time_to_utc(20, 0)
-        asia_end_utc = convert_ny_time_to_utc(2, 0)
+        # Define major trading sessions in UTC
+        # These are converted from NY times as requested
 
-        # London: 02:00-11:00 NY = 07:00-16:00 UTC (EST)
-        london_start_utc = convert_ny_time_to_utc(2, 0)
-        london_end_utc = convert_ny_time_to_utc(11, 0)
+        # Asia: 20:00-00:00 NY time -> 01:00-05:00 UTC (EST conversion)
+        asia_start_utc = convert_ny_time_to_utc(20, 0)  # 20:00 NY -> 01:00 UTC
+        asia_end_utc = convert_ny_time_to_utc(0, 0)  # 00:00 NY -> 05:00 UTC
 
-        # NY: 09:30-16:00 NY = 14:30-21:00 UTC (EST)
-        ny_start_utc = convert_ny_time_to_utc(9, 30)
-        ny_end_utc = convert_ny_time_to_utc(16, 0)
+        # London: 02:00-05:00 NY time -> 07:00-10:00 UTC (EST conversion)
+        london_start_utc = convert_ny_time_to_utc(2, 0)  # 02:00 NY -> 07:00 UTC
+        london_end_utc = convert_ny_time_to_utc(5, 0)  # 05:00 NY -> 10:00 UTC
 
-        # Define trading sessions
+        # NY: 08:00-13:00 NY time -> 13:00-18:00 UTC (EST conversion)
+        ny_start_utc = convert_ny_time_to_utc(8, 0)  # 08:00 NY -> 13:00 UTC
+        ny_end_utc = convert_ny_time_to_utc(13, 0)  # 13:00 NY -> 18:00 UTC
+
         self.sessions = {
             "asia": TradingSession(
                 "Asia",
@@ -130,7 +137,7 @@ class KillzoneManager:
 
         current_time_only = current_time.time()
 
-        # Check exclusion periods first
+        # Check if in exclusion period first
         if exclude_low_volume:
             for exclusion in self.exclusion_periods:
                 if exclusion.is_active(current_time_only):
@@ -157,13 +164,13 @@ class KillzoneManager:
         """
         current_time_only = current_time.time()
 
-        for name, session in self.sessions.items():
+        for session_name, session in self.sessions.items():
             if session.is_active(current_time_only):
-                return name
+                return session_name
 
         return None
 
-    def get_session_info(self) -> dict:
+    def get_session_info(self) -> dict[str, dict[str, str]]:
         """Get information about all configured sessions."""
         info = {}
         for name, session in self.sessions.items():
@@ -204,7 +211,9 @@ def enhanced_killzone_ok(
 
 
 # Configuration helper functions
-def create_session_config(sessions: list[str], exclude_low_volume: bool = True) -> dict:
+def create_session_config(
+    sessions: list[str], exclude_low_volume: bool = True
+) -> dict[str, list[str] | bool]:
     """
     Create a configuration dictionary for killzone settings.
 

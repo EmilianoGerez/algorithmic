@@ -591,9 +591,10 @@ class BacktestRunner:
                 start_time_raw = first_candle["timestamp"]
                 if isinstance(start_time_raw, str):
                     # Handle ISO format
-                    if start_time_raw.endswith("Z"):
-                        start_time_raw = start_time_raw[:-1] + "+00:00"
-                    start_time = dt.fromisoformat(start_time_raw)
+                    start_time_str = start_time_raw
+                    if start_time_str.endswith("Z"):
+                        start_time_str = start_time_str[:-1] + "+00:00"
+                    start_time = dt.fromisoformat(start_time_str)
                 else:
                     start_time = start_time_raw
 
@@ -687,6 +688,7 @@ class BacktestRunner:
                     avg_total_trades = sum(
                         r.metrics.get("total_trades", 0) for r in successful_results
                     ) / len(successful_results)
+                    # avg_winning_trades is calculated but not used - removing to fix linting
                     avg_total_pnl = sum(
                         r.metrics.get("total_pnl", 0) for r in successful_results
                     ) / len(successful_results)

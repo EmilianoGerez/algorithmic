@@ -180,6 +180,9 @@ class ReplayEngine:
             else:  # FAST mode
                 self._run_fast_mode()
 
+            # Force close all open positions at backtest end
+            self._finalize_backtest()
+
         except Exception as e:
             logger.error(f"Replay execution failed: {e}")
             raise
@@ -285,6 +288,27 @@ class ReplayEngine:
                         f"Handler {type(handler).__name__} failed on event {event}: {e}"
                     )
                     # Continue with other handlers
+
+    def _finalize_backtest(self) -> None:
+        """Finalize backtest by closing open positions and cleanup."""
+        if not self.events:
+            return
+
+        # Get final candle from last event
+        final_event = self.events[-1]
+        if final_event.event_type == EventType.CANDLE:
+            final_candle = final_event.data
+
+            # Call finalization on strategy handlers
+            for handler in self.handlers:
+                if hasattr(handler, "strategy") and hasattr(
+                    handler.strategy, "on_backtest_complete"
+                ):
+                    try:
+                        handler.strategy.on_backtest_complete(final_candle)
+                        logger.info("Backtest finalization completed for strategy")
+                    except Exception as e:
+                        logger.error(f"Strategy backtest finalization failed: {e}")
 
     def stop(self) -> None:
         """Stop the replay execution."""

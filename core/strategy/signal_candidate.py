@@ -145,10 +145,9 @@ class FSMGuards:
         try:
             from .enhanced_killzone import enhanced_killzone_ok
 
-            result = enhanced_killzone_ok(
+            return enhanced_killzone_ok(
                 bar.ts, sessions=sessions, exclude_low_volume=exclude_low_volume
             )
-            return result
         except ImportError:
             # Fallback to simple killzone if enhanced module not available
             return True

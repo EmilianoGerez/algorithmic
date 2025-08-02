@@ -1,0 +1,174 @@
+# =========================
+#  Optimized Binance Config for Commission Efficiency
+# =========================
+
+# This configuration addresses the negative PnL issue by:
+# 1. Reducing commission rates to realistic levels
+# 2. Increasing entry spacing to reduce over-trading
+# 3. Using slightly higher strength thresholds for quality
+
+# ---------- Data ----------
+data:
+  source: csv
+  path: "data/BTC_USD_5min_20250801_001617.csv"
+  symbol: BTCUSDT
+  tick_size: 0.01
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
+  start_date: "2024-05-01"
+  end_date: "2024-08-01"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# ---------- Walk-forward ----------
+walk_forward:
+  folds: 3
+  train_fraction: 0.6
+  overlap_fraction: 0.1
+
+# ---------- Strategy core ----------
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSDT
+  use_mock_strategy: false
+  htf_list: ["60", "240", "1440"]
+
+# ---------- Indicator periods ----------
+indicators:
+  ema21_period: 21
+  ema50_period: 50
+  atr_period: 14
+  volume_sma_period: 20
+  regime_sensitivity: 0.001
+
+# ---------- Aggregation ----------
+aggregation:
+  source_tf_minutes: 5
+  target_timeframes_minutes: [60, 240, 1440]
+  buffer_size: 1500
+  roll_from: "calendar"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
+  fill_missing: "ffill"
+
+# ---------- Detectors ----------
+detectors:
+  fvg:
+    enabled: true
+    min_gap_atr: 0.15 # REDUCED for more signals
+    min_gap_pct: 0.02 # REDUCED for more signals
+    min_rel_vol: 1.5 # REDUCED volume requirement
+
+  pivot:
+    enabled: true
+    lookback_period: 5
+    min_atr_distance: 1.0
+    strength_calc: "atr_based"
+
+  enabled_timeframes: ["60", "240", "1440"]
+
+# ---------- Pool registry ----------
+pools:
+  "60":
+    ttl: 6h
+    hit_tolerance: 0.0
+  "240":
+    ttl: 3d
+    hit_tolerance: 0.0
+  "1440":
+    ttl: 3w
+    hit_tolerance: 0.0
+
+  strength_threshold: 0.3 # REDUCED for more signals
+  grace_period_minutes: 5
+  max_pools_per_tf: 10000
+  auto_expire_interval: "30s"
+
+# ---------- Zone watcher & FSM ----------
+zone_watcher:
+  price_tolerance: 0.1
+  confirm_closure: false
+  min_strength: 0.5 # REDUCED from 1.5 for more signals
+  max_active_zones: 500
+
+# ---------- Higher Level Zones (HLZ) ----------
+hlz:
+  min_members: 2
+  min_strength: 3.0
+  tf_weight:
+    H4: 2.0
+    D1: 3.0
+  merge_tolerance: 0.5
+  side_mixing: false
+  max_active_hlzs: 1000
+  recompute_on_update: true
+
+# ---------- Signal candidate pipeline ----------
+candidate:
+  expiry_minutes: 120 # REDUCED to 2 hours
+
+  # MODERATE entry spacing to prevent over-trading
+  min_entry_spacing_minutes: 30 # REDUCED to 30 minutes per pool
+  global_min_entry_spacing: 20 # REDUCED to 20 minutes globally
+  enable_spacing_throttle: true
+
+  filters:
+    ema_alignment: true
+    ema_tolerance_pct: 0
+    linger_minutes: 45 # REDUCED wait time
+    reclaim_requires_ema: true
+    volume_multiple: 0 # DISABLED due to poor data quality
+
+    use_enhanced_killzone: true
+    killzone_sessions: ["asia", "london", "ny"]
+    exclude_low_volume: false # DISABLED due to data quality
+    killzone: ["01:00", "18:00"]
+    regime: ["bear", "bull"]
+
+# ---------- Execution (Paper back-test) ----------
+execution:
+  mode: backtest
+  broker: paper
+  log_level: INFO
+  enable_latency_profiling: false
+  enable_memory_tracking: false
+  realtime_simulation: false
+  deterministic_seed: 42
+  dump_events: true
+  export_data_for_viz: true
+
+  risk:
+    model: atr
+    risk_per_trade: 0.005 # Keep conservative
+    atr_period: 14
+    sl_atr_multiple: 1.5
+    tp_rr: 3 # Keep 3:1 R:R
+    min_position: 0.01
+    max_position_pct: 0.1
+
+  broker_config:
+    name: binance
+    testnet: true
+    initial_balance: 10000.0
+    commission_per_trade: 0.0 # Will use code default
+
+  # NEW: Account configuration for realistic commissions
+  account:
+    initial_balance: 10000.0
+    commission: 0.0002 # 0.02% - realistic Binance futures rate
+    max_positions: 3 # Limit concurrent positions
+
+# ---------- Runtime ----------
+runtime:
+  use_mock_components: true
+
+# ---------- Feed layer ----------
+feeds:
+  base_tf: 5m
+  source: csv

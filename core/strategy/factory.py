@@ -20,6 +20,8 @@ from core.clock import get_clock
 from core.detectors.fvg import FVGDetector
 from core.entities import Candle
 from core.indicators.pack import IndicatorPack
+from core.risk.config import RiskModel
+from core.risk.manager import RiskManager
 from core.strategy import (
     OverlapDetector,
     PoolManager,
@@ -119,8 +121,9 @@ class TradingSignal:
 class MockZoneWatcher:
     """Mock Zone Watcher for Phase 8 testing."""
 
-    def __init__(self, config: Any) -> None:
+    def __init__(self, config: Any, risk_manager: Any = None) -> None:
         self.config = config
+        self.risk_manager = risk_manager
         self.last_signal_time: datetime | None = None
 
     def update(self, candle: Candle, indicators: IndicatorPack) -> TradingSignal | None:
@@ -140,39 +143,56 @@ class MockZoneWatcher:
         if ema21 is None or ema50 is None:
             return None
 
-        # Check cooldown period (reduced to 10 minutes for more signals)
+        # Check cooldown period (reduced to 5 minutes for more signals)
         if (
             self.last_signal_time is not None
-            and (candle.ts - self.last_signal_time).total_seconds() < 600
+            and (candle.ts - self.last_signal_time).total_seconds() < 300
         ):
             return None
 
-        # Signal conditions:
-        # 1. Price above EMA21 and EMA21 > EMA50 (bullish)
-        # 2. Price has moved more than 0.1% from EMA21 (momentum)
-        price_above_ema21 = candle.close > ema21
-        ema21_above_ema50 = ema21 > ema50
-        momentum_threshold = (
-            abs(candle.close - ema21) / ema21 > 0.001
-        )  # 0.1% minimum move
+        # Simplified signal conditions for testing - just need EMAs to be populated
+        # 1. Price above EMA21 (simplified bullish condition)
+        # 2. EMA21 > EMA50 (trend condition)
+        if ema21 is not None and ema50 is not None:
+            price_above_ema21 = candle.close > ema21
+            ema21_above_ema50 = ema21 > ema50
 
-        if price_above_ema21 and ema21_above_ema50 and momentum_threshold:
-            self.last_signal_time = candle.ts
+            # Debug logging for signal conditions
+            print(
+                f"DEBUG MockZoneWatcher: close={candle.close}, ema21={ema21}, ema50={ema50}"
+            )
+            print(
+                f"  price_above_ema21: {price_above_ema21}, ema21_above_ema50: {ema21_above_ema50}"
+            )
 
-            # Calculate signal parameters
-            entry = candle.close
-            atr = abs(candle.high - candle.low)  # Simple ATR approximation
-            stop_loss = entry - (atr * 1.5)  # 1.5x ATR stop
-            take_profit = entry + (atr * 3.0)  # 2:1 risk/reward
+            if price_above_ema21 and ema21_above_ema50:
+                self.last_signal_time = candle.ts
+                print("  SIGNAL CONDITIONS MET! Generating signal...")
 
-            # Ensure minimum risk/reward ratio
-            risk_distance = entry - stop_loss
-            if risk_distance > 0:
-                reward_distance = take_profit - entry
-                if reward_distance / risk_distance < 1.5:  # Minimum 1.5:1 RR
-                    take_profit = entry + (risk_distance * 2.0)
+                # Calculate signal parameters using risk manager's tp_rr if available
+                entry = candle.close
+                atr = abs(candle.high - candle.low)  # Simple ATR approximation
 
-                return TradingSignal(
+                if self.risk_manager is not None:
+                    # Use risk manager's tp_rr parameter for consistent calculations
+                    atr_distance = atr * 1.5  # Base ATR distance for SL
+                    stop_loss = entry - atr_distance
+                    take_profit = entry + (
+                        atr_distance * self.risk_manager.config.tp_rr
+                    )
+                else:
+                    # Fallback to manual calculation - use config tp_rr instead of hardcoded value
+                    sl_atr_multiple = getattr(self.config.risk, "sl_atr_multiple", 1.5)
+                    tp_rr = getattr(self.config.risk, "tp_rr", 2.0)
+                    atr_distance = atr * sl_atr_multiple
+                    stop_loss = entry - atr_distance
+                    take_profit = entry + (atr_distance * tp_rr)
+
+                print(
+                    f"  Creating TradingSignal: entry={entry}, sl={stop_loss}, tp={take_profit}"
+                )
+
+                signal = TradingSignal(
                     symbol=self.config.strategy.symbol,
                     side="buy",
                     entry_price=entry,
@@ -183,6 +203,10 @@ class MockZoneWatcher:
                     reason="EMA_momentum_bullish",
                 )
 
+                print(f"  Signal created successfully: {signal}")
+                return signal
+
+        # No signal conditions met
         return None
 
 
@@ -255,7 +279,16 @@ class MockPaperBroker:
         self.trades: list[dict[str, Any]] = []
         self.trade_id = 0
 
-    def submit_order(self, signal: TradingSignal, size: float) -> str:
+        # Position management settings
+        self.max_concurrent_positions = (
+            getattr(config.account, "max_positions", 5)
+            if hasattr(config, "account")
+            else 5
+        )
+        self.max_exposure_pct = 0.8  # Maximum 80% of balance in positions
+        self.allow_symbol_duplicates = False  # One position per symbol
+
+    def submit_order(self, signal: TradingSignal, size: float) -> str | None:
         """Submit order to paper broker.
 
         Args:
@@ -263,8 +296,13 @@ class MockPaperBroker:
             size: Calculated position size
 
         Returns:
-            Trade ID
+            Trade ID or None if rejected
         """
+        # Position management checks
+        if not self._validate_new_position(signal, size):
+            logger.warning(f"Position rejected by position management: {signal.symbol}")
+            return None
+
         self.trade_id += 1
         trade_id = f"trade_{self.trade_id}"
 
@@ -274,7 +312,9 @@ class MockPaperBroker:
         ):
             commission_rate = self.config.account.commission
         else:
-            commission_rate = 0.001  # Default 0.1%
+            commission_rate = (
+                0.0001  # Default 0.01% - more realistic for crypto futures
+            )
         commission = size * signal.entry_price * commission_rate
         self.balance -= commission
 
@@ -382,7 +422,9 @@ class MockPaperBroker:
         ):
             commission_rate = self.config.account.commission
         else:
-            commission_rate = 0.001  # Default 0.1%
+            commission_rate = (
+                0.0001  # Default 0.01% - more realistic for crypto futures
+            )
         exit_commission = trade["size"] * exit_price * commission_rate
         pnl -= exit_commission
 
@@ -427,6 +469,159 @@ class MockPaperBroker:
         """Get all trades."""
         return self.trades.copy()
 
+    def close_all_open_positions(self, final_price: float, final_time: Any) -> None:
+        """Force close all open positions at backtest end.
+
+        Args:
+            final_price: Final market price to close positions at
+            final_time: Final timestamp for closure
+        """
+        open_positions = [
+            trade for trade in self.positions.values() if trade["status"] == "open"
+        ]
+
+        if not open_positions:
+            return
+
+        logger.info(
+            f"Force closing {len(open_positions)} open positions at backtest end"
+        )
+
+        for trade in open_positions:
+            self._close_trade(trade, final_price, final_time, "backtest_end")
+
+        # Clear positions dict
+        self.positions.clear()
+
+        logger.info(f"All open positions closed. Final balance: ${self.balance:.2f}")
+
+    def get_total_exposure(self) -> float:
+        """Get total notional exposure of all open positions.
+
+        Returns:
+            Total dollar exposure across all open positions
+        """
+        total_exposure = 0.0
+        for trade in self.positions.values():
+            if trade["status"] == "open":
+                notional = trade["size"] * trade["entry_price"]
+                total_exposure += notional
+        return total_exposure
+
+    def get_open_position_count(self) -> int:
+        """Get count of open positions."""
+        return len(
+            [trade for trade in self.positions.values() if trade["status"] == "open"]
+        )
+
+    def has_position_for_symbol(self, symbol: str) -> bool:
+        """Check if there's already an open position for the symbol.
+
+        Args:
+            symbol: Trading symbol to check
+
+        Returns:
+            True if open position exists for symbol
+        """
+        for trade in self.positions.values():
+            if trade["status"] == "open" and trade["symbol"] == symbol:
+                return True
+        return False
+
+    def _validate_new_position(self, signal: TradingSignal, size: float) -> bool:
+        """Validate if a new position can be opened.
+
+        Args:
+            signal: Trading signal
+            size: Position size
+
+        Returns:
+            True if position can be opened
+        """
+        # Check concurrent position limit
+        if self.get_open_position_count() >= self.max_concurrent_positions:
+            logger.warning(
+                f"Maximum concurrent positions reached: {self.max_concurrent_positions}"
+            )
+            return False
+
+        # Check symbol duplicate limit
+        if not self.allow_symbol_duplicates and self.has_position_for_symbol(
+            signal.symbol
+        ):
+            logger.warning(f"Position already exists for symbol: {signal.symbol}")
+            return False
+
+        # Check total exposure limit
+        position_value = size * signal.entry_price
+        current_exposure = self.get_total_exposure()
+        max_exposure = self.balance * self.max_exposure_pct
+
+        if current_exposure + position_value > max_exposure:
+            logger.warning(
+                f"Position would exceed exposure limit: {current_exposure + position_value:.2f} > {max_exposure:.2f}"
+            )
+            return False
+
+        return True
+
+    def get_performance_stats(self) -> dict[str, Any]:
+        """Get comprehensive performance statistics.
+
+        Returns:
+            Dictionary with performance metrics
+        """
+        closed_trades = [t for t in self.trades if t["status"] == "closed"]
+        open_trades = [t for t in self.trades if t["status"] == "open"]
+
+        # Basic trade statistics
+        total_trades = len(self.trades)
+        closed_count = len(closed_trades)
+        open_count = len(open_trades)
+
+        if closed_count == 0:
+            return {
+                "total_trades": total_trades,
+                "closed_trades": closed_count,
+                "open_trades": open_count,
+                "total_pnl": 0.0,
+                "win_rate": 0.0,
+                "max_concurrent_positions": 0,
+                "max_exposure": 0.0,
+                "current_balance": self.balance,
+            }
+
+        # PnL calculation
+        winning_trades = [t for t in closed_trades if t.get("pnl", 0) > 0]
+        total_pnl = sum(t.get("pnl", 0) for t in closed_trades)
+        win_rate = len(winning_trades) / closed_count if closed_count > 0 else 0.0
+
+        # Position management statistics
+        current_exposure = self.get_total_exposure()
+        max_concurrent = 0
+        max_exposure = 0.0
+
+        # Calculate historical maximums (approximate)
+        # For now, use current values as estimates
+        max_concurrent = max(len(open_trades), self.max_concurrent_positions)
+        max_exposure = max(
+            current_exposure,
+            sum(t.get("size", 0) * t.get("entry_price", 0) for t in self.trades),
+        )
+
+        return {
+            "total_trades": total_trades,
+            "closed_trades": closed_count,
+            "open_trades": open_count,
+            "winning_trades": len(winning_trades),
+            "total_pnl": total_pnl,
+            "win_rate": win_rate,
+            "max_concurrent_positions": max_concurrent,
+            "max_exposure": max_exposure,
+            "current_balance": self.balance,
+            "current_exposure": current_exposure,
+        }
+
 
 class IntegratedStrategy:
     """Integrated strategy that coordinates all Phase 1-7 components."""
@@ -435,7 +630,7 @@ class IntegratedStrategy:
         self,
         config: Any,
         broker: MockPaperBroker,
-        risk_manager: MockRiskManager,
+        risk_manager: MockRiskManager | RiskManager,
         metrics_collector: MetricsCollector | None = None,
     ) -> None:
         """Initialize integrated strategy.
@@ -715,7 +910,7 @@ class IntegratedStrategy:
             self.fvg_detector = FVGDetector(
                 tf="5m", min_gap_atr=0.5, min_gap_pct=0.001, min_rel_vol=1.2
             )
-            self.zone_watcher = MockZoneWatcher(config)
+            self.zone_watcher = MockZoneWatcher(config, risk_manager)
             # htf_stack is None for mock strategy
 
         # Metrics
@@ -1040,111 +1235,38 @@ class IntegratedStrategy:
 
         return None
 
-    def get_performance_stats(self) -> dict[str, Any]:
-        """Get strategy performance statistics.
+    def on_backtest_complete(self, final_candle: Candle) -> None:
+        """Handle backtest completion - force close all open positions.
 
-        Returns:
-            Dictionary with performance metrics
+        Args:
+            final_candle: The final market candle of the backtest
         """
-        trades = self.broker.get_trades()
+        if hasattr(self.broker, "close_all_open_positions"):
+            self.broker.close_all_open_positions(final_candle.close, final_candle.ts)
 
-        if not trades:
-            return {
-                "total_trades": 0,
-                "total_pnl": 0.0,
-                "win_rate": 0.0,
-                "avg_win": 0.0,
-                "avg_loss": 0.0,
-                "max_drawdown": 0.0,
-                "sharpe_ratio": 0.0,
-                "final_balance": self.broker.get_balance(),
+    def get_performance_stats(self) -> dict[str, Any]:
+        """Get comprehensive performance statistics."""
+        stats = {}
+
+        # Get broker stats
+        if hasattr(self.broker, "get_performance_stats"):
+            broker_stats = self.broker.get_performance_stats()
+            stats.update(broker_stats)
+
+        # Add strategy-specific stats
+        stats.update(
+            {
+                "candles_processed": self.candles_processed,
+                "total_signals": getattr(self, "total_signals", 0),
             }
-
-        # Calculate basic metrics
-        total_trades = len(trades)
-        closed_trades = [
-            t for t in trades if t["status"] in ["stop_loss", "take_profit"]
-        ]
-        total_pnl = sum(t["pnl"] for t in closed_trades)
-
-        winning_trades = [t for t in closed_trades if t["pnl"] > 0]
-        losing_trades = [t for t in closed_trades if t["pnl"] <= 0]
-
-        win_rate = len(winning_trades) / len(closed_trades) if closed_trades else 0.0
-        avg_win = (
-            sum(t["pnl"] for t in winning_trades) / len(winning_trades)
-            if winning_trades
-            else 0.0
-        )
-        avg_loss = (
-            sum(t["pnl"] for t in losing_trades) / len(losing_trades)
-            if losing_trades
-            else 0.0
         )
 
-        # Simple drawdown calculation
-        starting_balance_attr = getattr(self.config, "starting_balance", None)
-        starting_balance: float = (
-            float(starting_balance_attr)
-            if starting_balance_attr is not None
-            else 10000.0
-        )
-        if hasattr(self.config, "account") and hasattr(
-            self.config.account, "initial_balance"
-        ):
-            starting_balance = float(self.config.account.initial_balance)
+        # Get metrics from collector if available
+        if hasattr(self, "metrics_collector") and self.metrics_collector:
+            collector_stats = self.metrics_collector.get_summary()
+            stats.update(collector_stats)
 
-        balance_history = [starting_balance]
-        running_balance = starting_balance
-
-        for trade in closed_trades:
-            running_balance += trade["pnl"]
-            balance_history.append(running_balance)
-
-        peak = balance_history[0]
-        max_drawdown = 0.0
-
-        for balance in balance_history:
-            if balance > peak:
-                peak = balance
-            drawdown = (peak - balance) / peak if peak > 0 else 0.0
-            max_drawdown = max(max_drawdown, drawdown)
-
-        # Simple Sharpe ratio (daily returns)
-        if len(closed_trades) > 1:
-            returns = []
-            for i in range(1, len(balance_history)):
-                if balance_history[i - 1] > 0:
-                    ret = (
-                        balance_history[i] - balance_history[i - 1]
-                    ) / balance_history[i - 1]
-                    returns.append(ret)
-
-            if returns:
-                import statistics
-
-                mean_return = statistics.mean(returns)
-                std_return = statistics.stdev(returns) if len(returns) > 1 else 0.0
-                sharpe_ratio = (
-                    mean_return / std_return * (252**0.5) if std_return > 0 else 0.0
-                )
-            else:
-                sharpe_ratio = 0.0
-        else:
-            sharpe_ratio = 0.0
-
-        return {
-            "total_trades": total_trades,
-            "closed_trades": len(closed_trades),
-            "total_pnl": total_pnl,
-            "win_rate": win_rate,
-            "avg_win": avg_win,
-            "avg_loss": avg_loss,
-            "max_drawdown": max_drawdown,
-            "sharpe_ratio": sharpe_ratio,
-            "final_balance": self.broker.get_balance(),
-            "candles_processed": self.candles_processed,
-        }
+        return stats
 
 
 class StrategyFactory:
@@ -1154,7 +1276,7 @@ class StrategyFactory:
     def build(
         config: Any,
         metrics_collector: MetricsCollector | None = None,
-        shared_risk_manager: MockRiskManager | None = None,
+        shared_risk_manager: RiskManager | None = None,
     ) -> IntegratedStrategy:
         """Build complete strategy from configuration.
 
@@ -1187,7 +1309,51 @@ class StrategyFactory:
             risk_manager = shared_risk_manager
             logger.debug("Reusing shared risk manager for ATR warm-up")
         else:
-            risk_manager = MockRiskManager(config)
+            # Create real RiskManager with proper configuration
+            from core.risk.config import RiskConfig
+
+            # Handle different config structures - prefer execution.risk, fallback to top-level risk
+            risk_section = None
+
+            # First, try to get from execution.risk (the primary location)
+            if hasattr(config, "execution") and hasattr(config.execution, "risk"):
+                risk_section = config.execution.risk
+                logger.info(
+                    f"Found risk section in execution.risk: tp_rr={getattr(risk_section, 'tp_rr', 'NOT_FOUND')}"
+                )
+            # Fallback to top-level risk section
+            elif hasattr(config, "risk"):
+                risk_section = config.risk
+                logger.info(
+                    f"Found risk section in config.risk: tp_rr={getattr(risk_section, 'tp_rr', 'NOT_FOUND')}"
+                )
+            else:
+                logger.warning("No risk configuration found, using defaults")
+
+            # Handle missing fields with defaults
+            risk_config = RiskConfig(
+                model=RiskModel.ATR
+                if (risk_section and getattr(risk_section, "model", "atr") == "atr")
+                else RiskModel.PERCENT,
+                risk_per_trade=getattr(risk_section, "risk_per_trade", 0.005)
+                if risk_section
+                else 0.005,
+                atr_period=getattr(risk_section, "atr_period", 14)
+                if risk_section
+                else 14,
+                sl_atr_multiple=getattr(risk_section, "sl_atr_multiple", 1.5)
+                if risk_section
+                else 1.5,
+                tp_rr=getattr(risk_section, "tp_rr", 2.0) if risk_section else 2.0,
+                min_position=getattr(risk_section, "min_position", 0.01)
+                if risk_section
+                else 0.01,
+                max_position_pct=getattr(risk_section, "max_position_pct", 0.1)
+                if risk_section
+                else 0.1,
+            )
+            logger.info(f"Created RiskConfig with tp_rr={risk_config.tp_rr}")
+            risk_manager = RiskManager(risk_config)
 
         # Create integrated strategy
         strategy = IntegratedStrategy(config, broker, risk_manager, metrics_collector)

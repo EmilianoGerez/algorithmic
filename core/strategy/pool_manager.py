@@ -205,6 +205,10 @@ class PoolManager:
                 expiry_ts = clock.now() + ttl
 
                 logger.info(
+                    f"Pool expiry calculation: clock.now()={clock.now()}, ttl={ttl}, expiry_ts={expiry_ts}"
+                )
+
+                logger.info(
                     f"POOL_CREATED tf={event.tf} top={top:.2f} bottom={bottom:.2f} strength={strength:.3f} expiry_ts={expiry_ts} pool_id={pool_id}"
                 )
 

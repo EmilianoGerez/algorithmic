@@ -136,8 +136,8 @@ class TimerWheel:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.debug(
-                f"Expiry in past - skip pool {pool_id}: {expires_at} <= {self.current_time}"
+            logger.warning(
+                f"TTL rejection: pool {pool_id}, expires_at={expires_at}, current_time={self.current_time}"
             )
             return False
 

@@ -135,6 +135,17 @@ class DataConfig(BaseModel):
         return v
 
 
+class SlippageConfig(BaseModel):
+    """Slippage configuration for realistic execution simulation."""
+
+    entry_pct: float = Field(
+        default=0.0, description="Entry slippage as percentage (e.g., 0.0002 for 2 bps)"
+    )
+    exit_pct: float = Field(
+        default=0.0, description="Exit slippage as percentage (e.g., 0.0002 for 2 bps)"
+    )
+
+
 class ExecutionConfig(BaseModel):
     """Execution environment configuration."""
 
@@ -160,6 +171,9 @@ class ExecutionConfig(BaseModel):
     )
     export_data_for_viz: bool = Field(
         default=False, description="Enable data.csv and trades.csv export"
+    )
+    slippage: SlippageConfig = Field(
+        default_factory=SlippageConfig, description="Slippage configuration"
     )
 
 

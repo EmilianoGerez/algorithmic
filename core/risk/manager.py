@@ -259,3 +259,96 @@ class RiskManager:
                 return False
 
         return True
+
+    def size_position(self, signal: TradingSignal, account_balance: float) -> float:
+        """Compatibility method for legacy size_position interface.
+
+        This method provides backward compatibility with the MockRiskManager
+        interface by creating minimal AccountState and IndicatorSnapshot objects.
+
+        Args:
+            signal: Trading signal with price levels
+            account_balance: Current account balance
+
+        Returns:
+            Position size as a float (base currency units)
+        """
+        from datetime import datetime
+
+        from core.indicators.snapshot import IndicatorSnapshot
+        from core.trading.models import AccountState
+
+        # Create minimal AccountState
+        account = AccountState(
+            cash_balance=account_balance,
+            equity=account_balance,
+            positions={},  # No existing positions for simplicity
+            realized_pnl=0.0,
+            open_orders=0,
+            timestamp=datetime.now(),
+        )
+
+        # Create minimal IndicatorSnapshot with default ATR
+        # For compatibility, use a reasonable default ATR of 1% of entry price
+        default_atr = signal.entry_price * 0.01
+        snapshot = IndicatorSnapshot(
+            timestamp=datetime.now(),
+            ema21=None,
+            ema50=None,
+            atr=default_atr,
+            volume_sma=None,
+            regime=None,
+            regime_with_slope=None,
+            current_volume=0.0,
+            current_close=signal.entry_price,
+        )
+
+        # Handle different TradingSignal types (Factory vs Real)
+        try:
+            # Try to call the main size method
+            sizing_result = self.size(signal, account, snapshot)
+        except AttributeError as e:
+            if "'TradingSignal' object has no attribute 'signal_id'" in str(e):
+                # This is the factory TradingSignal, create a wrapper
+                from core.strategy.signal_models import SignalDirection
+                from core.strategy.signal_models import (
+                    TradingSignal as RealTradingSignal,
+                )
+
+                # Convert factory signal to real signal
+                direction = (
+                    SignalDirection.LONG
+                    if signal.side == "buy"
+                    else SignalDirection.SHORT
+                )
+
+                # Import ZoneType for default value
+                from core.strategy.signal_models import ZoneType
+
+                real_signal = RealTradingSignal(
+                    signal_id="compat_" + str(id(signal)),
+                    candidate_id="compat_candidate",
+                    zone_id="compat_zone",
+                    zone_type=ZoneType.POOL,  # Use default pool type
+                    direction=direction,
+                    symbol=signal.symbol,
+                    entry_price=signal.entry_price,
+                    current_price=signal.entry_price,
+                    strength=1.0,  # Default strength
+                    confidence=1.0,  # Default confidence
+                    timestamp=datetime.now(),
+                    timeframe="5m",  # Default timeframe
+                    metadata={},
+                )
+
+                # Call with real signal
+                sizing_result = self.size(real_signal, account, snapshot)
+            else:
+                # Re-raise other AttributeErrors
+                raise e
+
+        if sizing_result is None:
+            return 0.0
+
+        # Return the quantity as a float
+        return float(abs(sizing_result.quantity))

@@ -308,6 +308,9 @@ def execute_backtest(
     result_dir.mkdir(parents=True, exist_ok=True)
 
     # Execute backtest
+    result = None  # Initialize to prevent NameError
+    results = None  # Initialize to prevent NameError
+
     try:
         # Create BacktestConfig with defaults for missing sections
         config_dict = cfg.copy()
@@ -342,7 +345,8 @@ def execute_backtest(
                 )
 
             else:
-                typer.echo("❌ Walk-forward analysis failed")
+                error_msg = results[0].error_message if results else "Unknown error"
+                typer.echo(f"❌ Walk-forward analysis failed: {error_msg}")
                 raise typer.Exit(1)
         else:
             # Single backtest
@@ -623,33 +627,63 @@ def run(
                 # Walk-forward analysis
                 typer.echo(f"Running walk-forward analysis with {walk} folds...")
                 results = runner.run_walk_forward()
-                typer.echo(f"✅ Walk-forward analysis completed: {len(results)} folds")
+
+                # Extract and display walk-forward metrics
+                successful_results = [r for r in results if r.success]
+                if successful_results:
+                    total_trades_all_folds = sum(
+                        r.metrics.get("total_trades", 0) for r in successful_results
+                    )
+                    total_pnl_all_folds = sum(
+                        r.metrics.get("total_pnl", 0) for r in successful_results
+                    )
+                    avg_sharpe = sum(
+                        r.metrics.get("sharpe_ratio", 0) for r in successful_results
+                    ) / len(successful_results)
+                    avg_win_rate = sum(
+                        r.metrics.get("win_rate", 0) for r in successful_results
+                    ) / len(successful_results)
+
+                    typer.echo(
+                        f"✅ Walk-forward analysis completed: {len(results)} folds"
+                    )
+                    typer.echo(
+                        f"📊 Total trades: {total_trades_all_folds}, Total P&L: ${total_pnl_all_folds:.2f}"
+                    )
+                    typer.echo(
+                        f"📈 Average Sharpe: {avg_sharpe:.3f}, Average Win Rate: {avg_win_rate:.2%}"
+                    )
+                else:
+                    typer.echo(
+                        f"❌ Walk-forward analysis completed: {len(results)} folds (all failed)"
+                    )
+
             else:
                 # Single backtest
                 typer.echo("Running single backtest...")
                 result = runner.run()
 
-            # Extract metrics from result
-            if hasattr(result, "metrics") and isinstance(result.metrics, dict):
-                trade_metrics = result.metrics.get("trade_metrics", {})
-                total_trades = trade_metrics.get("total_trades", 0)
-                total_pnl = trade_metrics.get("total_pnl", 0.0)
-            else:
-                # Fallback for object-style metrics
-                total_trades = (
-                    getattr(result.metrics, "total_trades", 0)
-                    if hasattr(result, "metrics")
-                    else 0
-                )
-                total_pnl = (
-                    getattr(result.metrics, "total_pnl", 0.0)
-                    if hasattr(result, "metrics")
-                    else 0.0
-                )
+                # Extract metrics from single backtest result
+                if hasattr(result, "metrics") and isinstance(result.metrics, dict):
+                    trade_metrics = result.metrics.get("trade_metrics", {})
+                    total_trades = trade_metrics.get("total_trades", 0)
+                    total_pnl = trade_metrics.get("total_pnl", 0.0)
+                else:
+                    # Fallback for object-style metrics
+                    total_trades = (
+                        getattr(result.metrics, "total_trades", 0)
+                        if hasattr(result, "metrics")
+                        else 0
+                    )
+                    total_pnl = (
+                        getattr(result.metrics, "total_pnl", 0.0)
+                        if hasattr(result, "metrics")
+                        else 0.0
+                    )
 
-            typer.echo(
-                f"✅ Backtest completed: {total_trades} trades, P&L: ${total_pnl:.2f}"
-            )
+                typer.echo(
+                    f"✅ Backtest completed: {total_trades} trades, P&L: ${total_pnl:.2f}"
+                )
 
         # Generate equity curve plot if requested
         if plot:
@@ -682,8 +716,9 @@ def run(
                                 self.events_path = self.out_dir / "events.parquet"
                                 self.symbol = symbol
 
+                        # Use result_dir for single backtest visualization
                         run_ctx = RunContext(
-                            str(result.result_dir if result.result_dir else result_dir),
+                            str(result_dir),
                             cfg.get("data", {}).get("symbol", "BTCUSD"),
                         )
 
@@ -703,11 +738,13 @@ def run(
                                 )
                         else:
                             # Fallback to equity curve
-                            generate_equity_curve_plot([result], result_dir)
+                            if result:
+                                generate_equity_curve_plot([result], result_dir)
 
                     except ImportError:
                         # Fallback to basic equity curve
-                        generate_equity_curve_plot([result], result_dir)
+                        if result:
+                            generate_equity_curve_plot([result], result_dir)
 
                 typer.echo(f"📊 Charts saved to {result_dir}/")
             except Exception as e:

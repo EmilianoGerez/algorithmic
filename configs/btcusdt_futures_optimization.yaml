@@ -1,0 +1,130 @@
+# =========================
+#  BTCUSDT Futures Optimization Config
+# =========================
+
+# ---------- Data (Real BTCUSDT Futures) ----------
+data:
+  source: csv
+  path: "data/BTCUSDT_5m_2025-05-18_futures.csv" # Real BTCUSDT futures data
+  symbol: BTCUSDT
+  tick_size: 0.01 # BTCUSDT precision
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
+  start_date: "2025-01-01" # Full dataset range
+  end_date: "2025-05-18"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# ---------- Walk-forward ----------
+walk_forward:
+  folds: 3
+  train_fraction: 0.6
+  overlap_fraction: 0.1
+
+# ---------- Strategy ----------
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSDT
+  use_mock_strategy: false # NEVER use mock data
+  htf_list: ["60", "240", "1440"]
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    volume_multiple: 1.5
+    killzone: ["01:00", "18:00"]
+    regime_ok: ["bull", "neutral"]
+
+  candidate:
+    min_entry_spacing_minutes: 30
+    global_min_entry_spacing: 10
+    filters:
+      ema_tolerance_pct: 0.5
+      volume_multiple: 1.2
+
+# ---------- Account ----------
+account:
+  initial_balance: 100000.0
+  currency: USDT
+
+# ---------- Risk ----------
+risk:
+  model: fixed_fractional
+  risk_per_trade: 0.02
+  max_positions: 3
+  tp_rr: 2.0
+  sl_atr_multiple: 1.5
+  enable_trailing_stop: false
+
+# ---------- Execution ----------
+execution:
+  slippage_model: linear
+  slippage_bps: 2.0
+  commission_rate: 0.0004
+
+# ---------- Aggregation ----------
+aggregation:
+  source_tf_minutes: 5
+  target_timeframes_minutes: [60, 240, 1440]
+  buffer_size: 1500
+  roll_from: "calendar"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
+  fill_missing: ffill
+
+# ---------- Indicators ----------
+indicators:
+  ema:
+    periods: [21, 50, 200]
+    source: close
+
+  atr:
+    period: 14
+
+  volume_sma:
+    period: 20
+
+# ---------- Detectors ----------
+detectors:
+  fvg:
+    min_gap_atr: 0.5
+    min_gap_pct: 0.1
+    min_rel_vol: 1.2
+    max_age_minutes: 1440
+
+  pivot:
+    swing_strength: 3
+    min_distance_atr: 2.0
+
+# ---------- HLZ (Higher Low Zone) ----------
+hlz:
+  min_strength: 2
+  merge_tolerance: 0.5
+  max_age_hours: 24
+  enable_dynamic_levels: true
+
+# ---------- Zone Watcher ----------
+zone_watcher:
+  min_strength: 1
+  max_zones: 10
+  cleanup_age_hours: 48
+
+# ---------- Pools ----------
+pools:
+  strength_threshold: 2
+  max_pool_size: 5
+  enable_pool_merging: true
+
+# ---------- Confluence ----------
+confluence:
+  min_score: 2
+  factors:
+    fvg_touch: 1
+    pivot_level: 1
+    ema_alignment: 1
+    volume_spike: 1

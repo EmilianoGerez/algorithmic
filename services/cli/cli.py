@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import typer
 from omegaconf import DictConfig, OmegaConf
@@ -958,6 +958,9 @@ def multirun(
         try:
             opt_engine = EnhancedOptimizationEngine(base_cfg, opt_config)
             start_time = time.time()
+
+            # Initialize optimization_result variable with Union type
+            optimization_result: Any | list[dict[str, Any]]
 
             if method == "bayesian":
                 try:

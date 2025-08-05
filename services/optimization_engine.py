@@ -672,18 +672,18 @@ def main() -> None:
                 full_params["risk.tp_rr"] = value
             # Add more mappings as needed
 
-        best_result = study
+        best_result_data = study
     else:
         results = engine.run_parallel_random_search()
-        best_result = max(results, key=lambda x: x["score"])
-        full_params = best_result["params"]
-        best_result = results
+        best_result_dict = max(results, key=lambda x: x["score"])
+        full_params = best_result_dict["params"]
+        best_result_data = results
 
     # Final validation
     validation = engine.validate_best_params(full_params)
 
     # Generate report
-    report = engine.generate_report(best_result, validation)
+    report = engine.generate_report(best_result_data, validation)
 
     # Save report
     report_path = engine.output_dir / "optimization_report.md"

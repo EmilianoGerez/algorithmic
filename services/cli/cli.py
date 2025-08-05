@@ -964,7 +964,7 @@ def multirun(
 
             if method == "bayesian":
                 try:
-                    import optuna  # type: ignore[import-not-found]
+                    import optuna  # type: ignore[import-not-found, import-untyped]
 
                     typer.echo(
                         f"🔬 Starting Bayesian optimization with {trials} trials..."

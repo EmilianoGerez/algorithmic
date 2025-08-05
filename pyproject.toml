@@ -84,13 +84,23 @@ module = [
     "plotly.*",
     "pyarrow.*",
     "mplfinance.*",
-    "python_user_visible.*"
+    "python_user_visible.*",
+    "optuna.*",
+    "joblib.*"
 ]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "services.cli.cli"
 warn_unreachable = false
+
+[[tool.mypy.overrides]]
+module = [
+    "services.optimization_engine",
+    "services.cli.cli"
+]
+# Handle optional dependencies that may be missing in different environments
+disable_error_code = ["unused-ignore"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

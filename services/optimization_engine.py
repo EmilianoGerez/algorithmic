@@ -23,16 +23,23 @@ import numpy as np
 import pandas as pd
 
 try:
-    import optuna  # type: ignore[import-not-found]
-    from optuna.pruners import MedianPruner  # type: ignore[import-not-found]
-    from optuna.samplers import TPESampler  # type: ignore[import-not-found]
+    import optuna  # type: ignore[import-not-found, import-untyped]
+    from optuna.pruners import (
+        MedianPruner,  # type: ignore[import-not-found, import-untyped]
+    )
+    from optuna.samplers import (
+        TPESampler,  # type: ignore[import-not-found, import-untyped]
+    )
 
     HAS_OPTUNA = True
 except ImportError:
     HAS_OPTUNA = False
 
 try:
-    from joblib import Parallel, delayed  # type: ignore[import-not-found]
+    from joblib import (  # type: ignore[import-not-found, import-untyped]
+        Parallel,
+        delayed,
+    )
 
     HAS_JOBLIB = True
 except ImportError:
@@ -657,6 +664,9 @@ def main() -> None:
     )
 
     engine = EnhancedOptimizationEngine(base_config, opt_config)
+
+    # Initialize best_result_data with Union type for different optimization methods
+    best_result_data: Any
 
     # Run optimization
     if args.method == "bayesian" and HAS_OPTUNA:

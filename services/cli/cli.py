@@ -824,10 +824,13 @@ def multirun(
         raise typer.Exit(1) from e
 
     # Determine optimization method and configuration
-    if method in ["bayesian", "random"] and trials is None:
+    # Validate required parameters for advanced methods
+    needs_trials = method in ["bayesian", "random"]
+    if needs_trials and trials is None:
         typer.echo(f"❌ {method} search requires --trials parameter", err=True)
         raise typer.Exit(1)
 
+    # Continue with valid configuration
     if method == "grid":
         # Traditional grid search using existing sweep engine
         typer.echo("🔧 Using traditional grid search...")
@@ -882,11 +885,11 @@ def multirun(
             typer.echo(f"🚀 Starting grid search with {jobs} workers...")
             start_time = time.time()
 
-            engine = ParameterSweepEngine(sweep_cfg)
-            results = engine.run_sweep()
+            sweep_engine = ParameterSweepEngine(sweep_cfg)
+            results = sweep_engine.run_sweep()
 
             # Save results
-            results_path = engine.save_results()
+            results_path = sweep_engine.save_results()
 
             # Summary
             end_time = time.time()
@@ -901,7 +904,7 @@ def multirun(
 
             if successful > 0:
                 # Show top results
-                top_results = engine.get_top_results(5)
+                top_results = sweep_engine.get_top_results(5)
                 typer.echo("\n🏆 Top 5 Results:")
                 for i, result in enumerate(top_results, 1):
                     typer.echo(
@@ -911,7 +914,7 @@ def multirun(
                     )
 
                 # Parameter importance analysis
-                importance = engine.analyze_parameter_importance()
+                importance = sweep_engine.analyze_parameter_importance()
                 if importance:
                     typer.echo("\n📈 Parameter Importance:")
                     sorted_importance = sorted(
@@ -953,17 +956,17 @@ def multirun(
 
         # Run enhanced optimization
         try:
-            engine = EnhancedOptimizationEngine(base_cfg, opt_config)
+            opt_engine = EnhancedOptimizationEngine(base_cfg, opt_config)
             start_time = time.time()
 
             if method == "bayesian":
                 try:
-                    import optuna
+                    import optuna  # type: ignore[import-not-found]
 
                     typer.echo(
                         f"🔬 Starting Bayesian optimization with {trials} trials..."
                     )
-                    study = engine.run_bayesian_optimization()
+                    study = opt_engine.run_bayesian_optimization()
 
                     # Extract best parameters
                     best_trial = study.best_trial
@@ -1003,15 +1006,15 @@ def multirun(
 
             elif method == "random":
                 typer.echo(f"🎲 Starting random search with {trials} trials...")
-                results = engine.run_parallel_random_search()
+                random_results = opt_engine.run_parallel_random_search()
 
                 # Find best result
-                successful_results = [r for r in results if r["success"]]
+                successful_results = [r for r in random_results if r["success"]]
                 if successful_results:
                     best_result = max(successful_results, key=lambda x: x["score"])
                     full_params = best_result["params"]  # Already in full path format
                     best_score = best_result["score"]
-                    optimization_result = results
+                    optimization_result = random_results
                 else:
                     typer.echo("❌ No successful trials in random search", err=True)
                     raise typer.Exit(1)
@@ -1019,7 +1022,7 @@ def multirun(
             # Final validation with full walk-forward
             typer.echo("🔍 Running final validation...")
             try:
-                validation_result = engine.validate_best_params(full_params)
+                validation_result = opt_engine.validate_best_params(full_params)
                 typer.echo("✅ Validation completed successfully")
             except Exception as e:
                 typer.echo(f"❌ Validation failed: {e}")
@@ -1028,8 +1031,8 @@ def multirun(
                 raise typer.Exit(1) from e
 
             # Generate and save report
-            report = engine.generate_report(optimization_result, validation_result)
-            report_path = engine.output_dir / "optimization_report.md"
+            report = opt_engine.generate_report(optimization_result, validation_result)
+            report_path = opt_engine.output_dir / "optimization_report.md"
             with open(report_path, "w") as f:
                 f.write(report)
 
@@ -1040,7 +1043,7 @@ def multirun(
             typer.echo(f"   • Trials completed: {trials}")
             typer.echo(f"   • Best score: {best_score:.4f}")
             typer.echo(f"   • Total time: {end_time - start_time:.1f} seconds")
-            typer.echo(f"   • Results saved to: {engine.output_dir}")
+            typer.echo(f"   • Results saved to: {opt_engine.output_dir}")
 
             typer.echo("\n🏆 Best Parameters:")
             for param, value in full_params.items():

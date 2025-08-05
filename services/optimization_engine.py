@@ -23,16 +23,16 @@ import numpy as np
 import pandas as pd
 
 try:
-    import optuna
-    from optuna.pruners import MedianPruner
-    from optuna.samplers import TPESampler
+    import optuna  # type: ignore[import-not-found]
+    from optuna.pruners import MedianPruner  # type: ignore[import-not-found]
+    from optuna.samplers import TPESampler  # type: ignore[import-not-found]
 
     HAS_OPTUNA = True
 except ImportError:
     HAS_OPTUNA = False
 
 try:
-    from joblib import Parallel, delayed
+    from joblib import Parallel, delayed  # type: ignore[import-not-found]
 
     HAS_JOBLIB = True
 except ImportError:
@@ -85,8 +85,8 @@ class OptimizationCache:
     def __init__(self, cache_dir: str):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self._aggregation_cache = {}
-        self._indicator_cache = {}
+        self._aggregation_cache: dict[str, Any] = {}
+        self._indicator_cache: dict[str, Any] = {}
 
     def get_cache_key(self, config: dict[str, Any], data_path: str) -> str:
         """Generate cache key from config and data."""
@@ -103,7 +103,7 @@ class OptimizationCache:
         if cache_file.exists():
             try:
                 with open(cache_file, "rb") as f:
-                    return pickle.load(f)
+                    return pickle.load(f)  # type: ignore[no-any-return]
             except Exception as e:
                 logger.warning(f"Failed to load cache {cache_file}: {e}")
         return None
@@ -129,15 +129,15 @@ class EnhancedOptimizationEngine:
         )
 
         # Results tracking
-        self.results = []
-        self.best_params = None
+        self.results: list[dict[str, Any]] = []
+        self.best_params: dict[str, Any] | None = None
         self.best_score = float("-inf")
 
         # Setup output directory
         self.output_dir = Path(config.output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def define_search_space(self, trial) -> dict[str, Any]:
+    def define_search_space(self, trial: Any) -> dict[str, Any]:
         """Define the hyperparameter search space for Optuna."""
         params = {}
 
@@ -192,7 +192,7 @@ class EnhancedOptimizationEngine:
 
         return params
 
-    def objective_function(self, trial) -> float:
+    def objective_function(self, trial: Any) -> float:
         """Objective function for optimization."""
         try:
             # Get trial parameters
@@ -231,7 +231,7 @@ class EnhancedOptimizationEngine:
             # Return poor score rather than crash
             return float("-inf")
 
-    def _evaluate_quick(self, params: dict[str, Any], trial) -> float:
+    def _evaluate_quick(self, params: dict[str, Any], trial: Any) -> float:
         """Quick evaluation on subset of data."""
         # Create trial config with reduced data
         trial_config = self._build_trial_config(params)
@@ -292,7 +292,7 @@ class EnhancedOptimizationEngine:
             if results and all(r.success for r in results):
                 # Average score across folds
                 scores = [self._extract_score(r.metrics) for r in results]
-                return np.mean(scores)
+                return float(np.mean(scores))
         else:
             result = runner.run()
             if result.success and hasattr(result, "metrics"):
@@ -351,7 +351,7 @@ class EnhancedOptimizationEngine:
             + (1 - abs(max_drawdown)) * 50 * 0.1  # Drawdown penalty
         )
 
-        return score
+        return float(score)
 
     def run_bayesian_optimization(self) -> optuna.Study:
         """Run Bayesian optimization with Optuna."""
@@ -409,7 +409,7 @@ class EnhancedOptimizationEngine:
 
         # Run in parallel
         if self.config.use_multiprocessing and HAS_JOBLIB:
-            results = Parallel(n_jobs=self.config.n_jobs)(
+            results: list[dict[str, Any]] = Parallel(n_jobs=self.config.n_jobs)(
                 delayed(self._evaluate_params)(params) for params in param_combinations
             )
         else:
@@ -564,7 +564,7 @@ class EnhancedOptimizationEngine:
         return metrics
 
     def generate_report(
-        self, study_or_results, validation_result: dict | None = None
+        self, study_or_results: Any, validation_result: dict | None = None
     ) -> str:
         """Generate optimization report."""
         report_lines = [
@@ -629,7 +629,7 @@ class EnhancedOptimizationEngine:
         return "\n".join(report_lines)
 
 
-def main():
+def main() -> None:
     """Example usage of the enhanced optimization engine."""
     import argparse
 

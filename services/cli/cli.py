@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import typer
 from omegaconf import DictConfig, OmegaConf
@@ -767,21 +767,38 @@ def multirun(
         "sweeps", "--output", "-o", help="Output directory for sweep results"
     ),
     jobs: int = typer.Option(4, "--jobs", "-j", help="Number of parallel jobs"),
+    method: str = typer.Option(
+        "grid", "--method", "-m", help="Search method: 'grid', 'bayesian', 'random'"
+    ),
+    trials: int = typer.Option(
+        None, "--trials", "-t", help="Number of trials (overrides grid enumeration)"
+    ),
+    timeout: int = typer.Option(None, "--timeout", help="Timeout in seconds"),
+    multifidelity: bool = typer.Option(
+        False, "--multifidelity", help="Enable multi-fidelity optimization"
+    ),
+    cache: bool = typer.Option(
+        True, "--cache/--no-cache", help="Enable preprocessing cache"
+    ),
 ) -> None:
-    """Run parameter optimization sweep.
+    """Run parameter optimization sweep with advanced search strategies.
 
     Examples:
-        # Basic parameter sweep
+        # Traditional grid search
         quantbt multirun --sweep configs/sweeps/risk_optimization.yaml
 
-        # Parallel execution
-        quantbt multirun --sweep configs/sweeps/risk_optimization.yaml --jobs 8
+        # Bayesian optimization (requires optuna)
+        quantbt multirun --sweep configs/sweeps/params.yaml --method bayesian --trials 200
+
+        # Parallel random search
+        quantbt multirun --sweep configs/sweeps/params.yaml --method random --trials 100 --jobs 8
+
+        # Multi-fidelity optimization
+        quantbt multirun --sweep configs/sweeps/params.yaml --method bayesian --multifidelity
     """
     import time
 
     import yaml
-
-    from services.sweep import ParameterSweepEngine, SweepConfiguration, SweepParameter
 
     # Load base configuration
     try:
@@ -806,91 +823,258 @@ def multirun(
         typer.echo(f"❌ Failed to load sweep config: {e}", err=True)
         raise typer.Exit(1) from e
 
-    # Parse sweep parameters
-    try:
-        parameters = []
-        param_count = 1
+    # Determine optimization method and configuration
+    # Validate required parameters for advanced methods
+    needs_trials = method in ["bayesian", "random"]
+    if needs_trials and trials is None:
+        typer.echo(f"❌ {method} search requires --trials parameter", err=True)
+        raise typer.Exit(1)
 
-        for param_name, param_config in sweep_dict.items():
-            if isinstance(param_config, list):
-                # Simple list of values
-                param_values = param_config
-            elif isinstance(param_config, dict) and "values" in param_config:
-                # Extended configuration with metadata
-                param_values = param_config["values"]
-            else:
-                typer.echo(f"❌ Invalid parameter config for '{param_name}'", err=True)
-                raise typer.Exit(1)
-
-            parameters.append(SweepParameter(name=param_name, values=param_values))
-            param_count *= len(param_values)
-
-        typer.echo(
-            f"📊 Sweep parameters: {len(parameters)} params, {param_count} combinations"
+    # Continue with valid configuration
+    if method == "grid":
+        # Traditional grid search using existing sweep engine
+        typer.echo("🔧 Using traditional grid search...")
+        from services.sweep import (
+            ParameterSweepEngine,
+            SweepConfiguration,
+            SweepParameter,
         )
 
-        if param_count > 100:
+        # Parse sweep parameters for grid search
+        try:
+            parameters = []
+            param_count = 1
+
+            for param_name, param_config in sweep_dict.items():
+                if isinstance(param_config, list):
+                    param_values = param_config
+                elif isinstance(param_config, dict) and "values" in param_config:
+                    param_values = param_config["values"]
+                else:
+                    typer.echo(
+                        f"❌ Invalid parameter config for '{param_name}'", err=True
+                    )
+                    raise typer.Exit(1)
+
+                parameters.append(SweepParameter(name=param_name, values=param_values))
+                param_count *= len(param_values)
+
             typer.echo(
-                f"⚠️  Large sweep with {param_count} combinations. This may take significant time."
+                f"📊 Grid search: {len(parameters)} params, {param_count} combinations"
             )
 
-    except Exception as e:
-        typer.echo(f"❌ Failed to parse sweep parameters: {e}", err=True)
-        raise typer.Exit(1) from e
-
-    # Create sweep configuration
-    sweep_cfg = SweepConfiguration(
-        base_config=base_cfg, parameters=parameters, max_workers=jobs, output_dir=output
-    )
-
-    # Execute sweep
-    try:
-        typer.echo(f"🚀 Starting parameter sweep with {jobs} workers...")
-        start_time = time.time()
-
-        engine = ParameterSweepEngine(sweep_cfg)
-        results = engine.run_sweep()
-
-        # Save results
-        results_path = engine.save_results()
-
-        # Summary
-        end_time = time.time()
-        successful = sum(1 for r in results if r.success)
-
-        typer.echo("\n🎯 Sweep Summary:")
-        typer.echo(f"   • Total combinations: {len(results)}")
-        typer.echo(f"   • Successful runs: {successful}")
-        typer.echo(f"   • Failed runs: {len(results) - successful}")
-        typer.echo(f"   • Total time: {end_time - start_time:.1f} seconds")
-        typer.echo(f"   • Results saved to: {results_path}")
-
-        if successful > 0:
-            # Show top results
-            top_results = engine.get_top_results(5)
-            typer.echo("\n🏆 Top 5 Results:")
-            for i, result in enumerate(top_results, 1):
+            if param_count > 1000:
                 typer.echo(
-                    f"   {i}. Sharpe: {result.sharpe_ratio:.3f}, "
-                    f"Return: {result.total_return:.2%}, "
-                    f"Params: {result.parameter_combination}"
+                    f"⚠️  Large grid with {param_count} combinations. Consider using --method bayesian or --method random"
                 )
 
-            # Parameter importance analysis
-            importance = engine.analyze_parameter_importance()
-            if importance:
-                typer.echo("\n📈 Parameter Importance:")
-                sorted_importance = sorted(
-                    importance.items(), key=lambda x: x[1], reverse=True
-                )
-                for param_name, score in sorted_importance:
-                    typer.echo(f"   • {param_name}: {score:.3f}")
+        except Exception as e:
+            typer.echo(f"❌ Failed to parse sweep parameters: {e}", err=True)
+            raise typer.Exit(1) from e
 
-        typer.echo("\n✅ Parameter sweep completed successfully!")
+        # Create sweep configuration
+        sweep_cfg = SweepConfiguration(
+            base_config=base_cfg,
+            parameters=parameters,
+            max_workers=jobs,
+            output_dir=output,
+        )
 
-    except Exception as e:
-        typer.echo(f"❌ Parameter sweep failed: {e}", err=True)
-        raise typer.Exit(1) from e
+        # Execute traditional sweep
+        try:
+            typer.echo(f"🚀 Starting grid search with {jobs} workers...")
+            start_time = time.time()
+
+            sweep_engine = ParameterSweepEngine(sweep_cfg)
+            results = sweep_engine.run_sweep()
+
+            # Save results
+            results_path = sweep_engine.save_results()
+
+            # Summary
+            end_time = time.time()
+            successful = sum(1 for r in results if r.success)
+
+            typer.echo("\n🎯 Grid Search Summary:")
+            typer.echo(f"   • Total combinations: {len(results)}")
+            typer.echo(f"   • Successful runs: {successful}")
+            typer.echo(f"   • Failed runs: {len(results) - successful}")
+            typer.echo(f"   • Total time: {end_time - start_time:.1f} seconds")
+            typer.echo(f"   • Results saved to: {results_path}")
+
+            if successful > 0:
+                # Show top results
+                top_results = sweep_engine.get_top_results(5)
+                typer.echo("\n🏆 Top 5 Results:")
+                for i, result in enumerate(top_results, 1):
+                    typer.echo(
+                        f"   {i}. Sharpe: {result.sharpe_ratio:.3f}, "
+                        f"Return: {result.total_return:.2%}, "
+                        f"Params: {result.parameter_combination}"
+                    )
+
+                # Parameter importance analysis
+                importance = sweep_engine.analyze_parameter_importance()
+                if importance:
+                    typer.echo("\n📈 Parameter Importance:")
+                    sorted_importance = sorted(
+                        importance.items(), key=lambda x: x[1], reverse=True
+                    )
+                    for param_name, score in sorted_importance:
+                        typer.echo(f"   • {param_name}: {score:.3f}")
+
+            typer.echo("\n✅ Grid search completed successfully!")
+
+        except Exception as e:
+            typer.echo(f"❌ Grid search failed: {e}", err=True)
+            raise typer.Exit(1) from e
+
+    else:
+        # Advanced optimization methods
+        try:
+            from services.optimization_engine import (
+                EnhancedOptimizationEngine,
+                OptimizationConfig,
+            )
+        except ImportError as e:
+            typer.echo(f"❌ Enhanced optimization not available: {e}", err=True)
+            typer.echo("💡 Install requirements: pip install optuna joblib", err=True)
+            raise typer.Exit(1) from e
+
+        typer.echo(f"🧠 Using {method} optimization...")
+
+        # Create optimization configuration
+        opt_config = OptimizationConfig(
+            method=method,
+            n_trials=trials,
+            timeout_seconds=timeout,
+            n_jobs=jobs,
+            use_multifidelity=multifidelity,
+            cache_preprocessing=cache,
+            output_dir=output,
+        )
+
+        # Run enhanced optimization
+        try:
+            opt_engine = EnhancedOptimizationEngine(base_cfg, opt_config)
+            start_time = time.time()
+
+            # Initialize optimization_result variable with Union type
+            optimization_result: Any | list[dict[str, Any]]
+
+            if method == "bayesian":
+                try:
+                    import optuna  # type: ignore[import-not-found, import-untyped]
+
+                    typer.echo(
+                        f"🔬 Starting Bayesian optimization with {trials} trials..."
+                    )
+                    study = opt_engine.run_bayesian_optimization()
+
+                    # Extract best parameters
+                    best_trial = study.best_trial
+                    best_params = best_trial.params
+                    best_score = best_trial.value
+
+                    # Map parameter names back to full paths
+                    full_params = {}
+                    for key, value in best_params.items():
+                        # This mapping should match the define_search_space method
+                        param_mapping = {
+                            "risk_per_trade": "risk.risk_per_trade",
+                            "tp_rr": "risk.tp_rr",
+                            "sl_atr_multiple": "risk.sl_atr_multiple",
+                            "fvg_min_gap_atr": "detectors.fvg.min_gap_atr",
+                            "fvg_min_gap_pct": "detectors.fvg.min_gap_pct",
+                            "fvg_min_rel_vol": "detectors.fvg.min_rel_vol",
+                            "hlz_min_strength": "hlz.min_strength",
+                            "hlz_merge_tolerance": "hlz.merge_tolerance",
+                            "zone_min_strength": "zone_watcher.min_strength",
+                            "pool_strength_threshold": "pools.strength_threshold",
+                            "entry_spacing": "candidate.min_entry_spacing_minutes",
+                            "ema_tolerance": "candidate.filters.ema_tolerance_pct",
+                            "volume_multiple": "candidate.filters.volume_multiple",
+                        }
+                        full_key = param_mapping.get(key, key)
+                        full_params[full_key] = value
+
+                    optimization_result = study
+
+                except ImportError:
+                    typer.echo(
+                        "❌ Optuna not installed. Install with: pip install optuna",
+                        err=True,
+                    )
+                    raise typer.Exit(1) from None
+
+            elif method == "random":
+                typer.echo(f"🎲 Starting random search with {trials} trials...")
+                random_results = opt_engine.run_parallel_random_search()
+
+                # Find best result
+                successful_results = [r for r in random_results if r["success"]]
+                if successful_results:
+                    best_result = max(successful_results, key=lambda x: x["score"])
+                    full_params = best_result["params"]  # Already in full path format
+                    best_score = best_result["score"]
+                    optimization_result = random_results
+                else:
+                    typer.echo("❌ No successful trials in random search", err=True)
+                    raise typer.Exit(1)
+
+            # Final validation with full walk-forward
+            typer.echo("🔍 Running final validation...")
+            try:
+                validation_result = opt_engine.validate_best_params(full_params)
+                typer.echo("✅ Validation completed successfully")
+            except Exception as e:
+                typer.echo(f"❌ Validation failed: {e}")
+                typer.echo(f"Parameters type: {type(full_params)}")
+                typer.echo(f"Parameters content: {full_params}")
+                raise typer.Exit(1) from e
+
+            # Generate and save report
+            report = opt_engine.generate_report(optimization_result, validation_result)
+            report_path = opt_engine.output_dir / "optimization_report.md"
+            with open(report_path, "w") as f:
+                f.write(report)
+
+            # Summary
+            end_time = time.time()
+            typer.echo(f"\n🎯 {method.title()} Optimization Summary:")
+            typer.echo(f"   • Method: {method}")
+            typer.echo(f"   • Trials completed: {trials}")
+            typer.echo(f"   • Best score: {best_score:.4f}")
+            typer.echo(f"   • Total time: {end_time - start_time:.1f} seconds")
+            typer.echo(f"   • Results saved to: {opt_engine.output_dir}")
+
+            typer.echo("\n🏆 Best Parameters:")
+            for param, value in full_params.items():
+                if isinstance(value, float):
+                    typer.echo(f"   • {param}: {value:.6f}")
+                else:
+                    typer.echo(f"   • {param}: {value}")
+
+            # Validation metrics
+            if "validation_metrics" in validation_result:
+                validation_metrics = validation_result["validation_metrics"]
+                typer.echo("\n📊 Validation Metrics:")
+                key_metrics = [
+                    "total_pnl_mean",
+                    "sharpe_ratio_mean",
+                    "win_rate_mean",
+                    "total_trades_mean",
+                ]
+                for key in key_metrics:
+                    if key in validation_metrics:
+                        typer.echo(f"   • {key}: {validation_metrics[key]:.4f}")
+
+            typer.echo(f"\n📄 Full report: {report_path}")
+            typer.echo("\n✅ Advanced optimization completed successfully!")
+
+        except Exception as e:
+            typer.echo(f"❌ {method.title()} optimization failed: {e}", err=True)
+            raise typer.Exit(1) from e
 
 
 @app.command()

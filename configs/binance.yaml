@@ -5,7 +5,7 @@
 # ---------- Data ----------
 data:
   source: csv
-  path: "data/BTC_USD_5min_20250801_001617.csv"
+  path: "data/BTC_USD_5min_20250801_160031.csv"
   symbol: BTCUSDT
   tick_size: 0.01 # Price precision for BTCUSDT
   timeframe: "5m"

@@ -1,0 +1,189 @@
+# =========================
+#  BTCUSDT Optimization Base Config
+# =========================
+
+# ---------- Data (Real BTCUSDT Futures Data) ----------
+data:
+  source: csv
+  path: "data/BTC_USD_5min_20250801_160031.csv" # Real BTCUSDT futures data
+  symbol: BTCUSDT
+  tick_size: 0.01 # BTCUSDT precision
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
+  start_date: "2024-03-01" # One month of data for optimization
+  end_date: "2024-04-01"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# ---------- Walk-forward ----------
+walk_forward:
+  folds: 2
+  train_fraction: 0.7
+  overlap_fraction: 0.1
+
+# ---------- Sweep (disabled here) ----------
+sweep:
+  enabled: false
+  parameters: {}
+
+# ---------- Strategy ----------
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSDT
+  use_mock_strategy: false
+  htf_list: ["60", "240", "1440"]
+
+# ---------- Aggregation ----------
+aggregation:
+  source_tf_minutes: 5
+  target_timeframes_minutes: [60, 240, 1440]
+  buffer_size: 1500
+  roll_from: "calendar"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
+  fill_missing: ffill
+
+# ---------- Indicators ----------
+indicators:
+  ema21_period: 21
+  ema50_period: 50
+  atr_period: 14
+  volume_sma_period: 20
+  regime_sensitivity: 0.001
+
+# ---------- Candidate Filters ----------
+candidate:
+  min_entry_spacing_minutes: 45
+  global_min_entry_spacing: 30
+  enable_spacing_throttle: true
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    ema_tolerance_pct: 0.001
+    linger_minutes: 60
+    reclaim_requires_ema: true
+    exclude_low_volume: true
+    volume_multiple: 2.0
+    use_enhanced_killzone: true
+    killzone_sessions: ["asia", "london", "ny"]
+    killzone: ["01:00", "18:00"]
+    regime: ["bear", "bull"]
+
+# ---------- Detectors ----------
+detectors:
+  enabled_timeframes: ["60", "240", "1440"]
+  fvg:
+    enabled: true
+    min_gap_atr: 0.25
+    min_gap_pct: 0.025
+    min_rel_vol: 1.5
+  pivot:
+    enabled: true
+    lookback_period: 5
+    min_atr_distance: 1.2
+    strength_calc: atr_based
+
+# ---------- HLZ (Higher-Level Zones) ----------
+hlz:
+  min_strength: 2.5
+  max_active_hlzs: 500
+  merge_tolerance: 0.3
+  recompute_on_update: true
+  side_mixing: false
+  min_members: 2
+  tf_weight:
+    "60": 1.0
+    "240": 2.5
+    "1440": 4.0
+
+# ---------- Pools ----------
+pools:
+  strength_threshold: 0.5
+  max_pools_per_tf: 10000
+  grace_period_minutes: 5
+  auto_expire_interval: 30s
+  "60":
+    ttl: 6h
+    hit_tolerance: 0.0
+  "240":
+    ttl: 3d
+    hit_tolerance: 0.0
+  "1440":
+    ttl: 3w
+    hit_tolerance: 0.0
+
+# ---------- Pivot Pools ----------
+pivot_pools:
+  strength_threshold: 0.5
+  max_pools_per_tf: 5000
+  grace_period_minutes: 10
+  auto_expire_interval: 60s
+  "60":
+    ttl: 12h
+    hit_tolerance: 0.0
+    min_atr_distance: 0.8
+  "240":
+    ttl: 5d
+    hit_tolerance: 0.0
+    min_atr_distance: 1.0
+  "1440":
+    ttl: 1M
+    hit_tolerance: 0.0
+    min_atr_distance: 1.5
+
+# ---------- Zone Watcher ----------
+zone_watcher:
+  min_strength: 1.2
+  max_active_zones: 500
+  price_tolerance: 0.1
+  confirm_closure: false
+
+# ---------- Risk Management ----------
+risk:
+  model: atr
+  risk_per_trade: 0.007
+  max_position_pct: 0.1
+  min_position: 0.01
+  atr_period: 14
+  sl_atr_multiple: 1.5
+  tp_rr: 3.0
+
+# ---------- Execution ----------
+execution:
+  mode: backtest
+  broker: paper
+  realtime_simulation: false
+  deterministic_seed: 42
+  log_level: INFO
+  dump_events: true
+  export_data_for_viz: true
+  enable_latency_profiling: false
+  enable_memory_tracking: false
+  slippage:
+    entry_pct: 0.0002
+    exit_pct: 0.0002
+  broker_config:
+    name: binance
+    testnet: true
+    initial_balance: 10000.0
+    commission_per_trade: 0.0004
+    max_retries: 3
+    retry_backoff: 1.0
+    min_request_interval: 0.1
+    rest_timeout: 10
+    ws_timeout: 30
+
+# ---------- Feeds ----------
+feeds:
+  source: csv
+  base_tf: 5m
+
+# ---------- Runtime ----------
+runtime:
+  use_mock_components: true

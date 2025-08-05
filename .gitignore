@@ -48,6 +48,22 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+
+# Project-specific cleanup patterns
+*_SUMMARY.md
+*_REPORT.md
+*_IMPLEMENTATION*.md
+HOW_*.md
+analyze_*.py
+debug_*.py
+demo_*.py
+update_*.py
+enhanced_*.py
+test_*.py
+*test_chunk*
+sweeps/
+cache/
+results/*.html
 .pytest_cache/
 cover/
 

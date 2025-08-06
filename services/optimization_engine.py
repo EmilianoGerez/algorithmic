@@ -345,7 +345,7 @@ class EnhancedOptimizationEngine:
     def _save_study_results(self, study: optuna.Study, filename: str) -> None:
         """Save study results to file."""
         try:
-            results = {
+            results: dict[str, Any] = {
                 "study_name": study.study_name,
                 "direction": study.direction.name,
                 "best_value": study.best_value if study.best_trial else None,
@@ -369,7 +369,9 @@ class EnhancedOptimizationEngine:
                     if trial.datetime_complete
                     else None,
                 }
-                results["trials"].append(trial_data)
+                trials_list = results["trials"]
+                if isinstance(trials_list, list):
+                    trials_list.append(trial_data)
 
             # Save to file
             output_file = self.output_path / filename

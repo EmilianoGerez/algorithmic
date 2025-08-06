@@ -379,8 +379,6 @@ class ParallelOptimizer:
                 "n_trials": len(study.trials),
                 "best_value": study.best_value if study.best_trial else None,
                 "best_params": study.best_params if study.best_trial else None,
-                "study_state": study.study_state.name,
-                "creation_time": study.creation_time,
                 "sampler": type(study.sampler).__name__,
                 "pruner": type(study.pruner).__name__,
             }

@@ -25,6 +25,7 @@ algorithmic/
 ## 🚀 Quick Start
 
 ### 1. Installation
+
 ```bash
 # Set up environment
 python -m venv .venv
@@ -39,6 +40,7 @@ pip install -e .
 ```
 
 ### 2. Run a Backtest
+
 ```bash
 # Using the CLI command
 quantbt --config configs/optimized_btc_20250801.yaml
@@ -51,6 +53,7 @@ python -m services.backtester --file data/BTCUSDT_5m_2025-05-18_futures.csv
 ```
 
 ### 3. Run Optimization
+
 ```bash
 # 3-phase optimization (recommended)
 python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
@@ -60,6 +63,7 @@ python tools/optimization/run_ultra_fast_optimization.py
 ```
 
 ### 4. Analyze Results
+
 ```bash
 # Generate performance dashboard
 python tools/analysis/optimization_dashboard.py

@@ -5,6 +5,7 @@ Tools for running various optimization strategies and configurations.
 ## 🚀 Available Tools
 
 ### `run_3phase_optimization.py`
+
 **Main 3-phase optimization runner** - The primary optimization tool.
 
 ```bash
@@ -12,6 +13,7 @@ python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
 ```
 
 **Features:**
+
 - Phase 1: Random exploration
 - Phase 2: Random refinement
 - Phase 3: Bayesian validation
@@ -19,15 +21,19 @@ python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
 - M3 Pro optimized for speed
 
 ### `run_ultra_fast_optimization.py`
+
 **Quick optimization testing** - For rapid parameter testing.
 
 ### `run_optimization_demo.py`
+
 **Demo optimization** - Simple demonstration of optimization capabilities.
 
 ### `production_optimization_demo.py`
+
 **Production optimization** - Production-ready optimization with full validation.
 
 ### `test_real_optimization.py`
+
 **Real optimization testing** - Test optimization with real data validation.
 
 ## 📊 Parameters Optimized
@@ -40,6 +46,7 @@ python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
 ## 📈 Results
 
 Optimization results are saved to:
+
 - `results/phase1_random/`
 - `results/phase2_random/`
 - `results/phase3_bayesian/`

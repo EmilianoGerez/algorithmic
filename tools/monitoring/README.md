@@ -5,6 +5,7 @@ Tools for live monitoring and tracking of optimization processes.
 ## 🚀 Available Tools
 
 ### `monitor_optimization_live.py`
+
 **Live optimization monitoring** - Real-time optimization tracking.
 
 ```bash
@@ -12,6 +13,7 @@ python tools/monitoring/monitor_optimization_live.py
 ```
 
 **Features:**
+
 - Real-time optimization progress tracking
 - Live performance metrics updates
 - Trial completion monitoring

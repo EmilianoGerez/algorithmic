@@ -5,6 +5,7 @@ Tools for analyzing optimization performance and trading results.
 ## 🚀 Available Tools
 
 ### `optimization_dashboard.py`
+
 **Comprehensive optimization dashboard** - Complete performance analysis.
 
 ```bash
@@ -12,6 +13,7 @@ python tools/analysis/optimization_dashboard.py
 ```
 
 **Features:**
+
 - Phase-by-phase performance comparison
 - Parameter evolution tracking
 - Efficiency metrics calculation
@@ -19,6 +21,7 @@ python tools/analysis/optimization_dashboard.py
 - Export to CSV and markdown reports
 
 ### `analyze_optimization_performance.py`
+
 **Detailed performance analysis** - In-depth optimization analysis.
 
 ## 📈 Generated Reports

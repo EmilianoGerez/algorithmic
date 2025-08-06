@@ -214,6 +214,40 @@ class BacktestConfig(BaseModel):
             data=DataConfig(**cfg.data),
         )
 
+    @classmethod
+    def from_dict(cls, config_dict: dict) -> BacktestConfig:
+        """Create BacktestConfig from dictionary."""
+        # Convert dict to BacktestConfig, handling nested structures
+        config_copy = config_dict.copy()
+
+        # Handle nested configs
+        if "strategy" in config_copy and isinstance(config_copy["strategy"], dict):
+            config_copy["strategy"] = StrategyConfig(**config_copy["strategy"])
+
+        if "risk" in config_copy and isinstance(config_copy["risk"], dict):
+            config_copy["risk"] = RiskConfig(**config_copy["risk"])
+
+        if "account" in config_copy and isinstance(config_copy["account"], dict):
+            config_copy["account"] = AccountConfig(**config_copy["account"])
+
+        if "data" in config_copy and isinstance(config_copy["data"], dict):
+            config_copy["data"] = DataConfig(**config_copy["data"])
+
+        if "execution" in config_copy and isinstance(config_copy["execution"], dict):
+            config_copy["execution"] = ExecutionConfig(**config_copy["execution"])
+
+        if "walk_forward" in config_copy and isinstance(
+            config_copy["walk_forward"], dict
+        ):
+            config_copy["walk_forward"] = WalkForwardConfig(
+                **config_copy["walk_forward"]
+            )
+
+        if "sweep" in config_copy and isinstance(config_copy["sweep"], dict):
+            config_copy["sweep"] = SweepConfig(**config_copy["sweep"])
+
+        return cls(**config_copy)
+
 
 @dataclass
 class BacktestMetrics:

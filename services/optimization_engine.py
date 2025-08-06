@@ -1,51 +1,22 @@
 #!/usr/bin/env python3
 """
-Enhanced HTF Strategy Optimization Engine
-
-Implements modern hyperparameter optimization strategies:
-- Bayesian optimization via Optuna
-- Multi-fidelity optimization
-- Parallel execution with caching
-- Early stopping for unpromising trials
+Enhanced Optimization Engine
+Production-grade optimization engine that provides a high-level interface
+for the 3-phase optimization system using the ParallelOptimizer underneath.
 """
 
-import hashlib
 import json
 import logging
-import pickle
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-import numpy as np
-import pandas as pd
-
-try:
-    import optuna  # type: ignore[import-not-found, import-untyped]
-    from optuna.pruners import (
-        MedianPruner,  # type: ignore[import-not-found, import-untyped]
-    )
-    from optuna.samplers import (
-        TPESampler,  # type: ignore[import-not-found, import-untyped]
-    )
-
-    HAS_OPTUNA = True
-except ImportError:
-    HAS_OPTUNA = False
-
-try:
-    from joblib import (  # type: ignore[import-not-found, import-untyped]
-        Parallel,
-        delayed,
-    )
-
-    HAS_JOBLIB = True
-except ImportError:
-    HAS_JOBLIB = False
+import optuna
+from pydantic import BaseModel
 
 from services.models import BacktestConfig
+from services.parallel_optimizer import ParallelOptimizer
 from services.runner import BacktestRunner
 
 logger = logging.getLogger(__name__)
@@ -53,656 +24,411 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class OptimizationConfig:
-    """Configuration for optimization runs."""
+    """Configuration for optimization engine."""
 
-    # Search strategy
-    method: str = "bayesian"  # "bayesian", "random", "grid"
-    n_trials: int = 200
-    timeout_seconds: int | None = None
+    # Core optimization settings
+    method: str = "random"  # "random" or "bayesian"
+    n_trials: int = 50
+    timeout_seconds: int = 1800
 
-    # Parallelization
-    n_jobs: int = 4
-    use_multiprocessing: bool = True
-
-    # Multi-fidelity
+    # Multi-fidelity settings
     use_multifidelity: bool = True
     initial_data_fraction: float = 0.3
-    promotion_threshold: float = 0.5  # Top 50% advance to full data
 
-    # Caching
+    # Parallelization settings
+    n_jobs: int = 8
+    use_multiprocessing: bool = True
+
+    # Pruning settings
+    enable_pruning: bool = False
+    min_trials_for_pruning: int = 5
+
+    # Caching settings
     cache_preprocessing: bool = True
     cache_dir: str = "cache/optimization"
 
-    # Early stopping
-    enable_pruning: bool = True
-    min_trials_for_pruning: int = 20
+    # Validation settings
+    discovery_folds: int = 2
+    validation_folds: int = 3
 
-    # Walk-forward during optimization
-    discovery_folds: int = 2  # Fast discovery phase (minimum 2 for validation)
-    validation_folds: int = 3  # Final validation
-
-    # Output
+    # Output settings
     output_dir: str = "results/optimization"
     save_study: bool = True
 
 
-class OptimizationCache:
-    """Caches expensive preprocessing operations."""
-
-    def __init__(self, cache_dir: str):
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self._aggregation_cache: dict[str, Any] = {}
-        self._indicator_cache: dict[str, Any] = {}
-
-    def get_cache_key(self, config: dict[str, Any], data_path: str) -> str:
-        """Generate cache key from config and data."""
-        cache_data = {
-            "data_path": data_path,
-            "aggregation": config.get("aggregation", {}),
-            "indicators": config.get("indicators", {}),
-        }
-        return hashlib.md5(str(cache_data).encode()).hexdigest()
-
-    def get_cached_preprocessing(self, cache_key: str) -> dict[str, Any] | None:
-        """Load cached preprocessing results."""
-        cache_file = self.cache_dir / f"preprocess_{cache_key}.pkl"
-        if cache_file.exists():
-            try:
-                with open(cache_file, "rb") as f:
-                    return pickle.load(f)  # type: ignore[no-any-return]
-            except Exception as e:
-                logger.warning(f"Failed to load cache {cache_file}: {e}")
-        return None
-
-    def save_preprocessing(self, cache_key: str, data: dict[str, Any]) -> None:
-        """Save preprocessing results to cache."""
-        cache_file = self.cache_dir / f"preprocess_{cache_key}.pkl"
-        try:
-            with open(cache_file, "wb") as f:
-                pickle.dump(data, f)
-        except Exception as e:
-            logger.warning(f"Failed to save cache {cache_file}: {e}")
-
-
 class EnhancedOptimizationEngine:
-    """Enhanced optimization engine with modern hyperparameter search."""
+    """Enhanced optimization engine with production-grade features."""
 
-    def __init__(self, base_config: BacktestConfig, config: OptimizationConfig):
+    def __init__(self, base_config: BacktestConfig, opt_config: OptimizationConfig):
         self.base_config = base_config
-        self.config = config
-        self.cache = (
-            OptimizationCache(config.cache_dir) if config.cache_preprocessing else None
+        self.opt_config = opt_config
+
+        # Create output directory
+        self.output_path = Path(opt_config.output_dir)
+        self.output_path.mkdir(parents=True, exist_ok=True)
+
+        # Initialize parallel optimizer
+        config_dict = self._convert_config_to_dict(base_config)
+        self.parallel_optimizer = ParallelOptimizer(
+            config_dict=config_dict,
+            n_workers=opt_config.n_jobs,
+            cache_dir=opt_config.cache_dir,
+            study_db_path=str(self.output_path / "optuna_studies.db"),
         )
 
-        # Results tracking
-        self.results: list[dict[str, Any]] = []
-        self.best_params: dict[str, Any] | None = None
-        self.best_score = float("-inf")
+        logger.info("EnhancedOptimizationEngine initialized")
+        logger.info(f"Method: {opt_config.method}, Trials: {opt_config.n_trials}")
+        logger.info(f"Output: {self.output_path}")
 
-        # Setup output directory
-        self.output_dir = Path(config.output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def define_search_space(self, trial: Any) -> dict[str, Any]:
-        """Define the hyperparameter search space for Optuna."""
-        params = {}
-
-        # Risk management
-        params["risk.risk_per_trade"] = trial.suggest_float(
-            "risk_per_trade", 0.003, 0.02, step=0.001
-        )
-        params["risk.tp_rr"] = trial.suggest_float("tp_rr", 2.0, 4.0, step=0.5)
-        params["risk.sl_atr_multiple"] = trial.suggest_float(
-            "sl_atr_multiple", 1.0, 2.5, step=0.25
-        )
-
-        # FVG detection
-        params["detectors.fvg.min_gap_atr"] = trial.suggest_float(
-            "fvg_min_gap_atr", 0.15, 0.4, step=0.05
-        )
-        params["detectors.fvg.min_gap_pct"] = trial.suggest_float(
-            "fvg_min_gap_pct", 0.01, 0.05, step=0.005
-        )
-        params["detectors.fvg.min_rel_vol"] = trial.suggest_float(
-            "fvg_min_rel_vol", 0.5, 2.5, step=0.25
-        )
-
-        # HLZ confluence
-        params["hlz.min_strength"] = trial.suggest_float(
-            "hlz_min_strength", 1.5, 4.0, step=0.25
-        )
-        params["hlz.merge_tolerance"] = trial.suggest_float(
-            "hlz_merge_tolerance", 0.2, 0.5, step=0.05
-        )
-
-        # Zone filtering
-        params["zone_watcher.min_strength"] = trial.suggest_float(
-            "zone_min_strength", 0.8, 2.5, step=0.1
-        )
-        params["pools.strength_threshold"] = trial.suggest_float(
-            "pool_strength_threshold", 0.3, 1.0, step=0.05
-        )
-
-        # Entry timing
-        params["candidate.min_entry_spacing_minutes"] = trial.suggest_int(
-            "entry_spacing", 30, 120, step=15
-        )
-        params["candidate.filters.ema_tolerance_pct"] = trial.suggest_float(
-            "ema_tolerance", 0.0005, 0.003, step=0.0005
-        )
-
-        # Volume filtering
-        params["candidate.filters.volume_multiple"] = trial.suggest_float(
-            "volume_multiple", 0.0, 3.0, step=0.5
-        )
-
-        return params
-
-    def objective_function(self, trial: Any) -> float:
-        """Objective function for optimization."""
-        try:
-            # Get trial parameters
-            params = self.define_search_space(trial)
-
-            # Multi-fidelity: start with subset of data
-            if self.config.use_multifidelity:
-                # Quick evaluation on partial data
-                quick_score = self._evaluate_quick(params, trial)
-
-                # Report intermediate value for pruning
-                trial.report(quick_score, step=0)
-
-                # Check if trial should be pruned
-                if trial.should_prune():
-                    raise optuna.TrialPruned()
-
-                # If promising, run full evaluation
-                if quick_score > self.best_score * 0.7:  # Top candidates
-                    score = self._evaluate_full(params)
-                else:
-                    score = quick_score
-            else:
-                # Standard full evaluation
-                score = self._evaluate_full(params)
-
-            # Track best result
-            if score > self.best_score:
-                self.best_score = score
-                self.best_params = params.copy()
-
-            return score
-
-        except Exception as e:
-            logger.error(f"Trial failed: {e}")
-            # Return poor score rather than crash
-            return float("-inf")
-
-    def _evaluate_quick(self, params: dict[str, Any], trial: Any) -> float:
-        """Quick evaluation on subset of data."""
-        # Create trial config with reduced data
-        trial_config = self._build_trial_config(params)
-
-        # Convert to dict for modification, then back to config
-        config_dict = trial_config.model_dump()
-
-        # Reduce data size for quick evaluation
-        original_start = config_dict["data"].get("start_date")
-        original_end = config_dict["data"].get("end_date")
-
-        if original_start and original_end:
-            # Use first 30% of date range
-            from datetime import datetime, timedelta
-
-            start_dt = datetime.fromisoformat(original_start)
-            end_dt = datetime.fromisoformat(original_end)
-            total_days = (end_dt - start_dt).days
-            quick_end = start_dt + timedelta(
-                days=int(total_days * self.config.initial_data_fraction)
-            )
-            config_dict["data"]["end_date"] = quick_end.isoformat()
-
-        # Disable expensive features for quick eval - use minimum folds
-        config_dict["execution"]["dump_events"] = False
-        config_dict["execution"]["export_data_for_viz"] = False
-        config_dict["walk_forward"]["folds"] = 2  # Minimum allowed folds
-
-        # Recreate config
-        modified_config = BacktestConfig(**config_dict)
-
-        # Run backtest
-        runner = BacktestRunner(modified_config)
-        result = runner.run()
-
-        if result.success and hasattr(result, "metrics"):
-            return self._extract_score(result.metrics)
-        return float("-inf")
-
-    def _evaluate_full(self, params: dict[str, Any]) -> float:
-        """Full evaluation with complete data and walk-forward."""
-        trial_config = self._build_trial_config(params)
-
-        # Convert to dict for modification, then back to config
-        config_dict = trial_config.model_dump()
-
-        # Use discovery folds for optimization
-        config_dict["walk_forward"]["folds"] = self.config.discovery_folds
-
-        # Recreate config
-        modified_config = BacktestConfig(**config_dict)
-
-        # Run backtest
-        runner = BacktestRunner(modified_config)
-
-        if self.config.discovery_folds > 1:
-            results = runner.run_walk_forward()
-            if results and all(r.success for r in results):
-                # Average score across folds
-                scores = [self._extract_score(r.metrics) for r in results]
-                return float(np.mean(scores))
+    def _convert_config_to_dict(self, config: BacktestConfig) -> dict[str, Any]:
+        """Convert BacktestConfig to dictionary for ParallelOptimizer."""
+        # Convert Pydantic model to dict
+        if hasattr(config, "model_dump"):
+            return config.model_dump()
+        elif hasattr(config, "dict"):
+            return config.dict()
         else:
-            result = runner.run()
-            if result.success and hasattr(result, "metrics"):
-                return self._extract_score(result.metrics)
+            # Fallback for older versions
+            return {
+                "data": {
+                    "path": getattr(config.data, "path", ""),
+                    "start_date": getattr(config.data, "start_date", None),
+                    "end_date": getattr(config.data, "end_date", None),
+                },
+                "strategy": {
+                    "name": getattr(config.strategy, "name", ""),
+                    "htf_list": getattr(config.strategy, "htf_list", []),
+                },
+                "walk_forward": {
+                    "folds": self.opt_config.discovery_folds
+                    + self.opt_config.validation_folds,
+                    "train_fraction": 0.7,
+                },
+                "execution": {
+                    "dump_events": False,
+                    "export_data_for_viz": False,
+                },
+            }
 
-        return float("-inf")
+    def run_random_optimization(self) -> optuna.Study:
+        """Run random optimization phase."""
+        logger.info(f"Starting random optimization: {self.opt_config.n_trials} trials")
 
-    def _build_trial_config(self, params: dict[str, Any]) -> BacktestConfig:
-        """Build configuration for trial with parameter overrides."""
-        try:
-            # Convert base config to dictionary
-            config_dict = self.base_config.model_dump()
+        study_name = f"random_{int(time.time())}"
 
-            # Apply parameter overrides
-            for param_path, value in params.items():
-                logger.debug(f"Setting {param_path} = {value} (type: {type(value)})")
-                self._set_nested_param(config_dict, param_path, value)
-
-            return BacktestConfig(**config_dict)
-
-        except Exception as e:
-            logger.error(f"Failed to build trial config: {e}")
-            logger.error(f"Parameters: {params}")
-            raise
-
-    def _set_nested_param(self, config: dict[str, Any], path: str, value: Any) -> None:
-        """Set nested parameter in config dictionary."""
-        keys = path.split(".")
-        current = config
-
-        for key in keys[:-1]:
-            if key not in current:
-                current[key] = {}
-            current = current[key]
-
-        current[keys[-1]] = value
-
-    def _extract_score(self, metrics: dict[str, Any]) -> float:
-        """Extract optimization score from metrics."""
-        # Composite score combining multiple factors
-        total_pnl = metrics.get("total_pnl", 0)
-        sharpe = metrics.get("sharpe_ratio", 0)
-        win_rate = metrics.get("win_rate", 0)
-        total_trades = metrics.get("total_trades", 0)
-        max_drawdown = metrics.get("max_drawdown", 0)
-
-        # Minimum trade requirement
-        if total_trades < 5:
-            return float("-inf")
-
-        # Composite score (you can adjust weights)
-        score = (
-            total_pnl * 0.4  # Absolute profit
-            + sharpe * 100 * 0.3  # Risk-adjusted return
-            + win_rate * 100 * 0.2  # Consistency
-            + (1 - abs(max_drawdown)) * 50 * 0.1  # Drawdown penalty
+        study = self.parallel_optimizer.run_random_optimization(
+            n_trials=self.opt_config.n_trials,
+            timeout_seconds=self.opt_config.timeout_seconds,
+            data_fraction=self.opt_config.initial_data_fraction
+            if self.opt_config.use_multifidelity
+            else 1.0,
+            enable_pruning=self.opt_config.enable_pruning,
+            study_name=study_name,
         )
 
-        return float(score)
-
-    def run_bayesian_optimization(self) -> optuna.Study:
-        """Run Bayesian optimization with Optuna."""
-        if not HAS_OPTUNA:
-            raise ImportError(
-                "Optuna required for Bayesian optimization: pip install optuna"
-            )
-
-        # Create study
-        sampler = TPESampler(seed=42)
-        pruner = (
-            MedianPruner(
-                n_startup_trials=self.config.min_trials_for_pruning, n_warmup_steps=1
-            )
-            if self.config.enable_pruning
-            else None
-        )
-
-        study = optuna.create_study(
-            direction="maximize",
-            sampler=sampler,
-            pruner=pruner,
-            study_name=f"htf_optimization_{int(time.time())}",
-        )
-
-        # Run optimization
-        logger.info(
-            f"Starting Bayesian optimization with {self.config.n_trials} trials"
-        )
-
-        study.optimize(
-            self.objective_function,
-            n_trials=self.config.n_trials,
-            timeout=self.config.timeout_seconds,
-            n_jobs=1,  # Optuna handles parallelization differently
-        )
-
-        # Save study
-        if self.config.save_study:
-            study_path = self.output_dir / f"optuna_study_{int(time.time())}.pkl"
-            with open(study_path, "wb") as f:
-                pickle.dump(study, f)
-            logger.info(f"Study saved to {study_path}")
+        # Save study results
+        self._save_study_results(study, f"{study_name}_results.json")
 
         return study
 
-    def run_parallel_random_search(self) -> list[dict[str, Any]]:
-        """Run parallel random search without Optuna."""
+    def run_bayesian_optimization(self) -> optuna.Study:
+        """Run Bayesian optimization phase."""
         logger.info(
-            f"Starting parallel random search with {self.config.n_trials} trials"
+            f"Starting Bayesian optimization: {self.opt_config.n_trials} trials"
         )
 
-        # Generate random parameter combinations
-        param_combinations = self._generate_random_params(self.config.n_trials)
+        study_name = f"bayesian_{int(time.time())}"
 
-        # Run in parallel
-        if self.config.use_multiprocessing and HAS_JOBLIB:
-            results: list[dict[str, Any]] = Parallel(n_jobs=self.config.n_jobs)(
-                delayed(self._evaluate_params)(params) for params in param_combinations
-            )
-        else:
-            # Sequential fallback
-            results = [self._evaluate_params(params) for params in param_combinations]
+        study = self.parallel_optimizer.run_bayesian_optimization(
+            n_trials=self.opt_config.n_trials,
+            timeout_seconds=self.opt_config.timeout_seconds,
+            initial_random_trials=max(10, self.opt_config.n_trials // 10),
+            enable_multifidelity=self.opt_config.use_multifidelity,
+            study_name=study_name,
+        )
 
-        return results
+        # Save study results
+        self._save_study_results(study, f"{study_name}_results.json")
 
-    def _generate_random_params(self, n_trials: int) -> list[dict[str, Any]]:
-        """Generate random parameter combinations."""
-        combinations = []
+        return study
 
-        for _ in range(n_trials):
-            params = {}
-
-            # Risk management
-            params["risk.risk_per_trade"] = float(np.random.uniform(0.003, 0.02))
-            params["risk.tp_rr"] = float(np.random.choice([2.0, 2.5, 3.0, 3.5, 4.0]))
-            params["risk.sl_atr_multiple"] = float(np.random.uniform(1.0, 2.5))
-
-            # FVG detection
-            params["detectors.fvg.min_gap_atr"] = float(np.random.uniform(0.15, 0.4))
-            params["detectors.fvg.min_gap_pct"] = float(np.random.uniform(0.01, 0.05))
-            params["detectors.fvg.min_rel_vol"] = float(np.random.uniform(0.5, 2.5))
-
-            # HLZ confluence
-            params["hlz.min_strength"] = float(np.random.uniform(1.5, 4.0))
-            params["hlz.merge_tolerance"] = float(np.random.uniform(0.2, 0.5))
-
-            # Zone filtering
-            params["zone_watcher.min_strength"] = float(np.random.uniform(0.8, 2.5))
-            params["pools.strength_threshold"] = float(np.random.uniform(0.3, 1.0))
-
-            # Entry timing - fix the randint call
-            spacing_options = [30, 45, 60, 75, 90, 105, 120]
-            params["candidate.min_entry_spacing_minutes"] = int(
-                np.random.choice(spacing_options)
-            )
-            params["candidate.filters.ema_tolerance_pct"] = float(
-                np.random.uniform(0.0005, 0.003)
-            )
-
-            # Volume filtering
-            params["candidate.filters.volume_multiple"] = float(
-                np.random.uniform(0.0, 3.0)
-            )
-
-            combinations.append(params)
-
-        return combinations
-
-    def _evaluate_params(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Evaluate single parameter combination."""
+    def get_performance_metrics(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Get performance metrics for a specific parameter set."""
         try:
-            score = self._evaluate_full(params)
-            return {"params": params, "score": score, "success": True}
+            # Apply parameters to configuration and run real backtest
+            config_dict = self._convert_config_to_dict(self.base_config)
+
+            # Apply optimization parameters
+            for param_name, param_value in params.items():
+                if param_name == "risk_per_trade":
+                    config_dict["risk"]["risk_per_trade"] = param_value
+                elif param_name == "tp_rr":
+                    config_dict["risk"]["tp_rr"] = param_value
+                elif param_name == "sl_atr_multiple":
+                    config_dict["risk"]["sl_atr_multiple"] = param_value
+                elif param_name == "zone_min_strength":
+                    if "zone_watcher" not in config_dict:
+                        config_dict["zone_watcher"] = {}
+                    config_dict["zone_watcher"]["min_strength"] = param_value
+                elif param_name == "pool_strength_threshold":
+                    if "pools" not in config_dict:
+                        config_dict["pools"] = {}
+                    config_dict["pools"]["strength_threshold"] = param_value
+                # FVG detection parameters
+                elif param_name == "min_gap_atr":
+                    if "detectors" not in config_dict:
+                        config_dict["detectors"] = {}
+                    if "fvg" not in config_dict["detectors"]:
+                        config_dict["detectors"]["fvg"] = {}
+                    config_dict["detectors"]["fvg"]["min_gap_atr"] = param_value
+                elif param_name == "min_gap_pct":
+                    if "detectors" not in config_dict:
+                        config_dict["detectors"] = {}
+                    if "fvg" not in config_dict["detectors"]:
+                        config_dict["detectors"]["fvg"] = {}
+                    config_dict["detectors"]["fvg"]["min_gap_pct"] = param_value
+                elif param_name == "min_rel_vol":
+                    if "detectors" not in config_dict:
+                        config_dict["detectors"] = {}
+                    if "fvg" not in config_dict["detectors"]:
+                        config_dict["detectors"]["fvg"] = {}
+                    config_dict["detectors"]["fvg"]["min_rel_vol"] = param_value
+                # Candidate filtering parameters
+                elif param_name == "ema_tolerance_pct":
+                    if "candidate" not in config_dict:
+                        config_dict["candidate"] = {}
+                    if "filters" not in config_dict["candidate"]:
+                        config_dict["candidate"]["filters"] = {}
+                    config_dict["candidate"]["filters"]["ema_tolerance_pct"] = (
+                        param_value
+                    )
+                elif param_name == "volume_multiple":
+                    if "candidate" not in config_dict:
+                        config_dict["candidate"] = {}
+                    if "filters" not in config_dict["candidate"]:
+                        config_dict["candidate"]["filters"] = {}
+                    config_dict["candidate"]["filters"]["volume_multiple"] = param_value
+                elif param_name == "min_entry_spacing":
+                    if "candidate" not in config_dict:
+                        config_dict["candidate"] = {}
+                    config_dict["candidate"]["min_entry_spacing_minutes"] = param_value
+
+            # Create config and run backtest
+            config = BacktestConfig.from_dict(config_dict)
+            runner = BacktestRunner(config)
+            results = runner.run()
+
+            if results and results.success and results.metrics:
+                # Handle both dict and BacktestMetrics object
+                if hasattr(results.metrics, "to_dict"):
+                    metrics_dict = results.metrics.to_dict()
+                elif hasattr(results.metrics, "__dict__"):
+                    metrics_dict = results.metrics.__dict__
+                else:
+                    metrics_dict = results.metrics
+
+                # Extract nested metrics - the actual metrics are in 'trade_metrics' sub-dict
+                trade_metrics = metrics_dict.get("trade_metrics", {})
+
+                metrics = trade_metrics  # Use trade_metrics as the main metrics source
+                return {
+                    "total_pnl": metrics.get("total_pnl", 0.0),
+                    "total_return": metrics.get("total_pnl", 0.0)
+                    / 10000.0,  # Convert to return ratio
+                    "sharpe_ratio": 0.0,  # Not available in trade_metrics
+                    "win_rate": metrics.get("win_rate", 0.0),
+                    "total_trades": metrics.get("total_trades", 0),
+                    "max_drawdown": metrics.get("max_drawdown", 0.0),
+                    "profit_factor": metrics.get("profit_factor", 1.0)
+                    if "profit_factor" in metrics
+                    else 1.0,
+                }
+            else:
+                logger.warning("Backtest returned no metrics")
+                return {
+                    "total_pnl": 0.0,
+                    "total_return": 0.0,
+                    "sharpe_ratio": 0.0,
+                    "win_rate": 0.0,
+                    "total_trades": 0,
+                    "max_drawdown": 0.0,
+                    "profit_factor": 0.0,
+                }
+
         except Exception as e:
-            logger.error(f"Parameter evaluation failed: {e}")
+            logger.error(f"Error getting performance metrics: {e}")
             return {
-                "params": params,
-                "score": float("-inf"),
-                "success": False,
-                "error": str(e),
+                "total_pnl": 0.0,
+                "total_return": 0.0,
+                "sharpe_ratio": 0.0,
+                "win_rate": 0.0,
+                "total_trades": 0,
+                "max_drawdown": 0.0,
+                "profit_factor": 0.0,
             }
 
     def validate_best_params(self, best_params: dict[str, Any]) -> dict[str, Any]:
-        """Final validation with full walk-forward."""
-        logger.info("Running final validation with full walk-forward")
+        """Run validation on the best parameters."""
+        logger.info("Running validation on best parameters...")
 
         try:
-            trial_config = self._build_trial_config(best_params)
+            # Get performance metrics
+            metrics = self.get_performance_metrics(best_params)
 
-            # Create new config dict with validation folds
-            config_dict = trial_config.model_dump()
-            config_dict["walk_forward"]["folds"] = self.config.validation_folds
+            # Run walk-forward validation if configured
+            if self.opt_config.validation_folds > 1:
+                validation_metrics = self._run_walk_forward_validation(best_params)
 
-            # Rebuild config from dict
-            from services.models import BacktestConfig
-
-            validation_config = BacktestConfig.model_validate(config_dict)
-
-            runner = BacktestRunner(validation_config)
-
-            if self.config.validation_folds > 1:
-                results = runner.run_walk_forward()
-                if results and all(r.success for r in results):
-                    # Aggregate metrics
-                    metrics = self._aggregate_walk_forward_metrics(results)
-                    return {
-                        "params": best_params,
-                        "validation_metrics": metrics,
-                        "individual_folds": [r.metrics for r in results],
-                    }
+                return {
+                    "validation_metrics": validation_metrics,
+                    "single_run_metrics": metrics,
+                    "best_params": best_params,
+                    "validation_folds": self.opt_config.validation_folds,
+                }
             else:
-                result = runner.run()
-                if result.success:
-                    return {"params": best_params, "validation_metrics": result.metrics}
-
-            return {"params": best_params, "validation_error": "Failed to validate"}
+                return {
+                    "validation_metrics": metrics,
+                    "best_params": best_params,
+                    "validation_folds": 1,
+                }
 
         except Exception as e:
             logger.error(f"Validation failed: {e}")
-            logger.error(f"Parameters: {best_params}")
-            raise
+            return {"validation_metrics": {}, "error": str(e)}
 
-    def _aggregate_walk_forward_metrics(self, results: list) -> dict[str, Any]:
-        """Aggregate metrics across walk-forward folds."""
-        metrics = {}
+    def _run_walk_forward_validation(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Run walk-forward validation."""
+        try:
+            config_dict = self._convert_config_to_dict(self.base_config)
 
-        # Get all metric keys from first successful result
-        first_result = next(r for r in results if r.success)
-        logger.debug(f"First result metrics type: {type(first_result.metrics)}")
-        logger.debug(f"First result metrics: {first_result.metrics}")
+            # Apply parameters (simplified)
+            temp_config = BacktestConfig(**config_dict)
+            runner = BacktestRunner(temp_config)
 
-        metric_keys = first_result.metrics.keys()
+            # Run walk-forward
+            results = runner.run_walk_forward()
 
-        for key in metric_keys:
-            values = [r.metrics.get(key, 0) for r in results if r.success]
-            logger.debug(
-                f"Key: {key}, Values: {values}, Types: {[type(v) for v in values]}"
-            )
+            if results and all(r.success for r in results):
+                # Aggregate metrics across folds
+                aggregated_metrics = {}
+                all_metrics = [r.metrics for r in results if r.metrics]
 
-            if values:
-                # Only aggregate numeric values
-                try:
-                    # Check if all values are numeric
-                    numeric_values = []
-                    for v in values:
-                        if isinstance(v, int | float):
-                            numeric_values.append(v)
-                        elif isinstance(v, dict):
-                            logger.warning(f"Skipping dict value for key {key}: {v}")
-                            continue
-                        else:
-                            logger.warning(
-                                f"Skipping non-numeric value for key {key}: {v} (type: {type(v)})"
+                if all_metrics:
+                    # Calculate means for key metrics
+                    for key in all_metrics[0]:
+                        values = [
+                            m.get(key, 0)
+                            for m in all_metrics
+                            if isinstance(m.get(key), int | float)
+                        ]
+                        if values:
+                            aggregated_metrics[f"{key}_mean"] = sum(values) / len(
+                                values
                             )
-                            continue
+                            aggregated_metrics[f"{key}_std"] = (
+                                sum(
+                                    (x - aggregated_metrics[f"{key}_mean"]) ** 2
+                                    for x in values
+                                )
+                                / len(values)
+                            ) ** 0.5
 
-                    if numeric_values:
-                        metrics[f"{key}_mean"] = np.mean(numeric_values)
-                        metrics[f"{key}_std"] = np.std(numeric_values)
-                        metrics[f"{key}_min"] = np.min(numeric_values)
-                        metrics[f"{key}_max"] = np.max(numeric_values)
-                    else:
-                        logger.warning(f"No numeric values found for key {key}")
+                return aggregated_metrics
+            else:
+                logger.warning("Walk-forward validation failed")
+                return {}
 
-                except Exception as e:
-                    logger.error(f"Error aggregating key {key}: {e}")
-                    logger.error(f"Values causing error: {values}")
+        except Exception as e:
+            logger.error(f"Walk-forward validation error: {e}")
+            return {}
 
-        return metrics
+    def _save_study_results(self, study: optuna.Study, filename: str) -> None:
+        """Save study results to file."""
+        try:
+            results = {
+                "study_name": study.study_name,
+                "direction": study.direction.name,
+                "best_value": study.best_value if study.best_trial else None,
+                "best_params": study.best_params if study.best_trial else None,
+                "n_trials": len(study.trials),
+                "creation_time": None,  # Optuna Study doesn't have creation_time
+                "trials": [],
+            }
 
-    def generate_report(
-        self, study_or_results: Any, validation_result: dict | None = None
-    ) -> str:
-        """Generate optimization report."""
-        report_lines = [
-            "# HTF Strategy Optimization Report",
-            f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}",
-            "",
-            "## Configuration",
-            f"- Method: {self.config.method}",
-            f"- Trials: {self.config.n_trials}",
-            f"- Parallel jobs: {self.config.n_jobs}",
-            f"- Multi-fidelity: {self.config.use_multifidelity}",
-            "",
-        ]
+            # Add trial details
+            for trial in study.trials:
+                trial_data = {
+                    "number": trial.number,
+                    "value": trial.value,
+                    "params": trial.params,
+                    "state": trial.state.name,
+                    "datetime_start": trial.datetime_start.isoformat()
+                    if trial.datetime_start
+                    else None,
+                    "datetime_complete": trial.datetime_complete.isoformat()
+                    if trial.datetime_complete
+                    else None,
+                }
+                results["trials"].append(trial_data)
 
-        if HAS_OPTUNA and isinstance(study_or_results, optuna.Study):
-            # Optuna study report
-            best_trial = study_or_results.best_trial
+            # Save to file
+            output_file = self.output_path / filename
+            with open(output_file, "w") as f:
+                json.dump(results, f, indent=2)
 
-            report_lines.extend(
-                [
-                    "## Best Trial",
-                    f"- Score: {best_trial.value:.4f}",
-                    f"- Trial number: {best_trial.number}",
-                    "",
-                    "### Best Parameters:",
-                ]
-            )
+            logger.info(f"Study results saved to: {output_file}")
 
-            for key, value in best_trial.params.items():
-                report_lines.append(f"- {key}: {value}")
+        except Exception as e:
+            logger.error(f"Failed to save study results: {e}")
 
-            # Parameter importance
-            try:
-                importance = optuna.importance.get_param_importances(study_or_results)
-                report_lines.extend(
-                    [
-                        "",
-                        "### Parameter Importance:",
-                    ]
-                )
-                for param, score in sorted(
-                    importance.items(), key=lambda x: x[1], reverse=True
-                ):
-                    report_lines.append(f"- {param}: {score:.4f}")
-            except Exception:
-                pass
+    def get_optimization_summary(self) -> dict[str, Any]:
+        """Get summary of optimization runs."""
+        try:
+            studies = self.parallel_optimizer.list_studies()
+            summary: dict[str, Any] = {"total_studies": len(studies), "studies": []}
 
-        # Validation results
-        if validation_result:
-            report_lines.extend(
-                [
-                    "",
-                    "## Validation Results",
-                ]
-            )
+            for study_name in studies:
+                study_info = self.parallel_optimizer.get_study_info(study_name)
+                if isinstance(summary["studies"], list):
+                    summary["studies"].append(study_info)
 
-            validation_metrics = validation_result.get("validation_metrics", {})
-            for key, value in validation_metrics.items():
-                if isinstance(value, int | float):
-                    report_lines.append(f"- {key}: {value:.4f}")
+            return summary
 
-        return "\n".join(report_lines)
+        except Exception as e:
+            logger.error(f"Failed to get optimization summary: {e}")
+            return {"error": str(e)}
 
 
-def main() -> None:
-    """Example usage of the enhanced optimization engine."""
-    import argparse
+# Convenience functions for backward compatibility
+def create_optimization_engine(
+    base_config: BacktestConfig, **kwargs: Any
+) -> EnhancedOptimizationEngine:
+    """Create optimization engine with default settings."""
+    opt_config = OptimizationConfig(**kwargs)
+    return EnhancedOptimizationEngine(base_config, opt_config)
 
-    parser = argparse.ArgumentParser(description="Enhanced HTF Strategy Optimization")
-    parser.add_argument("--config", default="configs/btcusdt_optimization_base.yaml")
-    parser.add_argument("--method", choices=["bayesian", "random"], default="bayesian")
-    parser.add_argument("--trials", type=int, default=100)
-    parser.add_argument("--jobs", type=int, default=4)
-    parser.add_argument("--timeout", type=int, help="Timeout in seconds")
 
-    args = parser.parse_args()
-
-    # Load base configuration
-    from services.cli.cli import load_configuration
-
-    base_config_dict = load_configuration(args.config)
-    base_config = BacktestConfig(**base_config_dict)
-
-    # Setup optimization
+def run_quick_optimization(
+    base_config: BacktestConfig,
+    n_trials: int = 50,
+    method: str = "random",
+    **kwargs: Any,
+) -> dict[str, Any]:
+    """Run a quick optimization for testing."""
     opt_config = OptimizationConfig(
-        method=args.method,
-        n_trials=args.trials,
-        n_jobs=args.jobs,
-        timeout_seconds=args.timeout,
+        method=method,
+        n_trials=n_trials,
+        timeout_seconds=600,  # 10 minutes
+        n_jobs=4,
+        enable_pruning=False,
+        output_dir="results/quick_optimization",
     )
 
     engine = EnhancedOptimizationEngine(base_config, opt_config)
 
-    # Initialize best_result_data with Union type for different optimization methods
-    best_result_data: Any
-
-    # Run optimization
-    if args.method == "bayesian" and HAS_OPTUNA:
-        study = engine.run_bayesian_optimization()
-        best_params = study.best_params
-
-        # Map back to full parameter names
-        full_params = {}
-        for key, value in best_params.items():
-            if key == "risk_per_trade":
-                full_params["risk.risk_per_trade"] = value
-            elif key == "tp_rr":
-                full_params["risk.tp_rr"] = value
-            # Add more mappings as needed
-
-        best_result_data = study
+    if method == "random":
+        result = engine.run_random_optimization()
+        return result if isinstance(result, dict) else {}
     else:
-        results = engine.run_parallel_random_search()
-        best_result_dict = max(results, key=lambda x: x["score"])
-        full_params = best_result_dict["params"]
-        best_result_data = results
-
-    # Final validation
-    validation = engine.validate_best_params(full_params)
-
-    # Generate report
-    report = engine.generate_report(best_result_data, validation)
-
-    # Save report
-    report_path = engine.output_dir / "optimization_report.md"
-    with open(report_path, "w") as f:
-        f.write(report)
-
-    print(f"✅ Optimization completed. Report saved to {report_path}")
-    print(f"🏆 Best score: {engine.best_score:.4f}")
-
-
-if __name__ == "__main__":
-    main()
+        result = engine.run_bayesian_optimization()
+        return result if isinstance(result, dict) else {}

@@ -11,15 +11,19 @@ algorithmic/
 ├── 🏗️ core/              # Core trading engine and strategy components
 ├── 🔧 services/          # Backend services (optimization, data, metrics)
 ├── 🛠️ tools/             # Utility tools and scripts
-│   ├── optimization/     # Optimization runners and demos
+│   ├── cli/             # Command-line interfaces and TUI
+│   ├── optimization/    # Optimization runners and demos
 │   ├── analysis/        # Performance analysis dashboards
 │   └── monitoring/      # Live monitoring tools
+├── 📜 scripts/           # Setup scripts and utilities
 ├── ⚙️ configs/           # Configuration files
 ├── 📊 data/              # Market data files
 ├── 📖 docs/              # Documentation
-├── 🧪 tests/             # Test configurations
+├── 🧪 tests/             # Test configurations and test suites
+│   └── cli/             # CLI/TUI specific tests
 ├── 📈 results/           # Optimization and backtest results
-└── 🎯 run_backtest.py    # Main backtest runner
+├── 🎯 run_backtest.py    # Main backtest runner
+└── 🚀 quantbt.py         # Main project launcher
 ```
 
 ## 🚀 Quick Start
@@ -35,11 +39,27 @@ pip install -r requirements.txt
 # Install in development mode
 pip install -e .
 
+# Set up TUI (Terminal User Interface)
+./scripts/setup_tui.sh
+
 # Set up pre-commit hooks (recommended)
 ./setup-precommit.sh
 ```
 
-### 2. Run a Backtest
+### 2. Launch the Application (Multiple Options)
+
+```bash
+# 🎨 Interactive Terminal Interface (Recommended - Easy and user-friendly!)
+python3 quantbt.py
+
+# 🖥️ Or launch TUI directly
+python3 tools/cli/quantbt_tui.py
+
+# ⌨️ Or use enhanced CLI for advanced users
+python3 tools/cli/quantbt_simple.py
+```
+
+### 3. OR Use Traditional CLI
 
 ```bash
 # Using the CLI command
@@ -52,7 +72,34 @@ python run_backtest.py --config configs/optimized_btc_20250801.yaml
 python -m services.backtester --file data/BTCUSDT_5m_2025-05-18_futures.csv
 ```
 
-### 3. Run Optimization
+## 🖥️ Terminal User Interface (TUI)
+
+**New!** User-friendly shell interface for managing all tools without command-line complexity:
+
+```bash
+# Launch the interactive TUI (recommended for beginners)
+python3 quantbt_tui.py
+```
+
+**TUI Features:**
+
+- 📊 **Data Management** - Fetch, validate, browse data files interactively
+- 🎯 **Backtesting** - Quick backtest, custom configs, walk-forward analysis
+- 🧠 **Optimization** - 3-phase, ultra-fast, bayesian optimization
+- 📈 **Analysis** - Performance dashboards and detailed reports
+- 📡 **Monitoring** - System status, live optimization tracking
+- ⚙️ **Configuration** - Browse, validate, edit config files
+- 🎨 **Beautiful Interface** - Rich formatting, progress indicators, file browsers
+
+### 4. Run Optimization (TUI or CLI)
+
+**Via TUI (Easy):**
+
+```bash
+python3 quantbt_tui.py  # Navigate to Optimization menu
+```
+
+**Via CLI (Advanced):**
 
 ```bash
 # 3-phase optimization (recommended)
@@ -62,7 +109,7 @@ python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
 python tools/optimization/run_ultra_fast_optimization.py
 ```
 
-### 4. Analyze Results
+### 5. Analyze Results
 
 ```bash
 # Generate performance dashboard

@@ -17,6 +17,7 @@ classifiers = [
 
 [project.scripts]
 quantbt = "services.cli.cli:app"
+quantbt-enhanced = "services.cli.enhanced_cli:app"
 
 [tool.setuptools.packages.find]
 include = ["core*", "infra*", "services*"]

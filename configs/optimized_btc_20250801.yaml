@@ -1,0 +1,202 @@
+# =========================
+#  Optimized Config for BTCUSDT_5m_2025-05-18_futures.csv
+#  Based on Latest 3-Phase Optimization Results (11-Parameter Search)
+#
+#  Optimal Parameters Found:
+#  - risk_per_trade: 0.0248 (2.48% risk per trade)
+#  - tp_rr: 2.2708 (2.27:1 risk-reward ratio)
+#  - sl_atr_multiple: 1.1346 (1.13x ATR stop loss)
+#  - zone_min_strength: 0.5256 (zone strength threshold)
+#  - pool_strength_threshold: 0.5045 (pool strength filter)
+#  - min_gap_atr: 0.2943 (FVG gap size in ATR)
+#  - min_gap_pct: 0.0113 (1.13% minimum gap)
+#  - min_rel_vol: 1.9307 (volume requirement)
+#  - ema_tolerance_pct: 0.0009 (EMA alignment tolerance)
+#  - volume_multiple: 1.7552 (volume spike requirement)
+#  - min_entry_spacing: 90 (entry spacing in minutes)
+#
+#  Latest Optimization Strategy:
+#  - Lower R:R ratio (2.27:1) for more frequent wins
+#  - Tighter stops (1.13x ATR) for risk control
+#  - More permissive zone detection (0.5256 threshold)
+#  - Wider entry spacing (90 min) for quality trades
+# =========================
+
+# ---------- Data ----------
+data:
+  source: csv
+  path: "data/BTC_USD_5min_20250801_180943.csv"
+  symbol: BTCUSDT
+  tick_size: 0.01
+  timeframe: "5m"
+  date_format: "%Y-%m-%dT%H:%M:%SZ"
+  start_date: "2025-05-01"
+  end_date: "2025-07-01"
+  columns:
+    timestamp: timestamp
+    open: open
+    high: high
+    low: low
+    close: close
+    volume: volume
+
+# ---------- Walk-forward ----------
+walk_forward:
+  folds: 3
+  train_fraction: 0.7
+  overlap_fraction: 0.1
+
+# ---------- Strategy ----------
+strategy:
+  name: htf_liquidity_mtf
+  symbol: BTCUSDT
+  use_mock_strategy: false
+  htf_list: ["60", "240", "1440"]
+  expiry_minutes: 120
+  filters:
+    ema_alignment: true
+    volume_multiple: 1.2
+    killzone: ["01:00", "18:00"]
+    regime_ok: ["bull", "neutral"]
+
+# ---------- Account ----------
+account:
+  initial_balance: 10000.0
+  currency: USDT
+
+# ---------- Risk (OPTIMIZED) ----------
+risk:
+  model: fixed_fractional
+  risk_per_trade: 0.0248 # OPTIMIZED: 2.48% risk per trade (aggressive but controlled)
+  max_positions: 3
+  tp_rr: 2.2708 # OPTIMIZED: 2.27:1 risk-reward ratio (moderate R:R)
+  sl_atr_multiple: 1.1346 # OPTIMIZED: 1.13x ATR stop loss (tight protection)
+  enable_trailing_stop: false
+
+# ---------- Execution ----------
+execution:
+  slippage_model: linear
+  slippage_bps: 2.0
+  commission_rate: 0.0004
+  dump_events: false
+  export_data_for_viz: true # Enable for production analysis
+  enable_latency_profiling: false
+  enable_memory_tracking: false
+
+# ---------- Aggregation ----------
+aggregation:
+  source_tf_minutes: 5
+  target_timeframes_minutes: [60, 240, 1440]
+  buffer_size: 2000
+  roll_from: "calendar"
+  out_of_order_policy: "drop"
+  max_clock_skew_seconds: 300
+  enable_strict_ordering: true
+  fill_missing: ffill
+
+# ---------- Indicators ----------
+indicators:
+  ema:
+    periods: [21, 50, 200]
+    source: close
+
+  atr:
+    period: 14
+
+  volume_sma:
+    period: 20
+
+# ---------- Detectors ----------
+detectors:
+  fvg:
+    enabled: true
+    min_gap_atr: 0.2943 # OPTIMIZED: Moderate gap size detection
+    min_gap_pct: 0.0113 # OPTIMIZED: 1.13% minimum gap
+    min_rel_vol: 1.9307 # OPTIMIZED: Higher volume requirement
+    max_age_minutes: 1440
+    enabled_timeframes: ["60", "240", "1440"]
+
+  pivot:
+    enabled: false
+
+# ---------- HLZ ----------
+hlz:
+  min_members: 2
+  min_strength: 1.5
+  tf_weight:
+    "60": 1.0
+    "240": 2.5
+    "1440": 4.0
+  merge_tolerance: 0.3
+  side_mixing: false
+  max_active_hlzs: 500
+  recompute_on_update: true
+
+# ---------- Zone Watcher (OPTIMIZED) ----------
+zone_watcher:
+  price_tolerance: 0.1
+  confirm_closure: false
+  min_strength: 0.5256 # OPTIMIZED: Lower zone strength threshold (more permissive)
+  max_active_zones: 300
+
+# ---------- Signal candidate pipeline ----------
+candidate:
+  expiry_minutes: 120
+  min_entry_spacing_minutes: 90 # OPTIMIZED: Conservative entry spacing
+  global_min_entry_spacing: 10
+  enable_spacing_throttle: true
+  filters:
+    ema_alignment: true
+    ema_tolerance_pct: 0.0009 # OPTIMIZED: Very tight EMA alignment tolerance
+    linger_minutes: 60
+    reclaim_requires_ema: true
+    volume_multiple: 1.7552 # OPTIMIZED: Moderate volume spike requirement
+    use_enhanced_killzone: false
+    killzone: ["01:00", "18:00"]
+    regime: ["bull", "neutral"]
+
+# ---------- Pool registry (OPTIMIZED) ----------
+pools:
+  "60":
+    ttl: 6h
+    hit_tolerance: 0.0
+  "240":
+    ttl: 3d
+    hit_tolerance: 0.0
+  "1440":
+    ttl: 3w
+    hit_tolerance: 0.0
+
+  strength_threshold: 0.5045 # OPTIMIZED: Moderate threshold for quality pools
+  grace_period_minutes: 60
+  max_pools_per_tf: 1500
+  auto_expire_interval: "30s"
+
+# ---------- Pivot Pools ----------
+pivot_pools:
+  "60":
+    ttl: 12h
+    hit_tolerance: 0.0
+    min_atr_distance: 0.8
+  "240":
+    ttl: 5d
+    hit_tolerance: 0.0
+    min_atr_distance: 1.0
+  "1440":
+    ttl: 1M
+    hit_tolerance: 0.0
+    min_atr_distance: 1.5
+
+  strength_threshold: 0.5
+  grace_period_minutes: 10
+  max_pools_per_tf: 1500
+  auto_expire_interval: "30s"
+
+# ---------- Confluence ----------
+confluence:
+  min_score: 2
+  factors:
+    fvg_touch: 1
+    pivot_level: 1
+    ema_alignment: 1
+    volume_spike: 1

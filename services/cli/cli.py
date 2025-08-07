@@ -959,9 +959,7 @@ def multirun(
             opt_engine = EnhancedOptimizationEngine(base_cfg, opt_config)
             start_time = time.time()
 
-            # Initialize optimization_result variable with Union type
-            optimization_result: Any | list[dict[str, Any]]
-
+            # Run optimization
             if method == "bayesian":
                 try:
                     import optuna  # type: ignore[import-not-found, import-untyped]
@@ -998,8 +996,6 @@ def multirun(
                         full_key = param_mapping.get(key, key)
                         full_params[full_key] = value
 
-                    optimization_result = study
-
                 except ImportError:
                     typer.echo(
                         "❌ Optuna not installed. Install with: pip install optuna",
@@ -1009,17 +1005,14 @@ def multirun(
 
             elif method == "random":
                 typer.echo(f"🎲 Starting random search with {trials} trials...")
-                random_results = opt_engine.run_parallel_random_search()
+                study = opt_engine.run_random_optimization()
 
-                # Find best result
-                successful_results = [r for r in random_results if r["success"]]
-                if successful_results:
-                    best_result = max(successful_results, key=lambda x: x["score"])
-                    full_params = best_result["params"]  # Already in full path format
-                    best_score = best_result["score"]
-                    optimization_result = random_results
+                # Find best result from the returned study
+                if study and study.best_trial:
+                    best_score = study.best_value
+                    full_params = study.best_params
                 else:
-                    typer.echo("❌ No successful trials in random search", err=True)
+                    typer.echo("❌ No successful trials found")
                     raise typer.Exit(1)
 
             # Final validation with full walk-forward
@@ -1034,10 +1027,13 @@ def multirun(
                 raise typer.Exit(1) from e
 
             # Generate and save report
-            report = opt_engine.generate_report(optimization_result, validation_result)
-            report_path = opt_engine.output_dir / "optimization_report.md"
+            report_path = opt_engine.output_path / "optimization_report.md"
             with open(report_path, "w") as f:
-                f.write(report)
+                f.write("# Optimization Report\n\n")
+                f.write(f"**Best Score:** {best_score}\n\n")
+                f.write("**Best Parameters:**\n")
+                for key, value in full_params.items():
+                    f.write(f"- {key}: {value}\n")
 
             # Summary
             end_time = time.time()
@@ -1046,7 +1042,7 @@ def multirun(
             typer.echo(f"   • Trials completed: {trials}")
             typer.echo(f"   • Best score: {best_score:.4f}")
             typer.echo(f"   • Total time: {end_time - start_time:.1f} seconds")
-            typer.echo(f"   • Results saved to: {opt_engine.output_dir}")
+            typer.echo(f"   • Results saved to: {opt_engine.output_path}")
 
             typer.echo("\n🏆 Best Parameters:")
             for param, value in full_params.items():

@@ -487,7 +487,10 @@ class MockPaperBroker:
         trade["original_exit_price"] = exit_price  # Keep original for analysis
         trade["exit_time"] = exit_time
         trade["pnl"] = pnl
-        trade["status"] = reason
+        trade["status"] = (
+            "closed"  # Set status to "closed" for proper metrics calculation
+        )
+        trade["close_reason"] = reason  # Store the reason separately
         trade["exit_commission"] = exit_commission
         trade["exit_slippage"] = slipped_exit_price - exit_price  # Track exit slippage
 
@@ -1165,15 +1168,27 @@ class IntegratedStrategy:
         # 4. Process any zone entries through signal candidate FSM
         for zone_entry in zone_entries:
             candidate = self.zone_watcher.spawn_candidate(zone_entry, candle.ts)
-            logger.debug(
-                f"Spawned candidate {candidate.candidate_id} from zone {zone_entry.zone_id}"
-            )
+            if candidate is not None:
+                logger.debug(
+                    f"Spawned candidate {candidate.candidate_id} from zone {zone_entry.zone_id}"
+                )
+            else:
+                logger.debug(
+                    f"Candidate creation throttled for zone {zone_entry.zone_id}"
+                )
 
         # 5. Run candidate FSM for all active candidates
         if hasattr(self.zone_watcher, "active_candidates"):
             updated_candidates = []
 
             for candidate in self.zone_watcher.active_candidates:
+                # Skip None candidates that might have gotten into the list
+                if candidate is None:
+                    logger.warning(
+                        "Found None candidate in active_candidates list, skipping"
+                    )
+                    continue
+
                 # Create indicator snapshot for FSM processing
                 snapshot = self.indicators.snapshot()
 
@@ -1293,8 +1308,10 @@ class IntegratedStrategy:
                     # Keep active candidates that aren't ready or expired
                     updated_candidates.append(updated_candidate)
 
-            # Replace the candidates list with updated ones
-            self.zone_watcher.active_candidates = updated_candidates
+            # Replace the candidates list with updated ones, filtering out any None values
+            self.zone_watcher.active_candidates = [
+                c for c in updated_candidates if c is not None
+            ]
 
         return None
 

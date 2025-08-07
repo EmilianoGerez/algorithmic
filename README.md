@@ -1,24 +1,75 @@
-# Quant Algorithm Skeleton
+# 🚀 Algorithmic Trading System
 
 ![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen) ![Python](https://img.shields.io/badge/python-3.11%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
-Production-ready multi-timeframe liquidity pool strategy with HTF signal detection.
+A comprehensive quantitative trading system with advanced optimization capabilities and real-time backtesting.
 
-## Quick start
+## 📁 Project Structure
+
+```
+algorithmic/
+├── 🏗️ core/              # Core trading engine and strategy components
+├── 🔧 services/          # Backend services (optimization, data, metrics)
+├── 🛠️ tools/             # Utility tools and scripts
+│   ├── optimization/     # Optimization runners and demos
+│   ├── analysis/        # Performance analysis dashboards
+│   └── monitoring/      # Live monitoring tools
+├── ⚙️ configs/           # Configuration files
+├── 📊 data/              # Market data files
+├── 📖 docs/              # Documentation
+├── 🧪 tests/             # Test configurations
+├── 📈 results/           # Optimization and backtest results
+└── 🎯 run_backtest.py    # Main backtest runner
+```
+
+## 🚀 Quick Start
+
+### 1. Installation
 
 ```bash
+# Set up environment
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Set up pre-commit hooks for code quality (recommended)
+# Install in development mode
+pip install -e .
+
+# Set up pre-commit hooks (recommended)
 ./setup-precommit.sh
+```
 
-# Run 5-minute BTC backtest with HTF liquidity strategy
-.venv/bin/quantbt run data/BTC_USD_5min_20250728_021825.csv --config configs/base.yaml --plot
+### 2. Run a Backtest
 
-# Or use the legacy interface
-python -m services.backtester --file sample_data/your_file.csv
+```bash
+# Using the CLI command
+quantbt --config configs/optimized_btc_20250801.yaml
+
+# Using the Python script
+python run_backtest.py --config configs/optimized_btc_20250801.yaml
+
+# Legacy interface
+python -m services.backtester --file data/BTCUSDT_5m_2025-05-18_futures.csv
+```
+
+### 3. Run Optimization
+
+```bash
+# 3-phase optimization (recommended)
+python tools/optimization/run_3phase_optimization.py --n1 25 --n2 25 --n3 50
+
+# Quick optimization testing
+python tools/optimization/run_ultra_fast_optimization.py
+```
+
+### 4. Analyze Results
+
+```bash
+# Generate performance dashboard
+python tools/analysis/optimization_dashboard.py
+
+# Monitor live optimization
+python tools/monitoring/monitor_optimization_live.py
 ```
 
 ## Features

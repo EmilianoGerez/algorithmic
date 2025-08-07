@@ -1005,19 +1005,14 @@ def multirun(
 
             elif method == "random":
                 typer.echo(f"🎲 Starting random search with {trials} trials...")
-                random_results = opt_engine.run_random_optimization()
+                study = opt_engine.run_random_optimization()
 
                 # Find best result from the returned study
-                if random_results.get("study"):
-                    study = random_results["study"]
-                    if study.best_trial:
-                        best_score = study.best_value
-                        full_params = study.best_params
-                    else:
-                        typer.echo("❌ No successful trials found")
-                        raise typer.Exit(1)
+                if study and study.best_trial:
+                    best_score = study.best_value
+                    full_params = study.best_params
                 else:
-                    typer.echo("❌ Random optimization failed")
+                    typer.echo("❌ No successful trials found")
                     raise typer.Exit(1)
 
             # Final validation with full walk-forward
